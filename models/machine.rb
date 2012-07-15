@@ -130,7 +130,11 @@ class Machine < Base::Machine
   # @return [nil]
   def power_off(i_node)
     logger.info("machine.power_off")
-    raise Exceptions::NotImplemented
+    begin
+      poweroffTask = self.vm_moref.PowerOffVM_Task.wait_for_completion
+    rescue => e
+      raise Exceptions::Forbidden
+    end
   end
 
   # This is where you would call your cloud service and restart a machine
@@ -140,11 +144,7 @@ class Machine < Base::Machine
   def restart(i_node)
     logger.info("machine.restart")
 
-    begin
-      poweroffTask = self.vm_moref.PowerOffVM_Task.wait_for_completion
-    rescue => e
-      raise Exceptions::Forbidden
-    end
+
   end
 
   # This is where you would call your cloud service and shutdown a machine
