@@ -68,18 +68,17 @@ class Machine < Base::Machine
   # @return [Machine]
   def self.find_by_uuid(i_node, uuid)
     logger.info('Machine.find_by_uuid')
-    machine = Machine.new(
-      uuid:             uuid,
-      name:             'My Fake Machine',
-      cpu_count:        rand(4),
-      cpu_speed:        rand(2000),
-      maximum_memory:   32*1024*1024,
-      system:           build_system(),
-      disks:            build_disks(),
-      nics:             build_nics(),
-      guest_agent:      true,
-      power_state:      'poweredOn'
-    )
+
+    credentials = parse_credentials(i_node.credentials)
+    vim = RbVmomi::VIM.connect :host => i_node.connection, :user => credentials["username"], :password => credentials["password"] , :insecure => true
+    si = vim.searchIndex
+    vm = si.FindByUuid :uuid => uuid, :vmSearch => true
+
+    if vm.nil?
+      raise Exceptions::NotFound
+    else
+      machine = new_machine_from_vm (vm)
+    end
 
     machine
   end
