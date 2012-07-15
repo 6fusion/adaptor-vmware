@@ -1,4 +1,4 @@
-AdaptorTemplate.controllers :inodes, :priority => :low do
+AdaptorVMware.controllers :inodes, :priority => :low do
   # Creates
   post :index do
     logger.info('i_nodes#index')

@@ -1,4 +1,4 @@
-AdaptorTemplate.controllers :capabilities, :map => "/inodes/:inode_uuid" do
+AdaptorVMware.controllers :capabilities, :map => "/inodes/:inode_uuid" do
   before do
     logger.info('capabilities#before')
     @i_node = INode.find_by_uuid(params[:inode_uuid])

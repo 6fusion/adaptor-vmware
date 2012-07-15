@@ -1,4 +1,4 @@
-class AdaptorTemplate < Padrino::Application
+class AdaptorVMware < Padrino::Application
   register Padrino::Rendering
   register Padrino::Mailer
   register Padrino::Helpers

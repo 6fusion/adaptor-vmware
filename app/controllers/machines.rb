@@ -1,4 +1,4 @@
-AdaptorTemplate.controllers :machines, :map => "/inodes/:inode_uuid" do
+AdaptorVMware.controllers :machines, :map => "/inodes/:inode_uuid" do
   before do
     @i_node = INode.find_by_uuid(params[:inode_uuid])
   end

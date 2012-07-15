@@ -1,4 +1,4 @@
-AdaptorTemplate.controllers :hosts, :map => "/inodes/:inode_uuid" do
+AdaptorVMware.controllers :hosts, :map => "/inodes/:inode_uuid" do
   before do
     logger.info('hosts#before')
     @i_node = INode.find_by_uuid(params[:inode_uuid])
