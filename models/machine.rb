@@ -144,7 +144,11 @@ class Machine < Base::Machine
   def restart(i_node)
     logger.info("machine.restart")
 
-
+    begin
+      rebootTask = self.vm_moref.RebootGuest
+    rescue => e
+      raise Exceptions::Forbidden
+    end
   end
 
   # This is where you would call your cloud service and shutdown a machine
