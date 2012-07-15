@@ -189,7 +189,12 @@ class Machine < Base::Machine
   # @return [nil]
   def delete(i_node)
     logger.info("machine.delete")
-    raise Exceptions::NotImplemented
+
+    begin
+      destroyTask = self.vm_moref.Destroy_Task
+    rescue => e
+      raise Exceptions::Forbidden
+    end
   end
 
   private
