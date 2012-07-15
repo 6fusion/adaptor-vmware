@@ -157,7 +157,12 @@ class Machine < Base::Machine
   # @return [nil]
   def shutdown(i_node)
     logger.info("machine.shutdown")
-    raise Exceptions::NotImplemented
+
+    begin
+      shutdownTask = self.vm_moref.ShutdownGuest
+    rescue => e
+      raise Exceptions::Forbidden
+    end
   end
 
   # This is where you would call your cloud service and unplug a machine
