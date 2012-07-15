@@ -40,18 +40,18 @@ class Machine < Base::Machine
                                                             )]
                                           )]
                        }],
-        :propSet => [{:pathSet => [],
+        :propSet => [{:pathSet => %w(config guest runtime),
                       :type => "VirtualMachine"
                      }]
     )
 
-    vms = pc.RetrieveProperties(:specSet => [filterSpec])
+    vm_properties = pc.RetrieveProperties(:specSet => [filterSpec])
 
     machines = Array.new
 
-    vms.each do |m|
+    vm_properties.each do |m|
       #Create a new machine object from the vm object
-      machine = new_machine_from_vm (m.obj)
+      machine = new_machine_from_vm (m)
 
       # Add the Machine object to the @machines array
       machines << machine
@@ -71,13 +71,22 @@ class Machine < Base::Machine
 
     credentials = parse_credentials(i_node.credentials)
     vim = RbVmomi::VIM.connect :host => i_node.connection, :user => credentials["username"], :password => credentials["password"] , :insecure => true
+    pc = vim.serviceContent.propertyCollector
     si = vim.searchIndex
     vm = si.FindByUuid :uuid => uuid, :vmSearch => true
 
     if vm.nil?
       raise Exceptions::NotFound
     else
-      machine = new_machine_from_vm (vm)
+      filterSpec = RbVmomi::VIM.PropertyFilterSpec(
+          :objectSet => [{:obj => vm}],
+          :propSet => [{:pathSet => %w(config guest runtime),
+                        :type => "VirtualMachine"
+                       }]
+      )
+
+      vm_properties = pc.RetrieveProperties(:specSet => [filterSpec])
+      machine = new_machine_from_vm(vm_properties[0])
     end
 
     machine
@@ -209,41 +218,44 @@ class Machine < Base::Machine
   end
 
   # Helper method for creating machine objects..
-  def self.new_machine_from_vm(vm)
+  def self.new_machine_from_vm(properties)
+    properties_hash = properties.to_hash
     machine = Machine.new(
-        uuid:             vm.config.uuid,
-        name:             vm.config.name,
-        cpu_count:        vm.config.hardware.numCPU,
-        cpu_speed:        vm.runtime.host.hardware.cpuInfo.hz / 1000000 ,
-        maximum_memory:   vm.config.hardware.memoryMB,
-        system:           build_system(vm),
-        disks:            build_disks(vm),
-        nics:             build_nics(vm),
-        guest_agent:      vm.guest.toolsStatus == "toolsOk" ? true : false,
-        power_state:      vm.runtime.powerState,
-        vm_moref:         vm
+        uuid:             properties_hash["config"].uuid,
+        name:             properties_hash["config"].name,
+        cpu_count:        properties_hash["config"].hardware.numCPU,
+        cpu_speed:        properties_hash["runtime"].host.hardware.cpuInfo.hz / 1000000 ,
+        maximum_memory:   properties_hash["config"].hardware.memoryMB,
+        system:           build_system(properties),
+        disks:            build_disks(properties),
+        nics:             build_nics(properties),
+        guest_agent:      properties_hash["guest"].toolsStatus == "toolsOk" ? true : false,
+        power_state:      properties_hash["runtime"].powerState,
+        vm_moref:         properties.obj
     )
 
     machine
   end
 
   # Helper Method for creating system objects.
-  def self.build_system(machine)
+  def self.build_system(properties)
     logger.info('Machine.build_system')
 
-    x64_arch = machine.config.guestId.include? "64"
+    properties_hash = properties.to_hash
+    x64_arch = properties_hash["config"].guestId.include? "64"
 
     MachineSystem.new(
         architecture:     x64_arch ? "x64" : "x32",
-        operating_system: machine.config.guestId
+        operating_system: properties_hash["config"].guestId
     )
   end
 
   # Helper Method for creating disk objects.
-  def self.build_disks(machine)
+  def self.build_disks(properties)
     logger.info('Machine.build_disks')
 
-    vm_disks = machine.config.hardware.device.grep(RbVmomi::VIM::VirtualDisk)
+    properties_hash = properties.to_hash
+    vm_disks = properties_hash["config"].hardware.device.grep(RbVmomi::VIM::VirtualDisk)
     machine_disks = Array.new
     vm_disks.each do |vdisk|
       machine_disk = MachineDisk.new(
@@ -260,10 +272,11 @@ class Machine < Base::Machine
   end
 
   # Helper Method for creating nic objects.
-  def self.build_nics(machine)
+  def self.build_nics(properties)
     logger.info('Machine.build_nics')
 
-    vm_nics = machine.config.hardware.device.grep(RbVmomi::VIM::VirtualE1000) + machine.config.hardware.device.grep(RbVmomi::VIM::VirtualPCNet32) + machine.config.hardware.device.grep(RbVmomi::VIM::VirtualVmxnet)
+    properties_hash = properties.to_hash
+    vm_nics = properties_hash["config"].hardware.device.grep(RbVmomi::VIM::VirtualE1000) + properties_hash["config"].hardware.device.grep(RbVmomi::VIM::VirtualPCNet32) + properties_hash["config"].hardware.device.grep(RbVmomi::VIM::VirtualVmxnet)
 
     machine_nics = Array.new
     vm_nics.each do |vnic|
@@ -271,7 +284,7 @@ class Machine < Base::Machine
           uuid:        "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaa#{vnic.key}",
           name:        vnic.deviceInfo.label,
           mac_address: vnic.macAddress,
-          ip_address:  machine.guest.net.empty? ? "Unknown" : machine.guest.net.find{|x| x.deviceConfigId == vnic.key}.ipAddress
+          ip_address:  properties_hash["guest"].net.empty? ? "Unknown" : properties_hash["guest"].net.find{|x| x.deviceConfigId == vnic.key}.ipAddress
       )
 
       machine_nics << machine_nic
