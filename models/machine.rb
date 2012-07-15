@@ -145,7 +145,7 @@ class Machine < Base::Machine
     logger.info("machine.restart")
 
     begin
-      rebootTask = self.vm_moref.RebootGuest
+      self.vm_moref.RebootGuest
     rescue => e
       raise Exceptions::Forbidden
     end
@@ -159,7 +159,7 @@ class Machine < Base::Machine
     logger.info("machine.shutdown")
 
     begin
-      shutdownTask = self.vm_moref.ShutdownGuest
+      self.vm_moref.ShutdownGuest
     rescue => e
       raise Exceptions::Forbidden
     end
