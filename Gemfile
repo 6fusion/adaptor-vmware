@@ -6,6 +6,7 @@ gem 'thin' # or mongrel
 
            # Project requirements
 gem 'rake'
+gem 'rbvmomi'
 
 # Test requirements
 gem 'mocha', :group => "test"

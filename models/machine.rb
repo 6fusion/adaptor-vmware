@@ -1,27 +1,57 @@
 # @api public
 class Machine < Base::Machine
+  attr_accessor :vm_moref
+
   # This is where you would call your cloud service and get a list of machines
   #
   # @param [INode] i_node iNode instance that defines where the action is to take place
   # @return [Array<Machine>]
   def self.all(i_node)
     logger.info('Machine.all')
+
+    credentials = parse_credentials(i_node.credentials)
+    vim = RbVmomi::VIM.connect :host => i_node.connection, :user => credentials["username"], :password => credentials["password"] , :insecure => true
+    pc = vim.serviceContent.propertyCollector
+
+    filterSpec = RbVmomi::VIM.PropertyFilterSpec(
+        :objectSet => [{
+                           :obj => vim.rootFolder,
+                           :selectSet => [RbVmomi::VIM.TraversalSpec(
+                                              :name => "RootFolders",
+                                              :type => "Folder",
+                                              :path => "childEntity",
+                                              :skip => false,
+                                              :selectSet =>[RbVmomi::VIM.TraversalSpec(
+                                                                :name => "Datacenters",
+                                                                :type => "Datacenter",
+                                                                :path => "vmFolder",
+                                                                :skip => false,
+                                                                :selectSet => [RbVmomi::VIM.TraversalSpec(
+                                                                                   :name => "Folders",
+                                                                                   :type => "Folder",
+                                                                                   :path => "childEntity",
+                                                                                   :skip => false,
+                                                                                   :selectSet => [RbVmomi::VIM.TraversalSpec(
+                                                                                                      :name => "SubFolders",
+                                                                                                      :type => "Folder",
+                                                                                                      :path => "childEntity",
+                                                                                                      :skip => false)]
+                                                                               )]
+                                                            )]
+                                          )]
+                       }],
+        :propSet => [{:pathSet => [],
+                      :type => "VirtualMachine"
+                     }]
+    )
+
+    vms = pc.RetrieveProperties(:specSet => [filterSpec])
+
     machines = Array.new
 
-    1.upto(5) do |i|
-      # Hydrate a Machine object
-      machine = Machine.new(
-        uuid:             'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa' + i.to_s,
-        name:             i.to_s + ':My Fake Machine',
-        cpu_count:        rand(4),
-        cpu_speed:        rand(2000),
-        maximum_memory:   32*1024*1024,
-        system:           build_system(),
-        disks:            build_disks(),
-        nics:             build_nics(),
-        guest_agent:      true,
-        power_state:      'poweredOn'
-      )
+    vms.each do |m|
+      #Create a new machine object from the vm object
+      machine = new_machine_from_vm (m.obj)
 
       # Add the Machine object to the @machines array
       machines << machine
@@ -145,27 +175,59 @@ class Machine < Base::Machine
   end
 
   private
-  # Template Helper Method. Can be deleted
-  def self.build_system()
+  #Helper Method for parsing credentials
+  def self.parse_credentials(credentials)
+    #Converts the credentials in "username|password" format to a hash
+    credential_items = credentials.split "|"
+    credential_hash = Hash.new
+    credential_hash["username"] = credential_items[0]
+    credential_hash["password"] = credential_items[1]
+    credential_hash
+  end
+
+  # Helper method for creating machine objects..
+  def self.new_machine_from_vm(vm)
+    machine = Machine.new(
+        uuid:             vm.config.uuid,
+        name:             vm.config.name,
+        cpu_count:        vm.config.hardware.numCPU,
+        cpu_speed:        vm.runtime.host.hardware.cpuInfo.hz / 1000000 ,
+        maximum_memory:   vm.config.hardware.memoryMB,
+        system:           build_system(vm),
+        disks:            build_disks(vm),
+        nics:             build_nics(vm),
+        guest_agent:      vm.guest.toolsStatus == "toolsOk" ? true : false,
+        power_state:      vm.runtime.powerState,
+        vm_moref:         vm
+    )
+
+    machine
+  end
+
+  # Helper Method for creating system objects.
+  def self.build_system(machine)
     logger.info('Machine.build_system')
 
+    x64_arch = machine.config.guestId.include? "64"
+
     MachineSystem.new(
-      architecture:     "x64",
-      operating_system: "Linux"
+        architecture:     x64_arch ? "x64" : "x32",
+        operating_system: machine.config.guestId
     )
   end
 
-  # Template Helper Method. Can be deleted
-  def self.build_disks()
+  # Helper Method for creating disk objects.
+  def self.build_disks(machine)
     logger.info('Machine.build_disks')
 
+    vm_disks = machine.config.hardware.device.grep(RbVmomi::VIM::VirtualDisk)
     machine_disks = Array.new
-    1.upto(2) do |i|
+    vm_disks.each do |vdisk|
       machine_disk = MachineDisk.new(
-        uuid:         "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa#{i}",
-        name:         "#{i}:My Fake Disk",
-        maximum_size: 32*1024*1024,
-        type:         'Disk'
+          uuid:         "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaa#{vdisk.key}",
+          name:         vdisk.deviceInfo.label,
+          maximum_size: vdisk.capacityInKB / 1000000,
+          type:         'Disk'
       )
 
       machine_disks << machine_disk
@@ -174,17 +236,19 @@ class Machine < Base::Machine
     machine_disks
   end
 
-  # Template Helper Method. Can be deleted
-  def self.build_nics()
+  # Helper Method for creating nic objects.
+  def self.build_nics(machine)
     logger.info('Machine.build_nics')
 
+    vm_nics = machine.config.hardware.device.grep(RbVmomi::VIM::VirtualE1000) + machine.config.hardware.device.grep(RbVmomi::VIM::VirtualPCNet32) + machine.config.hardware.device.grep(RbVmomi::VIM::VirtualVmxnet)
+
     machine_nics = Array.new
-    1.upto(2) do |i|
+    vm_nics.each do |vnic|
       machine_nic = MachineNic.new(
-        uuid:        "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa#{i}",
-        name:        "#{i}:My Fake Nic",
-        mac_address: "A0:B0:C0:D0:E0:F0:G0:H#{i}",
-        ip_address:  "192.168.1.#{i}"
+          uuid:        "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaa#{vnic.key}",
+          name:        vnic.deviceInfo.label,
+          mac_address: vnic.macAddress,
+          ip_address:  machine.guest.net.empty? ? "Unknown" : machine.guest.net.find{|x| x.deviceConfigId == vnic.key}.ipAddress
       )
 
       machine_nics << machine_nic
