@@ -1,5 +1,6 @@
 # @api public
 class MachineNic < Base::MachineNic
+  attr_accessor :vm,:key
   # This is where you would call your cloud service and
   # find a specific machine's nic's readings.
   # This request should support since (start_date) and until (end_date)
@@ -11,14 +12,25 @@ class MachineNic < Base::MachineNic
   def readings(i_node, _since = Time.now.utc.beginning_of_month, _until = Time.now.utc)
     logger.info('MachineNic.readings')
 
-    readings = Array.new
-    1.upto(2) do |j|
-      reading = MachineNicReading.new(
-        receive: 8*1024,
-        transmit:  16*1024
-      )
+    vim = RbVmomi::VIM.connect :host => i_node.connection, :user => i_node.credentials_hash["username"], :password => i_node.credentials_hash["password"] , :insecure => true
+    pm = vim.serviceContent.perfManager
+    vms = [vm]
+    metrics = {"net.received.average" => "#{key}","net.transmitted.average" => "#{key}"}
 
-      readings << reading
+    # Collects Performance information
+    stats = pm.retrieve_stats(vms,metrics,20,12,Time.now - 300 * 12)
+
+    readings = Array.new
+    stats.each do |p|
+      if p.entity == self.vm
+        for f in 0..p.sampleInfo.length - 1
+          reading = MachineNicReading.new(
+              receive:    p.value[0].value[f].to_s,
+              transmit:   p.value[1].value[f].to_s
+          )
+          readings << reading
+        end
+      end
     end
 
     readings

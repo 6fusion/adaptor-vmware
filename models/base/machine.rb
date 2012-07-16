@@ -35,7 +35,7 @@ class Base::Machine < Main
   # outputs:
   #   Array of Machine Models
   def self.all(i_node)
-    logger.info('Machine.all')
+    logger.info("Base::Machine.all")
     raise Exceptions::NotImplemented
   end
 
@@ -47,7 +47,7 @@ class Base::Machine < Main
   # outputs:
   #   Machine Model
   def self.find_by_uuid(i_node, uuid)
-    logger.info('Machine.find_by_uuid')
+    logger.info("Base::Machine.find_by_uuid")
     raise Exceptions::NotImplemented
   end
 
@@ -59,8 +59,8 @@ class Base::Machine < Main
   #   _until - The end DateTime for the range of readings requested
   # outputs:
   #   Array of Readings Models
-  def readings(i_node, _since = Time.now.utc.beginning_of_month, _until = Time.now.utc)
-    logger.info('machine.readings')
+  def self.readings(i_node, _since = Time.now.utc.beginning_of_month, _until = Time.now.utc)
+    logger.info("Base::Machine.readings")
     raise Exceptions::NotImplemented
   end
 
@@ -72,7 +72,7 @@ class Base::Machine < Main
   # outputs:
   #   none
   def power_on(i_node)
-    logger.info("machine.power_on")
+    logger.info("Base::Machine.power_on")
     raise Exceptions::NotImplemented
   end
 
@@ -83,7 +83,7 @@ class Base::Machine < Main
   # outputs:
   #   none
   def power_off(i_node)
-    logger.info("machine.power_off")
+    logger.info("Base::Machine.power_off")
     raise Exceptions::NotImplemented
   end
 
@@ -94,7 +94,7 @@ class Base::Machine < Main
   # outputs:
   #   none
   def restart(i_node)
-    logger.info("machine.restart")
+    logger.info("Base::Machine.restart")
     raise Exceptions::NotImplemented
   end
 
@@ -105,7 +105,7 @@ class Base::Machine < Main
   # outputs:
   #   none
   def shutdown(i_node)
-    logger.info("machine.shutdown")
+    logger.info("Base::Machine.shutdown")
     raise Exceptions::NotImplemented
   end
 
@@ -116,17 +116,17 @@ class Base::Machine < Main
   # outputs:
   #   none
   def unplug(i_node)
-    logger.info("machine.unplug")
+    logger.info("Base::Machine.unplug")
     raise Exceptions::NotImplemented
   end
 
   def save(i_node)
-    logger.info("machine.save")
+    logger.info("Base::Machine.save")
     raise Exceptions::NotImplemented
   end
 
   def delete(i_node)
-    logger.info("machine.delete")
+    logger.info("Base::Machine.delete")
     raise Exceptions::NotImplemented
   end
 end

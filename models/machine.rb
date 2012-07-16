@@ -1,6 +1,6 @@
 # @api public
 class Machine < Base::Machine
-  attr_accessor :vm_moref
+  attr_accessor :vm
 
   # This is where you would call your cloud service and get a list of machines
   #
@@ -9,8 +9,7 @@ class Machine < Base::Machine
   def self.all(i_node)
     logger.info('Machine.all')
 
-    credentials = parse_credentials(i_node.credentials)
-    vim = RbVmomi::VIM.connect :host => i_node.connection, :user => credentials["username"], :password => credentials["password"] , :insecure => true
+    vim = RbVmomi::VIM.connect :host => i_node.connection, :user => i_node.credentials_hash["username"], :password => i_node.credentials_hash["password"] , :insecure => true
     pc = vim.serviceContent.propertyCollector
 
     filterSpec = RbVmomi::VIM.PropertyFilterSpec(
@@ -69,8 +68,7 @@ class Machine < Base::Machine
   def self.find_by_uuid(i_node, uuid)
     logger.info('Machine.find_by_uuid')
 
-    credentials = parse_credentials(i_node.credentials)
-    vim = RbVmomi::VIM.connect :host => i_node.connection, :user => credentials["username"], :password => credentials["password"] , :insecure => true
+    vim = RbVmomi::VIM.connect :host => i_node.connection, :user => i_node.credentials_hash["username"], :password => i_node.credentials_hash["password"] , :insecure => true
     pc = vim.serviceContent.propertyCollector
     si = vim.searchIndex
     vm = si.FindByUuid :uuid => uuid, :vmSearch => true
@@ -101,18 +99,29 @@ class Machine < Base::Machine
   # @param [Time] _until The ending date/time for the requested readings
   # @return [Machine]
   def readings(i_node, _since = Time.now.utc.beginning_of_month, _until = Time.now.utc)
-    logger.info('machine.readings')
+    logger.info("machine.readings")
+
+    vim = RbVmomi::VIM.connect :host => i_node.connection, :user => i_node.credentials_hash["username"], :password => i_node.credentials_hash["password"] , :insecure => true
+    pm = vim.serviceContent.perfManager
+    vms = [vm]
+    metrics = {"cpu.usagemhz.average" => "","mem.consumed.average" => ""}
+
+    # Collects Performance information
+    stats = pm.retrieve_stats(vms,metrics,20,12,Time.now - 300 * 12)
 
     readings = Array.new
-    1.upto(5) do |i|
-      reading = MachineReading.new(
-        interval:     3600,
-        date_time:    Time.at((_until.to_f - _since.to_f) * rand + _since.to_f),
-        cpu_usage:    1400,
-        memory_bytes: rand(32) * 1024 * 1024
-      )
-
-      readings << reading
+    stats.each do |p|
+      if p.entity == self.vm
+        for f in 0..p.sampleInfo.length - 1
+          reading = MachineReading.new(
+              interval:     p.sampleInfo[f].interval.to_s,
+              date_time:    p.sampleInfo[f].timestamp.to_s,
+              cpu_usage:    p.value[0].value[f].to_s,
+              memory_bytes: p.value[1].value[f].to_s
+          )
+          readings << reading
+        end
+      end
     end
 
     readings
@@ -127,7 +136,7 @@ class Machine < Base::Machine
     logger.info("machine.power_on")
 
     begin
-      poweronTask = self.vm_moref.PowerOnVM_Task.wait_for_completion
+      poweronTask = self.vm.PowerOnVM_Task.wait_for_completion
     rescue => e
       raise Exceptions::Forbidden
     end
@@ -140,7 +149,7 @@ class Machine < Base::Machine
   def power_off(i_node)
     logger.info("machine.power_off")
     begin
-      poweroffTask = self.vm_moref.PowerOffVM_Task.wait_for_completion
+      poweroffTask = self.vm.PowerOffVM_Task.wait_for_completion
     rescue => e
       raise Exceptions::Forbidden
     end
@@ -154,7 +163,7 @@ class Machine < Base::Machine
     logger.info("machine.restart")
 
     begin
-      self.vm_moref.RebootGuest
+      self.vm.RebootGuest
     rescue => e
       raise Exceptions::Forbidden
     end
@@ -168,7 +177,7 @@ class Machine < Base::Machine
     logger.info("machine.shutdown")
 
     begin
-      self.vm_moref.ShutdownGuest
+      self.vm.ShutdownGuest
     rescue => e
       raise Exceptions::Forbidden
     end
@@ -200,22 +209,13 @@ class Machine < Base::Machine
     logger.info("machine.delete")
 
     begin
-      destroyTask = self.vm_moref.Destroy_Task
+      destroyTask = self.vm.Destroy_Task
     rescue => e
       raise Exceptions::Forbidden
     end
   end
 
   private
-  #Helper Method for parsing credentials
-  def self.parse_credentials(credentials)
-    #Converts the credentials in "username|password" format to a hash
-    credential_items = credentials.split "|"
-    credential_hash = Hash.new
-    credential_hash["username"] = credential_items[0]
-    credential_hash["password"] = credential_items[1]
-    credential_hash
-  end
 
   # Helper method for creating machine objects..
   def self.new_machine_from_vm(properties)
@@ -231,7 +231,7 @@ class Machine < Base::Machine
         nics:             build_nics(properties),
         guest_agent:      properties_hash["guest"].toolsStatus == "toolsOk" ? true : false,
         power_state:      properties_hash["runtime"].powerState,
-        vm_moref:         properties.obj
+        vm:               properties.obj
     )
 
     machine
@@ -262,7 +262,10 @@ class Machine < Base::Machine
           uuid:         "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaa#{vdisk.key}",
           name:         vdisk.deviceInfo.label,
           maximum_size: vdisk.capacityInKB / 1000000,
-          type:         'Disk'
+          type:         'Disk',
+          vm:           properties.obj,
+          key:          vdisk.key
+
       )
 
       machine_disks << machine_disk
@@ -284,7 +287,9 @@ class Machine < Base::Machine
           uuid:        "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaa#{vnic.key}",
           name:        vnic.deviceInfo.label,
           mac_address: vnic.macAddress,
-          ip_address:  properties_hash["guest"].net.empty? ? "Unknown" : properties_hash["guest"].net.find{|x| x.deviceConfigId == vnic.key}.ipAddress
+          ip_address:  properties_hash["guest"].net.empty? ? "Unknown" : properties_hash["guest"].net.find{|x| x.deviceConfigId == vnic.key}.ipAddress,
+          vm:          properties.obj,
+          key:         vnic.key
       )
 
       machine_nics << machine_nic
