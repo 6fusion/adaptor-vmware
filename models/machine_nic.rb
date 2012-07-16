@@ -9,7 +9,7 @@ class MachineNic < Base::MachineNic
   # @param [Time] _since The beginning date/time for the requested readings
   # @param [Time] _until The ending date/time for the requested readings
   # @return [Machine]
-  def readings(i_node, _since = Time.now.utc.beginning_of_month, _until = Time.now.utc)
+  def readings(i_node, _since = Time.now.utc.yesterday, _until = Time.now.utc)
     logger.info('MachineNic.readings')
 
     vim = RbVmomi::VIM.connect :host => i_node.connection, :user => i_node.credentials_hash["username"], :password => i_node.credentials_hash["password"] , :insecure => true
@@ -18,7 +18,7 @@ class MachineNic < Base::MachineNic
     metrics = {"net.received.average" => "#{key}","net.transmitted.average" => "#{key}"}
 
     # Collects Performance information
-    stats = pm.retrieve_stats(vms,metrics,20,12,Time.now - 300 * 12)
+    stats = pm.retrieve_stats(vms,metrics,300,_since,_until)
 
     readings = Array.new
     stats.each do |p|

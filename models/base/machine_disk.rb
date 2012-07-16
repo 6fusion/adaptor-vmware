@@ -15,7 +15,7 @@ class Base::MachineDisk < Main
   validates :type,
     :inclusion => { :in => %(Disk CD) }
 
-  def readings(i_node, _since = Time.now.utc.beginning_of_month, _until = Time.now.utc)
+  def readings(i_node, _since = Time.now.utc.yesterday, _until = Time.now.utc)
     logger.info('Base::MachineDisk.readings')
     raise Exceptions::NotImplemented
   end

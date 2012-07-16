@@ -16,7 +16,7 @@ class Base::MachineNic < Main
   validates :ip_address,
     :length => { :maximum => 40 }
 
-  def readings(i_node, _since = Time.now.utc.beginning_of_month, _until = Time.now.utc)
+  def readings(i_node, _since = Time.now.utc.yesterday, _until = Time.now.utc)
     logger.info('Base::MachineNic.readings')
     raise Exceptions::NotImplemented
   end

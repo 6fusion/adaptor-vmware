@@ -59,7 +59,7 @@ class Base::Machine < Main
   #   _until - The end DateTime for the range of readings requested
   # outputs:
   #   Array of Readings Models
-  def self.readings(i_node, _since = Time.now.utc.beginning_of_month, _until = Time.now.utc)
+  def self.readings(i_node, _since = Time.now.utc.yesterday, _until = Time.now.utc)
     logger.info("Base::Machine.readings")
     raise Exceptions::NotImplemented
   end
