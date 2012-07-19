@@ -98,7 +98,7 @@ class Machine < Base::Machine
   # @param [Time] _since The beginning date/time for the requested readings
   # @param [Time] _until The ending date/time for the requested readings
   # @return [Machine]
-  def readings(i_node, _since = Time.now.utc.yesterday, _until = Time.now.utc)
+  def readings(i_node, _since = Time.now.utc - 86400, _until = Time.now.utc)
     logger.info("machine.readings")
 
     vim = RbVmomi::VIM.connect :host => i_node.connection, :user => i_node.credentials_hash["username"], :password => i_node.credentials_hash["password"] , :insecure => true
@@ -113,12 +113,22 @@ class Machine < Base::Machine
     stats.each do |p|
       if p.entity == self.vm
         for f in 0..p.sampleInfo.length - 1
-          reading = MachineReading.new(
-              interval:     p.sampleInfo[f].interval.to_s,
-              date_time:    p.sampleInfo[f].timestamp.to_s,
-              cpu_usage:    p.value[0].value[f].to_s,
-              memory_bytes: p.value[1].value[f].to_s
-          )
+          if p.value.empty?
+            reading = MachineReading.new(
+                interval:     p.sampleInfo[f].interval.to_s,
+                date_time:    p.sampleInfo[f].timestamp.to_s,
+                cpu_usage:    0,
+                memory_bytes: 0
+            )
+          else
+            reading = MachineReading.new(
+                interval:     p.sampleInfo[f].interval.to_s,
+                date_time:    p.sampleInfo[f].timestamp.to_s,
+                cpu_usage:    p.value[0].value[f].to_s,
+                memory_bytes: p.value[1].value[f].to_s
+            )
+          end
+
           readings << reading
         end
       end
@@ -189,7 +199,12 @@ class Machine < Base::Machine
   # @return [nil]
   def unplug(i_node)
     logger.info("machine.unplug")
-    raise Exceptions::NotImplemented
+
+    begin
+      unpluTask = self.vm.PowerOffVM_Task
+    rescue => e
+      raise Exceptions::Forbidden
+    end
   end
 
   # This is where you would call your cloud service to create a new virtual machine
@@ -287,7 +302,7 @@ class Machine < Base::Machine
           uuid:        "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaa#{vnic.key}",
           name:        vnic.deviceInfo.label,
           mac_address: vnic.macAddress,
-          ip_address:  properties_hash["guest"].net.empty? ? "Unknown" : properties_hash["guest"].net.find{|x| x.deviceConfigId == vnic.key}.ipAddress,
+          ip_address:  properties_hash["guest"].net.empty? ? "Unknown" : properties_hash["guest"].net.find{|x| x.deviceConfigId == vnic.key}.nil? ? "Unknown" : properties_hash["guest"].net.find{|x| x.deviceConfigId == vnic.key}.ipAddress,
           vm:          properties.obj,
           key:         vnic.key
       )

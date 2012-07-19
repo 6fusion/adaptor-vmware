@@ -9,7 +9,7 @@ class MachineDisk < Base::MachineDisk
   # @param [Time] _since The beginning date/time for the requested readings
   # @param [Time] _until The ending date/time for the requested readings
   # @return [Machine]
-  def readings(i_node, _since = Time.now.utc.yesterday, _until = Time.now.utc)
+  def readings(i_node, _since = Time.now.utc - 86400, _until = Time.now.utc)
     logger.info('machine_disk.readings')
 
     vim = RbVmomi::VIM.connect :host => i_node.connection, :user => i_node.credentials_hash["username"], :password => i_node.credentials_hash["password"] , :insecure => true
@@ -24,11 +24,20 @@ class MachineDisk < Base::MachineDisk
     stats.each do |p|
       if p.entity == self.vm
         for f in 0..p.sampleInfo.length - 1
-          reading = MachineDiskReading.new(
-              usage: 32*1024*1024,
-              read:  p.value[0].value[f].to_s,
-              write: p.value[1].value[f].to_s
-          )
+          if p.value.empty?
+            reading = MachineDiskReading.new(
+                usage: 32,
+                read:  0,
+                write: 0
+            )
+          else
+            reading = MachineDiskReading.new(
+                usage: 32,
+                read:  p.value[0].value[f].to_s,
+                write: p.value[1].value[f].to_s
+            )
+          end
+
           readings << reading
         end
       end

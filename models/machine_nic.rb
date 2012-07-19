@@ -9,7 +9,7 @@ class MachineNic < Base::MachineNic
   # @param [Time] _since The beginning date/time for the requested readings
   # @param [Time] _until The ending date/time for the requested readings
   # @return [Machine]
-  def readings(i_node, _since = Time.now.utc.yesterday, _until = Time.now.utc)
+  def readings(i_node, _since = Time.now.utc - 86400, _until = Time.now.utc)
     logger.info('MachineNic.readings')
 
     vim = RbVmomi::VIM.connect :host => i_node.connection, :user => i_node.credentials_hash["username"], :password => i_node.credentials_hash["password"] , :insecure => true
@@ -24,10 +24,18 @@ class MachineNic < Base::MachineNic
     stats.each do |p|
       if p.entity == self.vm
         for f in 0..p.sampleInfo.length - 1
-          reading = MachineNicReading.new(
-              receive:    p.value[0].value[f].to_s,
-              transmit:   p.value[1].value[f].to_s
-          )
+          if p.value.empty?
+            reading = MachineNicReading.new(
+                receive:    0,
+                transmit:   0
+            )
+          else
+            reading = MachineNicReading.new(
+                receive:    p.value[0].value[f].to_s,
+                transmit:   p.value[1].value[f].to_s
+            )
+          end
+
           readings << reading
         end
       end

@@ -6,7 +6,6 @@ gem 'thin' # or mongrel
 
            # Project requirements
 gem 'rake'
-gem 'rbvmomi'
 
 # Test requirements
 gem 'mocha', :group => "test"
@@ -21,6 +20,7 @@ gem 'rabl'
 gem 'yajl-ruby', :require => "yajl"
 gem 'haml'
 gem 'activemodel', :require => "active_model"
+gem 'rbvmomi'
 
 # Or Padrino Edge
 # gem 'padrino', :git => 'git://github.com/padrino/padrino-framework.git'

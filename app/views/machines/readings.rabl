@@ -3,7 +3,7 @@ collection @machines if @machines.present?
 object @machine if @machine.present?
 extends 'machines/base'
 
-_since = params[:since].blank? ? Time.now.utc.yesterday : params[:since]
+_since = params[:since].blank? ? Time.now.utc - 86400 : params[:since]
 _until = params[:until].blank? ? Time.now.utc : params[:until]
 
 child :disks => :disks do
