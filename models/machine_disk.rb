@@ -18,7 +18,7 @@ class MachineDisk < Base::MachineDisk
     metrics = {"virtualDisk.read.average" => "*","virtualDisk.write.average" => "*"}
 
     # Collects Performance information
-    stats = pm.retrieve_stats(vms,metrics,300,_since,_until)
+    vm.stats = pm.retrieve_stats(vms,metrics,300,_since,_until)
 
     readings = Array.new
     stats.each do |p|

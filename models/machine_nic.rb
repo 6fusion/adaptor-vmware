@@ -18,7 +18,7 @@ class MachineNic < Base::MachineNic
     metrics = {"net.received.average" => "#{key}","net.transmitted.average" => "#{key}"}
 
     # Collects Performance information
-    stats = pm.retrieve_stats(vms,metrics,300,_since,_until)
+    vm.stats = pm.retrieve_stats(vms,metrics,300,_since,_until)
 
     readings = Array.new
     stats.each do |p|

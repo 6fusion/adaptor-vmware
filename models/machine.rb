@@ -1,6 +1,7 @@
 # @api public
 class Machine < Base::Machine
   attr_accessor :vm
+                :stats
 
   # This is where you would call your cloud service and get a list of machines
   #
@@ -45,18 +46,7 @@ class Machine < Base::Machine
     )
 
     vm_properties = pc.RetrieveProperties(:specSet => [filterSpec])
-
-    machines = Array.new
-
-    vm_properties.each do |m|
-      #Create a new machine object from the vm object
-      machine = new_machine_from_vm (m)
-
-      # Add the Machine object to the @machines array
-      machines << machine
-    end
-
-    machines
+    machines = vm_properties.map {|m| new_machine_from_vm (m)}
   end
 
   # This is where you would call your cloud service and find the machine matching
@@ -84,7 +74,7 @@ class Machine < Base::Machine
       )
 
       vm_properties = pc.RetrieveProperties(:specSet => [filterSpec])
-      machine = new_machine_from_vm(vm_properties[0])
+      machine = new_machine_from_vm(vm_properties.first)
     end
 
     machine
@@ -248,8 +238,6 @@ class Machine < Base::Machine
         power_state:      properties_hash["runtime"].powerState,
         vm:               properties.obj
     )
-
-    machine
   end
 
   # Helper Method for creating system objects.
@@ -271,22 +259,16 @@ class Machine < Base::Machine
 
     properties_hash = properties.to_hash
     vm_disks = properties_hash["config"].hardware.device.grep(RbVmomi::VIM::VirtualDisk)
-    machine_disks = Array.new
-    vm_disks.each do |vdisk|
-      machine_disk = MachineDisk.new(
+    machine_disks = vm_disks.map do |vdisk|
+      MachineDisk.new(
           uuid:         "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaa#{vdisk.key}",
           name:         vdisk.deviceInfo.label,
           maximum_size: vdisk.capacityInKB / 1000000,
           type:         'Disk',
           vm:           properties.obj,
           key:          vdisk.key
-
       )
-
-      machine_disks << machine_disk
     end
-
-    machine_disks
   end
 
   # Helper Method for creating nic objects.
@@ -296,9 +278,8 @@ class Machine < Base::Machine
     properties_hash = properties.to_hash
     vm_nics = properties_hash["config"].hardware.device.grep(RbVmomi::VIM::VirtualE1000) + properties_hash["config"].hardware.device.grep(RbVmomi::VIM::VirtualPCNet32) + properties_hash["config"].hardware.device.grep(RbVmomi::VIM::VirtualVmxnet)
 
-    machine_nics = Array.new
-    vm_nics.each do |vnic|
-      machine_nic = MachineNic.new(
+    machine_nics = vm_nics.map do |vnic|
+      MachineNic.new(
           uuid:        "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaa#{vnic.key}",
           name:        vnic.deviceInfo.label,
           mac_address: vnic.macAddress,
@@ -306,10 +287,7 @@ class Machine < Base::Machine
           vm:          properties.obj,
           key:         vnic.key
       )
-
-      machine_nics << machine_nic
     end
-
-    machine_nics
   end
+
 end
