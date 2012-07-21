@@ -35,8 +35,7 @@
 #  capabilities have also been implemented.
 class Capability < Base::Capability
 
-  SUPPORTED_CAPABILITIES = ['guest_inventory',
-                            'guest_metering']
+  SUPPORTED_CAPABILITIES = %w(guest_inventory guest_metering guest_state host_state create)
 
   # Should return a list of capabilities for an iNode
   #
