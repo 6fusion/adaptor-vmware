@@ -22,7 +22,7 @@ class Machine < Base::Machine
   def self.all(i_node)
     logger.info('machine.all')
 
-    # Connect to vCenter and set the property collector object
+    # Connect to vCenter and set the property collector variable
     connection = RbVmomi::VIM.connect :host => i_node.connection, :user => i_node.credentials_hash["username"], :password => i_node.credentials_hash["password"] , :insecure => true
     property_collector = connection.serviceContent.propertyCollector
 
@@ -64,8 +64,7 @@ class Machine < Base::Machine
     vm_properties.map {|m| new_machine_from_vm (m)}
   end
 
-  # This is where you would call your cloud service and
-  # find all readings for all machines.
+  # This is where you would call your cloud service and find all readings for all machines.
   # This request should support since (start_date) and until (end_date)
   #
   # @param [INode] i_node iNode instance that defines where the action is to take place
@@ -79,11 +78,11 @@ class Machine < Base::Machine
     machines = self.all(i_node)
     vms = machines.map {|m| m.vm}
 
-    # Connect to vCenter
+    # Connect to vCenter and set the performance manager variable
     connection = RbVmomi::VIM.connect :host => i_node.connection, :user => i_node.credentials_hash["username"], :password => i_node.credentials_hash["password"] , :insecure => true
+    performance_manager = connection.serviceContent.perfManager
 
     # Collects Performance information and set the machine.stats object
-    performance_manager = connection.serviceContent.perfManager
     metrics = {"cpu.usagemhz.average" => "","mem.consumed.average" => "","virtualDisk.read.average" => "*","virtualDisk.write.average" => "*","net.received.average" => "*","net.transmitted.average" => "*"}
     stats = performance_manager.retrieve_stats(vms,metrics,300,_since,_until)
     stats.each do |stat|
@@ -96,8 +95,7 @@ class Machine < Base::Machine
     machines
   end
 
-  # This is where you would call your cloud service and find the machine matching
-  # the uuid passed.
+  # This is where you would call your cloud service and find the machine matching the uuid passed.
   #
   # @param [INode] i_node iNode instance that defines where the action is to take place
   # @param [String] uuid The specific identifier for the Machine
@@ -105,10 +103,13 @@ class Machine < Base::Machine
   def self.find_by_uuid(i_node, uuid)
     logger.info('machine.find_by_uuid')
 
+    # Connect to vCenter and set the property collector and the searchindex variables
     connection = RbVmomi::VIM.connect :host => i_node.connection, :user => i_node.credentials_hash["username"], :password => i_node.credentials_hash["password"] , :insecure => true
-    pc = connection.serviceContent.propertyCollector
-    si = connection.searchIndex
-    vm = si.FindByUuid :uuid => uuid, :vmSearch => true
+    property_collector = connection.serviceContent.propertyCollector
+    search_index = connection.searchIndex
+
+    # Search for the virtual machine by UUID and set the property filter variable
+    vm = search_index.FindByUuid :uuid => uuid, :vmSearch => true
 
     if vm.nil?
       raise Exceptions::NotFound
@@ -120,15 +121,16 @@ class Machine < Base::Machine
                        }]
       )
 
-      vm_properties = pc.RetrieveProperties(:specSet => [filter_spec])
+      # Retrieve properties create the machine object
+      vm_properties = property_collector.RetrieveProperties(:specSet => [filter_spec])
       machine = new_machine_from_vm(vm_properties.first)
     end
 
+    # Return the updated machine object
     machine
   end
 
-  # This is where you would call your cloud service and find the machine matching
-  # the uuid passed.
+  # This is where you would call your cloud service and find the machine matching the uuid passed and find all readings.
   #
   # @param [INode] i_node iNode instance that defines where the action is to take place
   # @param [String] uuid The specific identifier for the Machine
@@ -141,11 +143,11 @@ class Machine < Base::Machine
     machine = self.find_by_uuid(i_node,uuid)
     vms = [machine.vm]
 
-    # Connect to vCenter
+    # Connect to vCenter and set the performance manager variable
     connection = RbVmomi::VIM.connect :host => i_node.connection, :user => i_node.credentials_hash["username"], :password => i_node.credentials_hash["password"] , :insecure => true
-
-    # Collects Performance information and set the machine.stats objects
     performance_manager = connection.serviceContent.perfManager
+
+    # Collects Performance information and set the machine.stats property
     metrics = {"cpu.usagemhz.average" => "","mem.consumed.average" => "","virtualDisk.read.average" => "*","virtualDisk.write.average" => "*","net.received.average" => "*","net.transmitted.average" => "*"}
     stats = performance_manager.retrieve_stats(vms,metrics,300,_since,_until)
     machine.stats = stats.first
