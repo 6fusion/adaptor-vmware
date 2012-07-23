@@ -19,13 +19,7 @@ AdaptorVMware.controllers :machines, :map => "/inodes/:inode_uuid" do
   end
 
   get :index, :map => 'machines/readings' do
-    @machines = Machine.all(@i_node)
-
-    render 'machines/readings'
-  end
-
-  get :index, :map => 'machines/:uuid/readings' do
-    @machine = Machine.find_by_uuid(@i_node, params[:uuid])
+    @machines = Machine.all_with_readings(@i_node)
 
     render 'machines/readings'
   end
@@ -34,6 +28,11 @@ AdaptorVMware.controllers :machines, :map => "/inodes/:inode_uuid" do
     @machine = Machine.find_by_uuid(@i_node, params[:uuid])
 
     render 'machines/show'
+  end
+  get :index, :map => 'machines/:uuid/readings' do
+    @machine = Machine.find_by_uuid_with_readings(@i_node, params[:uuid])
+
+    render 'machines/readings'
   end
 
   # Updates
