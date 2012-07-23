@@ -1,21 +1,35 @@
 # @api public
 class Machine < Base::Machine
-  attr_accessor :vm
+  attr_accessor :vm,
                 :stats
+
+  def stats=(stats)
+    @stats = stats
+
+    @disks.each do |disk|
+      disk.stats = stats
+    end
+
+    @nics.each do |nic|
+      nic.stats = stats
+    end
+  end
 
   # This is where you would call your cloud service and get a list of machines
   #
   # @param [INode] i_node iNode instance that defines where the action is to take place
   # @return [Array<Machine>]
   def self.all(i_node)
-    logger.info('Machine.all')
+    logger.info('machine.all')
 
-    vim = RbVmomi::VIM.connect :host => i_node.connection, :user => i_node.credentials_hash["username"], :password => i_node.credentials_hash["password"] , :insecure => true
-    pc = vim.serviceContent.propertyCollector
+    # Connect to vCenter and set the property collector object
+    connection = RbVmomi::VIM.connect :host => i_node.connection, :user => i_node.credentials_hash["username"], :password => i_node.credentials_hash["password"] , :insecure => true
+    property_collector = connection.serviceContent.propertyCollector
 
-    filterSpec = RbVmomi::VIM.PropertyFilterSpec(
+    # Create a filter to retrieve properties for all machines
+    filter_spec = RbVmomi::VIM.PropertyFilterSpec(
         :objectSet => [{
-                           :obj => vim.rootFolder,
+                           :obj => connection.rootFolder,
                            :selectSet => [RbVmomi::VIM.TraversalSpec(
                                               :name => "RootFolders",
                                               :type => "Folder",
@@ -45,38 +59,98 @@ class Machine < Base::Machine
                      }]
     )
 
-    vm_properties = pc.RetrieveProperties(:specSet => [filterSpec])
-    machines = vm_properties.map {|m| new_machine_from_vm (m)}
+    # Retrieve properties for all machines and create machine objects
+    vm_properties = property_collector.RetrieveProperties(:specSet => [filter_spec])
+    vm_properties.map {|m| new_machine_from_vm (m)}
+  end
+
+  # This is where you would call your cloud service and
+  # find all readings for all machines.
+  # This request should support since (start_date) and until (end_date)
+  #
+  # @param [INode] i_node iNode instance that defines where the action is to take place
+  # @param [Time] _since The beginning date/time for the requested readings
+  # @param [Time] _until The ending date/time for the requested readings
+  # @return [Array <Machines>]
+  def self.all_with_readings(i_node, _since = Time.now.utc - 3600, _until = Time.now.utc)
+    logger.info("machine.all_with_readings")
+
+    # Retrieve all machines and virtual machine references
+    machines = self.all(i_node)
+    vms = machines.map {|m| m.vm}
+
+    # Connect to vCenter
+    connection = RbVmomi::VIM.connect :host => i_node.connection, :user => i_node.credentials_hash["username"], :password => i_node.credentials_hash["password"] , :insecure => true
+
+    # Collects Performance information and set the machine.stats object
+    performance_manager = connection.serviceContent.perfManager
+    metrics = {"cpu.usagemhz.average" => "","mem.consumed.average" => "","virtualDisk.read.average" => "*","virtualDisk.write.average" => "*","net.received.average" => "*","net.transmitted.average" => "*"}
+    stats = performance_manager.retrieve_stats(vms,metrics,300,_since,_until)
+    stats.each do |stat|
+      machines.each do |machine|
+        machine.stats = stat if machine.vm == stat.entity
+      end
+    end
+
+    # Returns update machine array
+    machines
   end
 
   # This is where you would call your cloud service and find the machine matching
   # the uuid passed.
-  # 
+  #
   # @param [INode] i_node iNode instance that defines where the action is to take place
   # @param [String] uuid The specific identifier for the Machine
   # @return [Machine]
   def self.find_by_uuid(i_node, uuid)
-    logger.info('Machine.find_by_uuid')
+    logger.info('machine.find_by_uuid')
 
-    vim = RbVmomi::VIM.connect :host => i_node.connection, :user => i_node.credentials_hash["username"], :password => i_node.credentials_hash["password"] , :insecure => true
-    pc = vim.serviceContent.propertyCollector
-    si = vim.searchIndex
+    connection = RbVmomi::VIM.connect :host => i_node.connection, :user => i_node.credentials_hash["username"], :password => i_node.credentials_hash["password"] , :insecure => true
+    pc = connection.serviceContent.propertyCollector
+    si = connection.searchIndex
     vm = si.FindByUuid :uuid => uuid, :vmSearch => true
 
     if vm.nil?
       raise Exceptions::NotFound
     else
-      filterSpec = RbVmomi::VIM.PropertyFilterSpec(
+      filter_spec = RbVmomi::VIM.PropertyFilterSpec(
           :objectSet => [{:obj => vm}],
           :propSet => [{:pathSet => %w(config guest runtime),
                         :type => "VirtualMachine"
                        }]
       )
 
-      vm_properties = pc.RetrieveProperties(:specSet => [filterSpec])
+      vm_properties = pc.RetrieveProperties(:specSet => [filter_spec])
       machine = new_machine_from_vm(vm_properties.first)
     end
 
+    machine
+  end
+
+  # This is where you would call your cloud service and find the machine matching
+  # the uuid passed.
+  #
+  # @param [INode] i_node iNode instance that defines where the action is to take place
+  # @param [String] uuid The specific identifier for the Machine
+  # @return [Machine]
+  # @param [Object] _since
+  # @param [Object] _until
+  def self.find_by_uuid_with_readings(i_node, uuid, _since = Time.now.utc - 86400, _until = Time.now.utc)
+    logger.info('machine.find_by_uuid_with_readings')
+
+    machine = self.find_by_uuid(i_node,uuid)
+    vms = [machine.vm]
+
+    # Connect to vCenter
+    connection = RbVmomi::VIM.connect :host => i_node.connection, :user => i_node.credentials_hash["username"], :password => i_node.credentials_hash["password"] , :insecure => true
+
+    # Collects Performance information and set the machine.stats objects
+    performance_manager = connection.serviceContent.perfManager
+    metrics = {"cpu.usagemhz.average" => "","mem.consumed.average" => "","virtualDisk.read.average" => "*","virtualDisk.write.average" => "*","net.received.average" => "*","net.transmitted.average" => "*"}
+    stats = performance_manager.retrieve_stats(vms,metrics,300,_since,_until)
+    machine.stats = stats.first
+
+    # Return updated machine object
     machine
   end
 
@@ -88,43 +162,11 @@ class Machine < Base::Machine
   # @param [Time] _since The beginning date/time for the requested readings
   # @param [Time] _until The ending date/time for the requested readings
   # @return [Machine]
-  def readings(i_node, _since = Time.now.utc - 86400, _until = Time.now.utc)
+  def readings(i_node, _since = Time.now.utc - 1800, _until = Time.now.utc)
     logger.info("machine.readings")
 
-    vim = RbVmomi::VIM.connect :host => i_node.connection, :user => i_node.credentials_hash["username"], :password => i_node.credentials_hash["password"] , :insecure => true
-    pm = vim.serviceContent.perfManager
-    vms = [vm]
-    metrics = {"cpu.usagemhz.average" => "","mem.consumed.average" => ""}
-
-    # Collects Performance information
-    stats = pm.retrieve_stats(vms,metrics,300,_since,_until)
-
-    readings = Array.new
-    stats.each do |p|
-      if p.entity == self.vm
-        for f in 0..p.sampleInfo.length - 1
-          if p.value.empty?
-            reading = MachineReading.new(
-                interval:     p.sampleInfo[f].interval.to_s,
-                date_time:    p.sampleInfo[f].timestamp.to_s,
-                cpu_usage:    0,
-                memory_bytes: 0
-            )
-          else
-            reading = MachineReading.new(
-                interval:     p.sampleInfo[f].interval.to_s,
-                date_time:    p.sampleInfo[f].timestamp.to_s,
-                cpu_usage:    p.value[0].value[f].to_s,
-                memory_bytes: p.value[1].value[f].to_s
-            )
-          end
-
-          readings << reading
-        end
-      end
-    end
-
-    readings
+    #Create machine readings
+    readings_from_stats(stats)
   end
 
   # Management
@@ -136,7 +178,7 @@ class Machine < Base::Machine
     logger.info("machine.power_on")
 
     begin
-      poweronTask = self.vm.PowerOnVM_Task.wait_for_completion
+      vm.PowerOnVM_Task.wait_for_completion
     rescue => e
       raise Exceptions::Forbidden
     end
@@ -149,7 +191,7 @@ class Machine < Base::Machine
   def power_off(i_node)
     logger.info("machine.power_off")
     begin
-      poweroffTask = self.vm.PowerOffVM_Task.wait_for_completion
+      vm.PowerOffVM_Task.wait_for_completion
     rescue => e
       raise Exceptions::Forbidden
     end
@@ -163,7 +205,7 @@ class Machine < Base::Machine
     logger.info("machine.restart")
 
     begin
-      self.vm.RebootGuest
+      vm.RebootGuest
     rescue => e
       raise Exceptions::Forbidden
     end
@@ -177,7 +219,7 @@ class Machine < Base::Machine
     logger.info("machine.shutdown")
 
     begin
-      self.vm.ShutdownGuest
+      vm.ShutdownGuest
     rescue => e
       raise Exceptions::Forbidden
     end
@@ -189,12 +231,7 @@ class Machine < Base::Machine
   # @return [nil]
   def unplug(i_node)
     logger.info("machine.unplug")
-
-    begin
-      unpluTask = self.vm.PowerOffVM_Task
-    rescue => e
-      raise Exceptions::Forbidden
-    end
+    raise Exceptions::NotImplemented
   end
 
   # This is where you would call your cloud service to create a new virtual machine
@@ -214,7 +251,7 @@ class Machine < Base::Machine
     logger.info("machine.delete")
 
     begin
-      destroyTask = self.vm.Destroy_Task
+      vm.Destroy_Task.wait_for_completion
     rescue => e
       raise Exceptions::Forbidden
     end
@@ -224,8 +261,10 @@ class Machine < Base::Machine
 
   # Helper method for creating machine objects..
   def self.new_machine_from_vm(properties)
+    logger.info('machine.new_machine_from_vm')
     properties_hash = properties.to_hash
-    machine = Machine.new(
+
+    Machine.new(
         uuid:             properties_hash["config"].uuid,
         name:             properties_hash["config"].name,
         cpu_count:        properties_hash["config"].hardware.numCPU,
@@ -236,14 +275,39 @@ class Machine < Base::Machine
         nics:             build_nics(properties),
         guest_agent:      properties_hash["guest"].toolsStatus == "toolsOk" ? true : false,
         power_state:      properties_hash["runtime"].powerState,
-        vm:               properties.obj
+        vm:               properties.obj,
+        stats:            []
     )
   end
 
-  # Helper Method for creating system objects.
-  def self.build_system(properties)
-    logger.info('Machine.build_system')
+  # Helper Method for creating readings objects.
+  def readings_from_stats(performance_metrics)
+    logger.info('machine.readings_from_stats')
 
+    performance_metrics.sampleInfo.each_with_index.map do |x,i|
+      if performance_metrics.value.empty?
+        MachineReading.new(
+            interval:     x.interval.to_s,
+            date_time:    x.timestamp.to_s,
+            cpu_usage:    0,
+            memory_bytes: 0
+        )
+      else
+        metric_readings = Hash[performance_metrics.value.map{|s| ["#{s.id.counterId}.#{s.id.instance}",s.value]}]
+        MachineReading.new(
+            interval:     x.interval.to_s,
+            date_time:    x.timestamp.to_s,
+            cpu_usage:    metric_readings["6."][i].to_s,
+            memory_bytes: metric_readings["98."][i].to_s
+        )
+      end
+    end
+  end
+
+
+# Helper Method for creating system objects.
+  def self.build_system(properties)
+    logger.info('machine.build_system')
     properties_hash = properties.to_hash
     x64_arch = properties_hash["config"].guestId.include? "64"
 
@@ -255,37 +319,48 @@ class Machine < Base::Machine
 
   # Helper Method for creating disk objects.
   def self.build_disks(properties)
-    logger.info('Machine.build_disks')
-
+    logger.info('machine.build_disks')
     properties_hash = properties.to_hash
     vm_disks = properties_hash["config"].hardware.device.grep(RbVmomi::VIM::VirtualDisk)
-    machine_disks = vm_disks.map do |vdisk|
+
+    vm_disks.map do |vdisk|
       MachineDisk.new(
-          uuid:         "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaa#{vdisk.key}",
-          name:         vdisk.deviceInfo.label,
-          maximum_size: vdisk.capacityInKB / 1000000,
-          type:         'Disk',
-          vm:           properties.obj,
-          key:          vdisk.key
+        uuid:           "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaa#{vdisk.key}",
+        name:           vdisk.deviceInfo.label,
+        maximum_size:   vdisk.capacityInKB / 1000000,
+        type:           'Disk',
+        vm:             properties.obj,
+        stats:          [],
+        key:            vdisk.key
       )
     end
   end
 
   # Helper Method for creating nic objects.
   def self.build_nics(properties)
-    logger.info('Machine.build_nics')
-
+    logger.info('machine.build_nics')
     properties_hash = properties.to_hash
     vm_nics = properties_hash["config"].hardware.device.grep(RbVmomi::VIM::VirtualE1000) + properties_hash["config"].hardware.device.grep(RbVmomi::VIM::VirtualPCNet32) + properties_hash["config"].hardware.device.grep(RbVmomi::VIM::VirtualVmxnet)
 
-    machine_nics = vm_nics.map do |vnic|
+    vm_nics.map do |vnic|
+
+      if properties_hash["guest"].net.empty?
+        nic_ip_address = "Unknown"
+      elsif
+      properties_hash["guest"].net.find{|x| x.deviceConfigId == vnic.key}.nil?
+        nic_ip_address = "Unknown"
+      else
+        nic_ip_address =  properties_hash["guest"].net.find{|x| x.deviceConfigId == vnic.key}.ipAddress.join(",")
+      end
+
       MachineNic.new(
           uuid:        "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaa#{vnic.key}",
-          name:        vnic.deviceInfo.label,
-          mac_address: vnic.macAddress,
-          ip_address:  properties_hash["guest"].net.empty? ? "Unknown" : properties_hash["guest"].net.find{|x| x.deviceConfigId == vnic.key}.nil? ? "Unknown" : properties_hash["guest"].net.find{|x| x.deviceConfigId == vnic.key}.ipAddress,
-          vm:          properties.obj,
-          key:         vnic.key
+          name:         vnic.deviceInfo.label,
+          mac_address:  vnic.macAddress,
+          ip_address:   nic_ip_address,
+          vm:           properties.obj,
+          stats:        [],
+          key:          vnic.key
       )
     end
   end
