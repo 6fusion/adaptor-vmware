@@ -32,8 +32,8 @@ class MachineDisk < Base::MachineDisk
         metric_readings = Hash[performance_metrics.value.map{|s| ["#{s.id.counterId}.#{s.id.instance}",s.value]}]
         MachineDiskReading.new(
             usage: 32,
-            read:  metric_readings["173.scsi0:0"][i].to_s,
-            write: metric_readings["174.scsi0:0"][i].to_s
+            read:  metric_readings["173.scsi0:0"].nil? ? 0 : metric_readings["173.scsi0:0"][i].to_s,
+            write: metric_readings["174.scsi0:0"].nil? ? 0 : metric_readings["174.scsi0:0"][i].to_s
         )
       end
     end

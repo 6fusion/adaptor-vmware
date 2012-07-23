@@ -297,13 +297,12 @@ class Machine < Base::Machine
         MachineReading.new(
             interval:     x.interval.to_s,
             date_time:    x.timestamp.to_s,
-            cpu_usage:    metric_readings["6."][i].to_s,
-            memory_bytes: metric_readings["98."][i].to_s
+            cpu_usage:    metric_readings["6."].nil? ? 0 : metric_readings["6."][i].to_s,
+            memory_bytes: metric_readings["98."].nil? ? 0 : metric_readings["98."][i].to_s
         )
       end
     end
   end
-
 
 # Helper Method for creating system objects.
   def self.build_system(properties)
