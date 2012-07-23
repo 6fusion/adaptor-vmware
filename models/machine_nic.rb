@@ -1,6 +1,9 @@
 # @api public
 class MachineNic < Base::MachineNic
-  attr_accessor :vm,:key
+  attr_accessor :vm,
+                :stats,
+                :key
+
   # This is where you would call your cloud service and
   # find a specific machine's nic's readings.
   # This request should support since (start_date) and until (end_date)
@@ -9,38 +12,28 @@ class MachineNic < Base::MachineNic
   # @param [Time] _since The beginning date/time for the requested readings
   # @param [Time] _until The ending date/time for the requested readings
   # @return [Machine]
-  def readings(i_node, _since = Time.now.utc - 86400, _until = Time.now.utc)
-    logger.info('MachineNic.readings')
+  def readings(i_node, _since = Time.now.utc - 1800, _until = Time.now.utc)
+    logger.info('machine_nic.readings')
 
-    vim = RbVmomi::VIM.connect :host => i_node.connection, :user => i_node.credentials_hash["username"], :password => i_node.credentials_hash["password"] , :insecure => true
-    pm = vim.serviceContent.perfManager
-    vms = [vm]
-    metrics = {"net.received.average" => "#{key}","net.transmitted.average" => "#{key}"}
+    #Create machine nic readings
+    readings_from_stats(stats)
+  end
 
-    # Collects Performance information
-    vm.stats = pm.retrieve_stats(vms,metrics,300,_since,_until)
-
-    readings = Array.new
-    stats.each do |p|
-      if p.entity == self.vm
-        for f in 0..p.sampleInfo.length - 1
-          if p.value.empty?
-            reading = MachineNicReading.new(
-                receive:    0,
-                transmit:   0
-            )
-          else
-            reading = MachineNicReading.new(
-                receive:    p.value[0].value[f].to_s,
-                transmit:   p.value[1].value[f].to_s
-            )
-          end
-
-          readings << reading
-        end
+  def readings_from_stats(performance_metrics)
+    # Helper Method for creating readings objects.
+    performance_metrics.sampleInfo.each_with_index.map do |x,i|
+      if performance_metrics.value.empty?
+        MachineNicReading.new(
+            receive:    0,
+            transmit:   0
+        )
+      else
+        metric_readings = Hash[performance_metrics.value.map{|s| ["#{s.id.counterId}.#{s.id.instance}",s.value]}]
+        MachineNicReading.new(
+            receive:    metric_readings["148.#{key}"][i].to_s,
+            transmit:   metric_readings["149.#{key}"][i].to_s
+        )
       end
     end
-
-    readings
   end
 end
