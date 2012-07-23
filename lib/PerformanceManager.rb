@@ -35,6 +35,6 @@ class RbVmomi::VIM::PerformanceManager
     end
 
     # Send all query spec objects as an array to the QueryPerf method on the Performance Manager object
-    stats = QueryPerf(:querySpec => query_specs)
+    QueryPerf(:querySpec => query_specs)
   end
 end
