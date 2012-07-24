@@ -25,11 +25,12 @@ class Machine < Base::Machine
     # Connect to vCenter and set the property collector variable
 
     property_collector = i_node.session.serviceContent.propertyCollector
+    root_folder =  i_node.session.serviceContent.rootFolder
 
     # Create a filter to retrieve properties for all machines
     filter_spec = RbVmomi::VIM.PropertyFilterSpec(
         :objectSet => [{
-                           :obj => i_node.session.rootFolder,
+                           :obj => root_folder,
                            :selectSet => [RbVmomi::VIM.TraversalSpec(
                                               :name => "RootFolders",
                                               :type => "Folder",

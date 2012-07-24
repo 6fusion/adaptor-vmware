@@ -1,19 +1,29 @@
 # @api public
 # This class file should not be modified if you don't understand what you're doing.
 class INode < Base::INode
-  $session
+  attr_reader :session
 
-  def session
+  def open_session
     begin
     #Converts the credentials in "username|password" format to a hash
     credential_items = credentials.split "|"
 
     # Connect to vCenter if the session is not already established
-      $session ||= RbVmomi::VIM.connect :host => connection, :user => credential_items[0], :password => credential_items[1] , :insecure => true
+      @session ||= RbVmomi::VIM.connect :host => connection, :user => credential_items[0], :password => credential_items[1] , :insecure => true
     rescue => e
       raise Exceptions::Unrecoverable
     end
+  end
 
+  def close_session
+    begin
+      unless @session.nil?
+        @session.close
+        @session = nil
+      end
+    rescue => e
+      raise exceptions::Unrecoverable
+    end
   end
 
   # Should return details for a specific iNode

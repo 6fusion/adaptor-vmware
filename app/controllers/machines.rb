@@ -1,6 +1,11 @@
 AdaptorVMware.controllers :machines, :map => "/inodes/:inode_uuid" do
   before do
     @i_node = INode.find_by_uuid(params[:inode_uuid])
+    @i_node.open_session
+  end
+
+  after do
+    @i_node.close_session
   end
 
   # Creates
