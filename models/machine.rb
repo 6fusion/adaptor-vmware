@@ -23,13 +23,13 @@ class Machine < Base::Machine
     logger.info('machine.all')
 
     # Connect to vCenter and set the property collector variable
-    connection = RbVmomi::VIM.connect :host => i_node.connection, :user => i_node.credentials_hash["username"], :password => i_node.credentials_hash["password"] , :insecure => true
-    property_collector = connection.serviceContent.propertyCollector
+
+    property_collector = i_node.session.serviceContent.propertyCollector
 
     # Create a filter to retrieve properties for all machines
     filter_spec = RbVmomi::VIM.PropertyFilterSpec(
         :objectSet => [{
-                           :obj => connection.rootFolder,
+                           :obj => i_node.session.rootFolder,
                            :selectSet => [RbVmomi::VIM.TraversalSpec(
                                               :name => "RootFolders",
                                               :type => "Folder",
@@ -79,8 +79,7 @@ class Machine < Base::Machine
     vms = machines.map {|m| m.vm}
 
     # Connect to vCenter and set the performance manager variable
-    connection = RbVmomi::VIM.connect :host => i_node.connection, :user => i_node.credentials_hash["username"], :password => i_node.credentials_hash["password"] , :insecure => true
-    performance_manager = connection.serviceContent.perfManager
+    performance_manager = i_node.session.serviceContent.perfManager
 
     # Collects Performance information and set the machine.stats object
     metrics = {"cpu.usagemhz.average" => "","mem.consumed.average" => "","virtualDisk.read.average" => "*","virtualDisk.write.average" => "*","net.received.average" => "*","net.transmitted.average" => "*"}
@@ -104,9 +103,8 @@ class Machine < Base::Machine
     logger.info('machine.find_by_uuid')
 
     # Connect to vCenter and set the property collector and the searchindex variables
-    connection = RbVmomi::VIM.connect :host => i_node.connection, :user => i_node.credentials_hash["username"], :password => i_node.credentials_hash["password"] , :insecure => true
-    property_collector = connection.serviceContent.propertyCollector
-    search_index = connection.searchIndex
+    property_collector = i_node.session.serviceContent.propertyCollector
+    search_index = i_node.session.searchIndex
 
     # Search for the virtual machine by UUID and set the property filter variable
     vm = search_index.FindByUuid :uuid => uuid, :vmSearch => true
@@ -144,8 +142,7 @@ class Machine < Base::Machine
     vms = [machine.vm]
 
     # Connect to vCenter and set the performance manager variable
-    connection = RbVmomi::VIM.connect :host => i_node.connection, :user => i_node.credentials_hash["username"], :password => i_node.credentials_hash["password"] , :insecure => true
-    performance_manager = connection.serviceContent.perfManager
+    performance_manager = i_node.session.serviceContent.perfManager
 
     # Collects Performance information and set the machine.stats property
     metrics = {"cpu.usagemhz.average" => "","mem.consumed.average" => "","virtualDisk.read.average" => "*","virtualDisk.write.average" => "*","net.received.average" => "*","net.transmitted.average" => "*"}

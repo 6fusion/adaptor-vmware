@@ -1,14 +1,21 @@
 # @api public
 # This class file should not be modified if you don't understand what you're doing.
 class INode < Base::INode
-  def credentials_hash
+  $session
+
+  def session
+    begin
     #Converts the credentials in "username|password" format to a hash
     credential_items = credentials.split "|"
-    credential_hash = Hash.new
-    credential_hash["username"] = credential_items[0]
-    credential_hash["password"] = credential_items[1]
-    credential_hash
+
+    # Connect to vCenter if the session is not already established
+      $session ||= RbVmomi::VIM.connect :host => connection, :user => credential_items[0], :password => credential_items[1] , :insecure => true
+    rescue => e
+      raise Exceptions::Unrecoverable
+    end
+
   end
+
   # Should return details for a specific iNode
   #
   # @param [String] uuid The specific identifier for the iNode
