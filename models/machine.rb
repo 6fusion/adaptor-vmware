@@ -20,49 +20,54 @@ class Machine < Base::Machine
   # @param [INode] i_node iNode instance that defines where the action is to take place
   # @return [Array<Machine>]
   def self.all(i_node)
-    logger.info('machine.all')
+    begin
+      logger.info('machine.all')
 
-    # Connect to vCenter and set the property collector variable
+      # Set the property collector variable and root folder variables
+      property_collector = i_node.session.serviceContent.propertyCollector
+      root_folder =  i_node.session.serviceContent.rootFolder
 
-    property_collector = i_node.session.serviceContent.propertyCollector
-    root_folder =  i_node.session.serviceContent.rootFolder
+      # Create a filter to retrieve properties for all machines
+      filter_spec = RbVmomi::VIM.PropertyFilterSpec(
+          :objectSet => [{
+                             :obj => root_folder,
+                             :selectSet => [RbVmomi::VIM.TraversalSpec(
+                                                :name => "RootFolders",
+                                                :type => "Folder",
+                                                :path => "childEntity",
+                                                :skip => false,
+                                                :selectSet =>[RbVmomi::VIM.TraversalSpec(
+                                                                  :name => "Datacenters",
+                                                                  :type => "Datacenter",
+                                                                  :path => "vmFolder",
+                                                                  :skip => false,
+                                                                  :selectSet => [RbVmomi::VIM.TraversalSpec(
+                                                                                     :name => "Folders",
+                                                                                     :type => "Folder",
+                                                                                     :path => "childEntity",
+                                                                                     :skip => false,
+                                                                                     :selectSet => [RbVmomi::VIM.TraversalSpec(
+                                                                                                        :name => "SubFolders",
+                                                                                                        :type => "Folder",
+                                                                                                        :path => "childEntity",
+                                                                                                        :skip => false)]
+                                                                                 )]
+                                                              )]
+                                            )]
+                         }],
+          :propSet => [{:pathSet => %w(config guest runtime),
+                        :type => "VirtualMachine"
+                       }]
+      )
 
-    # Create a filter to retrieve properties for all machines
-    filter_spec = RbVmomi::VIM.PropertyFilterSpec(
-        :objectSet => [{
-                           :obj => root_folder,
-                           :selectSet => [RbVmomi::VIM.TraversalSpec(
-                                              :name => "RootFolders",
-                                              :type => "Folder",
-                                              :path => "childEntity",
-                                              :skip => false,
-                                              :selectSet =>[RbVmomi::VIM.TraversalSpec(
-                                                                :name => "Datacenters",
-                                                                :type => "Datacenter",
-                                                                :path => "vmFolder",
-                                                                :skip => false,
-                                                                :selectSet => [RbVmomi::VIM.TraversalSpec(
-                                                                                   :name => "Folders",
-                                                                                   :type => "Folder",
-                                                                                   :path => "childEntity",
-                                                                                   :skip => false,
-                                                                                   :selectSet => [RbVmomi::VIM.TraversalSpec(
-                                                                                                      :name => "SubFolders",
-                                                                                                      :type => "Folder",
-                                                                                                      :path => "childEntity",
-                                                                                                      :skip => false)]
-                                                                               )]
-                                                            )]
-                                          )]
-                       }],
-        :propSet => [{:pathSet => %w(config guest runtime),
-                      :type => "VirtualMachine"
-                     }]
-    )
+      # Retrieve properties for all machines and create machine objects
+      vm_properties = property_collector.RetrieveProperties(:specSet => [filter_spec])
+      vm_properties.map {|m| new_machine_from_vm (m)}
+    rescue => e
+      logger.error(e.message)
+      raise Exception::Unrecoverable
+    end
 
-    # Retrieve properties for all machines and create machine objects
-    vm_properties = property_collector.RetrieveProperties(:specSet => [filter_spec])
-    vm_properties.map {|m| new_machine_from_vm (m)}
   end
 
   # This is where you would call your cloud service and find all readings for all machines.
@@ -73,26 +78,31 @@ class Machine < Base::Machine
   # @param [Time] _until The ending date/time for the requested readings
   # @return [Array <Machines>]
   def self.all_with_readings(i_node, _since = Time.now.utc - 3600, _until = Time.now.utc)
-    logger.info("machine.all_with_readings")
+    begin
+      logger.info("machine.all_with_readings")
 
-    # Retrieve all machines and virtual machine references
-    machines = self.all(i_node)
-    vms = machines.map {|m| m.vm}
+      # Retrieve all machines and virtual machine references
+      machines = self.all(i_node)
+      vms = machines.map {|m| m.vm}
 
-    # Connect to vCenter and set the performance manager variable
-    performance_manager = i_node.session.serviceContent.perfManager
+      # Connect to vCenter and set the performance manager variable
+      performance_manager = i_node.session.serviceContent.perfManager
 
-    # Collects Performance information and set the machine.stats object
-    metrics = {"cpu.usagemhz.average" => "","mem.consumed.average" => "","virtualDisk.read.average" => "*","virtualDisk.write.average" => "*","net.received.average" => "*","net.transmitted.average" => "*"}
-    stats = performance_manager.retrieve_stats(vms,metrics,300,_since,_until)
-    stats.each do |stat|
-      machines.each do |machine|
-        machine.stats = stat if machine.vm == stat.entity
+      # Collects Performance information and set the machine.stats object
+      metrics = {"cpu.usagemhz.average" => "","mem.consumed.average" => "","virtualDisk.read.average" => "*","virtualDisk.write.average" => "*","net.received.average" => "*","net.transmitted.average" => "*"}
+      stats = performance_manager.retrieve_stats(vms,metrics,300,_since,_until)
+      stats.each do |stat|
+        machines.each do |machine|
+          machine.stats = stat if machine.vm == stat.entity
+        end
       end
-    end
 
-    # Returns update machine array
-    machines
+      # Returns update machine array
+      machines
+    rescue => e
+      logger.error(e.message)
+      raise Exception::Unrecoverable
+    end
   end
 
   # This is where you would call your cloud service and find the machine matching the uuid passed.
@@ -101,32 +111,36 @@ class Machine < Base::Machine
   # @param [String] uuid The specific identifier for the Machine
   # @return [Machine]
   def self.find_by_uuid(i_node, uuid)
-    logger.info('machine.find_by_uuid')
+    begin
+      logger.info('machine.find_by_uuid')
+      # Connect to vCenter and set the property collector and the searchindex variables
+      property_collector = i_node.session.serviceContent.propertyCollector
+      search_index = i_node.session.searchIndex
 
-    # Connect to vCenter and set the property collector and the searchindex variables
-    property_collector = i_node.session.serviceContent.propertyCollector
-    search_index = i_node.session.searchIndex
+      # Search for the virtual machine by UUID and set the property filter variable
+      vm = search_index.FindByUuid :uuid => uuid, :vmSearch => true
 
-    # Search for the virtual machine by UUID and set the property filter variable
-    vm = search_index.FindByUuid :uuid => uuid, :vmSearch => true
+      if vm.nil?
+        raise Exceptions::NotFound
+      else
+        filter_spec = RbVmomi::VIM.PropertyFilterSpec(
+            :objectSet => [{:obj => vm}],
+            :propSet => [{:pathSet => %w(config guest runtime),
+                          :type => "VirtualMachine"
+                         }]
+        )
 
-    if vm.nil?
-      raise Exceptions::NotFound
-    else
-      filter_spec = RbVmomi::VIM.PropertyFilterSpec(
-          :objectSet => [{:obj => vm}],
-          :propSet => [{:pathSet => %w(config guest runtime),
-                        :type => "VirtualMachine"
-                       }]
-      )
+        # Retrieve properties create the machine object
+        vm_properties = property_collector.RetrieveProperties(:specSet => [filter_spec])
+        machine = new_machine_from_vm(vm_properties.first)
+      end
 
-      # Retrieve properties create the machine object
-      vm_properties = property_collector.RetrieveProperties(:specSet => [filter_spec])
-      machine = new_machine_from_vm(vm_properties.first)
+      # Return the updated machine object
+      machine
+    rescue => e
+      logger.error(e.message)
+      raise Exception::Unrecoverable
     end
-
-    # Return the updated machine object
-    machine
   end
 
   # This is where you would call your cloud service and find the machine matching the uuid passed and find all readings.
@@ -137,21 +151,25 @@ class Machine < Base::Machine
   # @param [Object] _since
   # @param [Object] _until
   def self.find_by_uuid_with_readings(i_node, uuid, _since = Time.now.utc - 86400, _until = Time.now.utc)
-    logger.info('machine.find_by_uuid_with_readings')
+    begin
+      logger.info('machine.find_by_uuid_with_readings')
+      machine = self.find_by_uuid(i_node,uuid)
+      vms = [machine.vm]
 
-    machine = self.find_by_uuid(i_node,uuid)
-    vms = [machine.vm]
+      # Connect to vCenter and set the performance manager variable
+      performance_manager = i_node.session.serviceContent.perfManager
 
-    # Connect to vCenter and set the performance manager variable
-    performance_manager = i_node.session.serviceContent.perfManager
+      # Collects Performance information and set the machine.stats property
+      metrics = {"cpu.usagemhz.average" => "","mem.consumed.average" => "","virtualDisk.read.average" => "*","virtualDisk.write.average" => "*","net.received.average" => "*","net.transmitted.average" => "*"}
+      stats = performance_manager.retrieve_stats(vms,metrics,300,_since,_until)
+      machine.stats = stats.first
 
-    # Collects Performance information and set the machine.stats property
-    metrics = {"cpu.usagemhz.average" => "","mem.consumed.average" => "","virtualDisk.read.average" => "*","virtualDisk.write.average" => "*","net.received.average" => "*","net.transmitted.average" => "*"}
-    stats = performance_manager.retrieve_stats(vms,metrics,300,_since,_until)
-    machine.stats = stats.first
-
-    # Return updated machine object
-    machine
+      # Return updated machine object
+      machine
+    rescue => e
+      logger.error(e.message)
+      raise Exception::Unrecoverable
+    end
   end
 
   # This is where you would call your cloud service and
@@ -163,10 +181,15 @@ class Machine < Base::Machine
   # @param [Time] _until The ending date/time for the requested readings
   # @return [Machine]
   def readings(i_node, _since = Time.now.utc - 1800, _until = Time.now.utc)
-    logger.info("machine.readings")
+    begin
+      logger.info("machine.readings")
 
-    #Create machine readings
-    readings_from_stats(stats)
+      #Create machine readings
+      readings_from_stats(stats)
+    rescue => e
+      logger.error(e.message)
+      raise Exception::Unrecoverable
+    end
   end
 
   # Management
@@ -261,107 +284,131 @@ class Machine < Base::Machine
 
   # Helper method for creating machine objects..
   def self.new_machine_from_vm(properties)
-    logger.info('machine.new_machine_from_vm')
-    properties_hash = properties.to_hash
+    begin
+      logger.info('machine.new_machine_from_vm')
+      properties_hash = properties.to_hash
 
-    Machine.new(
-        uuid:             properties_hash["config"].uuid,
-        name:             properties_hash["config"].name,
-        cpu_count:        properties_hash["config"].hardware.numCPU,
-        cpu_speed:        properties_hash["runtime"].host.hardware.cpuInfo.hz / 1000000 ,
-        maximum_memory:   properties_hash["config"].hardware.memoryMB,
-        system:           build_system(properties),
-        disks:            build_disks(properties),
-        nics:             build_nics(properties),
-        guest_agent:      properties_hash["guest"].toolsStatus == "toolsOk" ? true : false,
-        power_state:      properties_hash["runtime"].powerState,
-        vm:               properties.obj,
-        stats:            []
-    )
+      Machine.new(
+          uuid:             properties_hash["config"].uuid,
+          name:             properties_hash["config"].name,
+          cpu_count:        properties_hash["config"].hardware.numCPU,
+          cpu_speed:        properties_hash["runtime"].host.hardware.cpuInfo.hz / 1000000 ,
+          maximum_memory:   properties_hash["config"].hardware.memoryMB,
+          system:           build_system(properties),
+          disks:            build_disks(properties),
+          nics:             build_nics(properties),
+          guest_agent:      properties_hash["guest"].toolsStatus == "toolsOk" ? true : false,
+          power_state:      properties_hash["runtime"].powerState,
+          vm:               properties.obj,
+          stats:            []
+      )
+    rescue => e
+      logger.error(e.message)
+      raise Exception::Unrecoverable
+    end
   end
 
   # Helper Method for creating readings objects.
   def readings_from_stats(performance_metrics)
-    logger.info('machine.readings_from_stats')
+    begin
+      logger.info('machine.readings_from_stats')
 
-    performance_metrics.sampleInfo.each_with_index.map do |x,i|
-      if performance_metrics.value.empty?
-        MachineReading.new(
-            interval:     x.interval.to_s,
-            date_time:    x.timestamp.to_s,
-            cpu_usage:    0,
-            memory_bytes: 0
-        )
-      else
-        metric_readings = Hash[performance_metrics.value.map{|s| ["#{s.id.counterId}.#{s.id.instance}",s.value]}]
-        MachineReading.new(
-            interval:     x.interval.to_s,
-            date_time:    x.timestamp.to_s,
-            cpu_usage:    metric_readings["6."].nil? ? 0 : metric_readings["6."][i].to_s,
-            memory_bytes: metric_readings["98."].nil? ? 0 : metric_readings["98."][i].to_s
-        )
+      performance_metrics.sampleInfo.each_with_index.map do |x,i|
+        if performance_metrics.value.empty?
+          MachineReading.new(
+              interval:     x.interval.to_s,
+              date_time:    x.timestamp.to_s,
+              cpu_usage:    0,
+              memory_bytes: 0
+          )
+        else
+          metric_readings = Hash[performance_metrics.value.map{|s| ["#{s.id.counterId}.#{s.id.instance}",s.value]}]
+          MachineReading.new(
+              interval:     x.interval.to_s,
+              date_time:    x.timestamp.to_s,
+              cpu_usage:    metric_readings["6."].nil? ? 0 : metric_readings["6."][i].to_s,
+              memory_bytes: metric_readings["98."].nil? ? 0 : metric_readings["98."][i].to_s
+          )
+        end
       end
+    rescue => e
+      logger.error(e.message)
+      raise Exception::Unrecoverable
     end
   end
 
 # Helper Method for creating system objects.
   def self.build_system(properties)
-    logger.info('machine.build_system')
-    properties_hash = properties.to_hash
-    x64_arch = properties_hash["config"].guestId.include? "64"
+    begin
+      logger.info('machine.build_system')
+      properties_hash = properties.to_hash
+      x64_arch = properties_hash["config"].guestId.include? "64"
 
-    MachineSystem.new(
-        architecture:     x64_arch ? "x64" : "x32",
-        operating_system: properties_hash["config"].guestId
-    )
+      MachineSystem.new(
+          architecture:     x64_arch ? "x64" : "x32",
+          operating_system: properties_hash["config"].guestId
+      )
+    rescue => e
+      logger.error(e.message)
+      raise Exception::Unrecoverable
+    end
   end
 
   # Helper Method for creating disk objects.
   def self.build_disks(properties)
-    logger.info('machine.build_disks')
-    properties_hash = properties.to_hash
-    vm_disks = properties_hash["config"].hardware.device.grep(RbVmomi::VIM::VirtualDisk)
+    begin
+      logger.info('machine.build_disks')
+      properties_hash = properties.to_hash
+      vm_disks = properties_hash["config"].hardware.device.grep(RbVmomi::VIM::VirtualDisk)
 
-    vm_disks.map do |vdisk|
-      MachineDisk.new(
-        uuid:           "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaa#{vdisk.key}",
-        name:           vdisk.deviceInfo.label,
-        maximum_size:   vdisk.capacityInKB / 1000000,
-        type:           'Disk',
-        vm:             properties.obj,
-        stats:          [],
-        key:            vdisk.key
-      )
+      vm_disks.map do |vdisk|
+        MachineDisk.new(
+            uuid:           "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaa#{vdisk.key}",
+            name:           vdisk.deviceInfo.label,
+            maximum_size:   vdisk.capacityInKB / 1000000,
+            type:           'Disk',
+            vm:             properties.obj,
+            stats:          [],
+            key:            vdisk.key
+        )
+      end
+    rescue => e
+      logger.error(e.message)
+      raise Exception::Unrecoverable
     end
   end
 
   # Helper Method for creating nic objects.
   def self.build_nics(properties)
-    logger.info('machine.build_nics')
-    properties_hash = properties.to_hash
-    vm_nics = properties_hash["config"].hardware.device.grep(RbVmomi::VIM::VirtualE1000) + properties_hash["config"].hardware.device.grep(RbVmomi::VIM::VirtualPCNet32) + properties_hash["config"].hardware.device.grep(RbVmomi::VIM::VirtualVmxnet)
+    begin
+      logger.info('machine.build_nics')
+      properties_hash = properties.to_hash
+      vm_nics = properties_hash["config"].hardware.device.grep(RbVmomi::VIM::VirtualE1000) + properties_hash["config"].hardware.device.grep(RbVmomi::VIM::VirtualPCNet32) + properties_hash["config"].hardware.device.grep(RbVmomi::VIM::VirtualVmxnet)
 
-    vm_nics.map do |vnic|
+      vm_nics.map do |vnic|
 
-      if properties_hash["guest"].net.empty?
-        nic_ip_address = "Unknown"
-      elsif
-      properties_hash["guest"].net.find{|x| x.deviceConfigId == vnic.key}.nil?
-        nic_ip_address = "Unknown"
-      else
-        nic_ip_address =  properties_hash["guest"].net.find{|x| x.deviceConfigId == vnic.key}.ipAddress.join(",")
+        if properties_hash["guest"].net.empty?
+          nic_ip_address = "Unknown"
+        elsif
+        properties_hash["guest"].net.find{|x| x.deviceConfigId == vnic.key}.nil?
+          nic_ip_address = "Unknown"
+        else
+          nic_ip_address =  properties_hash["guest"].net.find{|x| x.deviceConfigId == vnic.key}.ipAddress.join(",")
+        end
+
+        MachineNic.new(
+            uuid:        "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaa#{vnic.key}",
+            name:         vnic.deviceInfo.label,
+            mac_address:  vnic.macAddress,
+            ip_address:   nic_ip_address,
+            vm:           properties.obj,
+            stats:        [],
+            key:          vnic.key
+        )
       end
-
-      MachineNic.new(
-          uuid:        "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaa#{vnic.key}",
-          name:         vnic.deviceInfo.label,
-          mac_address:  vnic.macAddress,
-          ip_address:   nic_ip_address,
-          vm:           properties.obj,
-          stats:        [],
-          key:          vnic.key
-      )
+    rescue => e
+      logger.error(e.message)
+      raise Exception::Unrecoverable
     end
   end
-
 end

@@ -11,6 +11,7 @@ class INode < Base::INode
     # Connect to vCenter if the session is not already established
       @session ||= RbVmomi::VIM.connect :host => connection, :user => credential_items[0], :password => credential_items[1] , :insecure => true
     rescue => e
+      logger.error(e.message)
       raise Exceptions::Unrecoverable
     end
   end
@@ -22,6 +23,7 @@ class INode < Base::INode
         @session = nil
       end
     rescue => e
+      logger.error(e.message)
       raise exceptions::Unrecoverable
     end
   end
