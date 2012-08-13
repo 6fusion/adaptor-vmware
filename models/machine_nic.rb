@@ -3,7 +3,7 @@ class MachineNic < Base::MachineNic
                 :stats,
                 :key
 
-  def readings(i_node, _since = Time.now.utc - 1800, _until = Time.now.utc)
+  def readings(inode, _since = Time.now.utc - 1800, _until = Time.now.utc)
     logger.info('machine_nic.readings')
 
     #Create machine nic readings

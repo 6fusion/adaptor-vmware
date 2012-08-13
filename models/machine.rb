@@ -14,13 +14,13 @@ class Machine < Base::Machine
     end
   end
 
-  def self.all(i_node)
+  def self.all(inode)
     begin
       logger.info('machine.all')
 
       # Set the property collector variable and root folder variables
-      property_collector = i_node.session.serviceContent.propertyCollector
-      root_folder =  i_node.session.serviceContent.rootFolder
+      property_collector = inode.session.serviceContent.propertyCollector
+      root_folder =  inode.session.serviceContent.rootFolder
 
       # Create a filter to retrieve properties for all machines
       filter_spec = RbVmomi::VIM.PropertyFilterSpec(
@@ -64,16 +64,16 @@ class Machine < Base::Machine
     end
   end
 
-  def self.all_with_readings(i_node, _since = Time.now.utc - 3600, _until = Time.now.utc)
+  def self.all_with_readings(inode, _since = Time.now.utc - 3600, _until = Time.now.utc)
     begin
       logger.info("machine.all_with_readings")
 
       # Retrieve all machines and virtual machine references
-      machines = self.all(i_node)
+      machines = self.all(inode)
       vms = machines.map {|m| m.vm}
 
       # Connect to vCenter and set the performance manager variable
-      performance_manager = i_node.session.serviceContent.perfManager
+      performance_manager = inode.session.serviceContent.perfManager
 
       # Collects Performance information and set the machine.stats object
       metrics = {"cpu.usagemhz.average" => "","mem.consumed.average" => "","virtualDisk.read.average" => "*","virtualDisk.write.average" => "*","net.received.average" => "*","net.transmitted.average" => "*"}
@@ -92,12 +92,12 @@ class Machine < Base::Machine
     end
   end
 
-  def self.find_by_uuid(i_node, uuid)
+  def self.find_by_uuid(inode, uuid)
     begin
       logger.info('machine.find_by_uuid')
       # Connect to vCenter and set the property collector and the searchindex variables
-      property_collector = i_node.session.serviceContent.propertyCollector
-      search_index = i_node.session.searchIndex
+      property_collector = inode.session.serviceContent.propertyCollector
+      search_index = inode.session.searchIndex
 
       # Search for the virtual machine by UUID and set the property filter variable
       vm = search_index.FindByUuid :uuid => uuid, :vmSearch => true
@@ -125,14 +125,14 @@ class Machine < Base::Machine
     end
   end
 
-  def self.find_by_uuid_with_readings(i_node, uuid, _since = Time.now.utc - 86400, _until = Time.now.utc)
+  def self.find_by_uuid_with_readings(inode, uuid, _since = Time.now.utc - 86400, _until = Time.now.utc)
     begin
       logger.info('machine.find_by_uuid_with_readings')
-      machine = self.find_by_uuid(i_node,uuid)
+      machine = self.find_by_uuid(inode,uuid)
       vms = [machine.vm]
 
       # Connect to vCenter and set the performance manager variable
-      performance_manager = i_node.session.serviceContent.perfManager
+      performance_manager = inode.session.serviceContent.perfManager
 
       # Collects Performance information and set the machine.stats property
       metrics = {"cpu.usagemhz.average" => "","mem.consumed.average" => "","virtualDisk.read.average" => "*","virtualDisk.write.average" => "*","net.received.average" => "*","net.transmitted.average" => "*"}
@@ -147,7 +147,7 @@ class Machine < Base::Machine
     end
   end
 
-  def readings(i_node, _since = Time.now.utc - 1800, _until = Time.now.utc)
+  def readings(inode, _since = Time.now.utc - 1800, _until = Time.now.utc)
     begin
       logger.info("machine.readings")
 
@@ -159,7 +159,7 @@ class Machine < Base::Machine
     end
   end
 
-  def start(i_node)
+  def start(inode)
     logger.info("machine.start")
 
     begin
@@ -169,7 +169,7 @@ class Machine < Base::Machine
     end
   end
 
-  def stop(i_node)
+  def stop(inode)
     logger.info("machine.stop")
 
     begin
@@ -179,7 +179,7 @@ class Machine < Base::Machine
     end
   end
 
-  def restart(i_node)
+  def restart(inode)
     logger.info("machine.restart")
 
     begin
@@ -189,7 +189,7 @@ class Machine < Base::Machine
     end
   end
 
-  def force_stop(i_node)
+  def force_stop(inode)
     logger.info("machine.force_stop")
     begin
       vm.PowerOffVM_Task.wait_for_completion
@@ -198,7 +198,7 @@ class Machine < Base::Machine
     end
   end
 
-  def force_restart(i_node)
+  def force_restart(inode)
     logger.info("machine.force_restart")
     begin
       vm.ResetVM_Task.wait_for_completion
@@ -207,12 +207,12 @@ class Machine < Base::Machine
     end
   end
 
-  def save(i_node)
+  def save(inode)
     logger.info("machine.save")
     raise Exceptions::NotImplemented
   end
 
-  def delete(i_node)
+  def delete(inode)
     logger.info("machine.delete")
 
     begin

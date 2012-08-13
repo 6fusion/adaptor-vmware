@@ -108,8 +108,8 @@ AdaptorVMware.controllers :machines, :map => "/inodes/:inode_uuid" do
   put :show, :map => 'machines/:uuid/force_stop' do
     begin
       logger.info('GET - machines.uuid#force_stop')
-      @machine = Machine.find_by_uuid(@inode, params[:uuid]).force_stop(@inode)
-      @machine.force_stop(@inode) if @machine.present?
+      @machine = Machine.find_by_uuid(@inode, params[:uuid])
+      @machine.force_start(@inode) if @machine.present?
 
       render 'machines/show'
     ensure
@@ -120,7 +120,7 @@ AdaptorVMware.controllers :machines, :map => "/inodes/:inode_uuid" do
   put :show, :map => 'machines/:uuid/force_restart' do
     begin
       logger.info('GET - machines.uuid#force_restart')
-      @machine = Machine.find_by_uuid(@inode, params[:uuid]).force_restart(@inode)
+      @machine = Machine.find_by_uuid(@inode, params[:uuid])
       @machine.force_restart(@inode) if @machine.present?
 
       render 'machines/show'
