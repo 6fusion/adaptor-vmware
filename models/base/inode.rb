@@ -61,6 +61,6 @@ class Base::Inode < Main
   #
   # @return [Array]
   def capabilities
-    Capability.all(uuid)
+    Capability.all(@uuid)
   end
 end
