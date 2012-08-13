@@ -4,10 +4,10 @@ class Inode < Base::Inode
   def open_session
     begin
       #Converts the credentials in "username|password" format to a hash
-      credential_items = credentials.split "|"
+      credential_items = @credentials.split "|"
 
       # Connect to vCenter if the session is not already established
-      @session ||= RbVmomi::VIM.connect :host => connection, :user => credential_items[0], :password => credential_items[1] , :insecure => true
+      @session ||= RbVmomi::VIM.connect :host => @connection, :user => credential_items[0], :password => credential_items[1] , :insecure => true
     rescue => e
       logger.error(e.message)
       raise Exceptions::Unrecoverable
