@@ -20,6 +20,7 @@ gem 'rabl'
 gem 'yajl-ruby', :require => "yajl"
 gem 'haml'
 gem 'activemodel', :require => "active_model"
+gem 'activesupport', require: 'active_support/time'
 gem 'rbvmomi'
 
 # Or Padrino Edge

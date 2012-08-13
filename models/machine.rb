@@ -1,4 +1,3 @@
-# @api public
 class Machine < Base::Machine
   attr_accessor :vm,
                 :stats
@@ -15,10 +14,6 @@ class Machine < Base::Machine
     end
   end
 
-  # This is where you would call your cloud service and get a list of machines
-  #
-  # @param [INode] i_node iNode instance that defines where the action is to take place
-  # @return [Array<Machine>]
   def self.all(i_node)
     begin
       logger.info('machine.all')
@@ -67,16 +62,8 @@ class Machine < Base::Machine
       logger.error(e.message)
       raise Exception::Unrecoverable
     end
-
   end
 
-  # This is where you would call your cloud service and find all readings for all machines.
-  # This request should support since (start_date) and until (end_date)
-  #
-  # @param [INode] i_node iNode instance that defines where the action is to take place
-  # @param [Time] _since The beginning date/time for the requested readings
-  # @param [Time] _until The ending date/time for the requested readings
-  # @return [Array <Machines>]
   def self.all_with_readings(i_node, _since = Time.now.utc - 3600, _until = Time.now.utc)
     begin
       logger.info("machine.all_with_readings")
@@ -105,11 +92,6 @@ class Machine < Base::Machine
     end
   end
 
-  # This is where you would call your cloud service and find the machine matching the uuid passed.
-  #
-  # @param [INode] i_node iNode instance that defines where the action is to take place
-  # @param [String] uuid The specific identifier for the Machine
-  # @return [Machine]
   def self.find_by_uuid(i_node, uuid)
     begin
       logger.info('machine.find_by_uuid')
@@ -143,13 +125,6 @@ class Machine < Base::Machine
     end
   end
 
-  # This is where you would call your cloud service and find the machine matching the uuid passed and find all readings.
-  #
-  # @param [INode] i_node iNode instance that defines where the action is to take place
-  # @param [String] uuid The specific identifier for the Machine
-  # @return [Machine]
-  # @param [Object] _since
-  # @param [Object] _until
   def self.find_by_uuid_with_readings(i_node, uuid, _since = Time.now.utc - 86400, _until = Time.now.utc)
     begin
       logger.info('machine.find_by_uuid_with_readings')
@@ -172,14 +147,6 @@ class Machine < Base::Machine
     end
   end
 
-  # This is where you would call your cloud service and
-  # find a specific machine's readings.
-  # This request should support since (start_date) and until (end_date)
-  # 
-  # @param [INode] i_node iNode instance that defines where the action is to take place
-  # @param [Time] _since The beginning date/time for the requested readings
-  # @param [Time] _until The ending date/time for the requested readings
-  # @return [Machine]
   def readings(i_node, _since = Time.now.utc - 1800, _until = Time.now.utc)
     begin
       logger.info("machine.readings")
@@ -192,13 +159,8 @@ class Machine < Base::Machine
     end
   end
 
-  # Management
-  # This is where you would call your cloud service and power on a machine
-  # 
-  # @param [INode] i_node iNode instance that defines where the action is to take place
-  # @return [nil]
-  def power_on(i_node)
-    logger.info("machine.power_on")
+  def start(i_node)
+    logger.info("machine.start")
 
     begin
       vm.PowerOnVM_Task.wait_for_completion
@@ -207,23 +169,16 @@ class Machine < Base::Machine
     end
   end
 
-  # This is where you would call your cloud service and power off a machine
-  # 
-  # @param [INode] i_node iNode instance that defines where the action is to take place
-  # @return [nil]
-  def power_off(i_node)
-    logger.info("machine.power_off")
+  def stop(i_node)
+    logger.info("machine.stop")
+
     begin
-      vm.PowerOffVM_Task.wait_for_completion
+      vm.ShutdownGuest
     rescue => e
       raise Exceptions::Forbidden
     end
   end
 
-  # This is where you would call your cloud service and restart a machine
-  # 
-  # @param [INode] i_node iNode instance that defines where the action is to take place
-  # @return [nil]
   def restart(i_node)
     logger.info("machine.restart")
 
@@ -234,42 +189,29 @@ class Machine < Base::Machine
     end
   end
 
-  # This is where you would call your cloud service and shutdown a machine
-  # 
-  # @param [INode] i_node iNode instance that defines where the action is to take place
-  # @return [nil]
-  def shutdown(i_node)
-    logger.info("machine.shutdown")
-
+  def force_stop(i_node)
+    logger.info("machine.force_stop")
     begin
-      vm.ShutdownGuest
+      vm.PowerOffVM_Task.wait_for_completion
     rescue => e
       raise Exceptions::Forbidden
     end
   end
 
-  # This is where you would call your cloud service and unplug a machine
-  # 
-  # @param [INode] i_node iNode instance that defines where the action is to take place
-  # @return [nil]
-  def unplug(i_node)
-    logger.info("machine.unplug")
-    raise Exceptions::NotImplemented
+  def force_restart(i_node)
+    logger.info("machine.force_restart")
+    begin
+      vm.ResetVM_Task.wait_for_completion
+    rescue => e
+      raise Exceptions::Forbidden
+    end
   end
 
-  # This is where you would call your cloud service to create a new virtual machine
-  # 
-  # @param [INode] i_node iNode instance that defines where the action is to take place
-  # @return [nil]
   def save(i_node)
     logger.info("machine.save")
     raise Exceptions::NotImplemented
   end
 
-  # This is where you could call your cloud service to delete a virtual machine
-  # 
-  # @param [INode] i_node iNode instance that defines where the action is to take place
-  # @return [nil]
   def delete(i_node)
     logger.info("machine.delete")
 

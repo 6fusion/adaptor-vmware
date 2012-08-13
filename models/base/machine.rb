@@ -1,132 +1,133 @@
+# @api public
 class Base::Machine < Main
-  # @api public
   attr_accessor :uuid,
-    :name,
-    :cpu_count,
-    :cpu_speed,
-    :maximum_memory,
-    :system,
-    :disks,
-    :nics,
-    :guest_agent,
-    :power_state
+                :name,
+                :cpu_count,
+                :cpu_speed,
+                :maximum_memory,
+                :system,
+                :disks,
+                :nics,
+                :guest_agent
+
+  # @example Possible machine power states include:
+  #
+  #  |--------------------|
+  #  | power_state        |
+  #  |:-------------------|
+  #  | creating           |
+  #  | restarting         |
+  #  | starting           |
+  #  | stopping           |
+  #  | deleting           |
+  #  | stopped            |
+  #  | started            |
+  #  | deleted            |
+  #  |--------------------|
+  attr_accessor :power_state
 
   validates :uuid,
-    :presence => true,
-    :length => { :maximum => 40 }
+            :presence => true,
+            :length => { :maximum => 40 }
   validates :name,
-    :presence => true
+            :presence => true
   validates :cpu_count,
-    :numericality => { :only_integer => true, :greater_than => 0 }
+            :numericality => { :only_integer => true, :greater_than => 0 }
   validates :cpu_speed,
-    :numericality => { :greater_than => 0 }
+            :numericality => { :greater_than => 0 }
   validates :maximum_memory,
-    :numericality => { :only_integer => true, :greater_than => 0 }
+            :numericality => { :only_integer => true, :greater_than => 0 }
   validates :guest_agent,
-    :presence => true
+            :presence => true
   validates :power_state,
-    :presence => true
+            :presence => true
 
   # This is where you would call your cloud service and get a list of machines
-  # Implement a method that returns an array of all machines from
-  # your platform hydrating the Machine model.
-  # inputs:
-  #   none
-  # outputs:
-  #   Array of Machine Models
-  def self.all(i_node)
-    logger.info("Base::Machine.all")
+  #
+  # @param [Inode] inode iNode instance that defines where the action is to take place
+  # @return [Array<Machine>]
+  def self.all(inode)
+    logger.info('Machine.all')
     raise Exceptions::NotImplemented
   end
 
-  # This is where you would call your cloud service and
-  # find the machine matching the uuid passed.
-  # Then you would hydrate and return a Machine model.
-  # inputs:
-  #   uuid - This is the unique identifier for the machine
-  # outputs:
-  #   Machine Model
-  def self.find_by_uuid(i_node, uuid)
-    logger.info("Base::Machine.find_by_uuid")
+  # This is where you would call your cloud service and find the machine matching
+  # the uuid passed.
+  #
+  # @param [Inode] inode iNode instance that defines where the action is to take place
+  # @param [String] uuid The specific identifier for the Machine
+  # @return [Machine]
+  def self.find_by_uuid(inode, uuid)
+    logger.info('Machine.find_by_uuid')
     raise Exceptions::NotImplemented
   end
 
   # This is where you would call your cloud service and
   # find a specific machine's readings.
-  # This request should support since (start_date) and until (end_date)
-  # inputs:
-  #   _since - The beginning DateTime for the range of readings requested
-  #   _until - The end DateTime for the range of readings requested
-  # outputs:
-  #   Array of Readings Models
-  def self.readings(i_node, _since = Time.now.utc.yesterday, _until = Time.now.utc)
-    logger.info("Base::Machine.readings")
+  # This request should support interval (frequency), since (start_date), and until (end_date)
+  #
+  # @param [Inode] inode iNode instance that defines where the action is to take place
+  # @param [Integer] _interval The frequency the readins should be return for the requested date range
+  # @param [Time] _since The beginning date/time for the requested readings
+  # @param [Time] _until The ending date/time for the requested readings
+  # @return [Machine]
+  def readings(inode, _interval = 300, _since = Time.now.utc.beginning_of_month, _until = Time.now.utc)
+    logger.info('machine.readings')
     raise Exceptions::NotImplemented
   end
 
   # Management
-  # This is where you would call your cloud service and power on a machine
-  # Raise and exception in the event of an error
-  # inputs:
-  #   none
-  # outputs:
-  #   none
-  def power_on(i_node)
-    logger.info("Base::Machine.power_on")
+  # This is where you would call your cloud service and start a machine
+  #
+  # @param [Inode] inode iNode instance that defines where the action is to take place
+  # @return [nil]
+  def start(inode)
+    logger.info("machine.start")
     raise Exceptions::NotImplemented
   end
 
-  # This is where you would call your cloud service and power off a machine
-  # Raise and exception in the event of an error
-  # inputs:
-  #   none
-  # outputs:
-  #   none
-  def power_off(i_node)
-    logger.info("Base::Machine.power_off")
+  # This is where you would call your cloud service and stop a machine
+  #
+  # @param [Inode] inode iNode instance that defines where the action is to take place
+  # @return [nil]
+  def stop(inode)
+    logger.info("machine.stop")
     raise Exceptions::NotImplemented
   end
 
   # This is where you would call your cloud service and restart a machine
-  # Raise and exception in the event of an error
-  # inputs:
-  #   none
-  # outputs:
-  #   none
-  def restart(i_node)
-    logger.info("Base::Machine.restart")
+  #
+  # @param [Inode] inode iNode instance that defines where the action is to take place
+  # @return [nil]
+  def restart(inode)
+    logger.info("machine.restart")
     raise Exceptions::NotImplemented
   end
 
-  # This is where you would call your cloud service and shutdown a machine
-  # Raise and exception in the event of an error
-  # inputs:
-  #   none
-  # outputs:
-  #   none
-  def shutdown(i_node)
-    logger.info("Base::Machine.shutdown")
+  # This is where you would call your cloud service and force stop a machine
+  #
+  # @param [Inode] inode iNode instance that defines where the action is to take place
+  # @return [nil]
+  def force_stop(inode)
+    logger.info("machine.force_stop")
     raise Exceptions::NotImplemented
   end
 
-  # This is where you would call your cloud service and unplug a machine
-  # Raise and exception in the event of an error
-  # inputs:
-  #   none
-  # outputs:
-  #   none
-  def unplug(i_node)
-    logger.info("Base::Machine.unplug")
+  # This is where you would call your cloud service to create a new virtual machine
+  #
+  # @param [Inode] inode iNode instance that defines where the action is to take place
+  # @return [nil]
+  def save(inode)
+    logger.info("machine.save")
     raise Exceptions::NotImplemented
   end
 
-  def save(i_node)
-    logger.info("Base::Machine.save")
-    raise Exceptions::NotImplemented
-  end
-
-  def delete(i_node)
-    logger.info("Base::Machine.delete")
+  # This is where you could call your cloud service to delete a virtual machine
+  #
+  # @param [Inode] inode iNode instance that defines where the action is to take place
+  # @return [nil]
+  def delete(inode)
+    logger.info("machine.delete")
     raise Exceptions::NotImplemented
   end
 end

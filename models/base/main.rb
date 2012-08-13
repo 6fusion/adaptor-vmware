@@ -7,7 +7,11 @@ class Main
 
   def initialize(args)
     args.each do |k, v|
-      instance_variable_set("@#{k}", v) unless v.nil?
+      if self.respond_to?("#{k}=".to_sym)
+        self.send("#{k}=", v)
+      else
+        instance_variable_set("@#{k}", v) unless v.nil?
+      end
     end
   end
 end

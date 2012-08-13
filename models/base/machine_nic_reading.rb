@@ -1,10 +1,11 @@
+# @api public
 class Base::MachineNicReading < Main
-  # @api public
   attr_accessor :receive,
-                :transmit
+                :transmit,
+                :date_time
 
   validates :receive,
-    :numericality => { :only_integer => true, :greater_than_or_equal_to => 0 }
+            :numericality => { :only_integer => true, :greater_than_or_equal_to => 0 }
   validates :transmit,
-    :numericality => { :only_integer => true, :greater_than_or_equal_to => 0 }
+            :numericality => { :only_integer => true, :greater_than_or_equal_to => 0 }
 end
