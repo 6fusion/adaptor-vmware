@@ -64,7 +64,7 @@ class Machine < Base::Machine
     end
   end
 
-  def self.all_with_readings(inode, _since = Time.now.utc - 3600, _until = Time.now.utc)
+  def self.all_with_readings(inode, _interval = 300, _since = Time.now.utc - 3600, _until = Time.now.utc)
     begin
       logger.info("machine.all_with_readings")
 
@@ -77,7 +77,7 @@ class Machine < Base::Machine
 
       # Collects Performance information and set the machine.stats object
       metrics = {"cpu.usagemhz.average" => "","mem.consumed.average" => "","virtualDisk.read.average" => "*","virtualDisk.write.average" => "*","net.received.average" => "*","net.transmitted.average" => "*"}
-      stats = performance_manager.retrieve_stats(vms,metrics,300,_since,_until)
+      stats = performance_manager.retrieve_stats(vms,metrics,_interval,_since,_until)
       stats.each do |stat|
         machines.each do |machine|
           machine.stats = stat if machine.vm == stat.entity
@@ -125,7 +125,7 @@ class Machine < Base::Machine
     end
   end
 
-  def self.find_by_uuid_with_readings(inode, uuid, _since = Time.now.utc - 86400, _until = Time.now.utc)
+  def self.find_by_uuid_with_readings(inode, uuid, _interval = 300, _since = Time.now.utc - 86400, _until = Time.now.utc)
     begin
       logger.info('machine.find_by_uuid_with_readings')
       machine = self.find_by_uuid(inode,uuid)
@@ -136,7 +136,7 @@ class Machine < Base::Machine
 
       # Collects Performance information and set the machine.stats property
       metrics = {"cpu.usagemhz.average" => "","mem.consumed.average" => "","virtualDisk.read.average" => "*","virtualDisk.write.average" => "*","net.received.average" => "*","net.transmitted.average" => "*"}
-      stats = performance_manager.retrieve_stats(vms,metrics,300,_since,_until)
+      stats = performance_manager.retrieve_stats(vms,metrics,_interval,_since,_until)
       machine.stats = stats.first
 
       # Return updated machine object
@@ -147,7 +147,7 @@ class Machine < Base::Machine
     end
   end
 
-  def readings(inode, _since = Time.now.utc - 1800, _until = Time.now.utc)
+  def readings(inode, _interval = 300, _since = Time.now.utc - 1800, _until = Time.now.utc)
     begin
       logger.info("machine.readings")
 

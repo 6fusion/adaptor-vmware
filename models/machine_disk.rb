@@ -4,7 +4,7 @@ class MachineDisk < Base::MachineDisk
                 :stats,
                 :key
 
-  def readings(inode, _since = Time.now.utc - 1800, _until = Time.now.utc)
+  def readings(inode, _interval = 300, _since = Time.now.utc - 1800, _until = Time.now.utc)
     logger.info('machine_disk.readings')
 
     #Create machine disk readings
