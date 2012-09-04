@@ -64,7 +64,7 @@ class Machine < Base::Machine
     end
   end
 
-  def self.all_with_readings(inode, _interval = 300, _since = Time.now.utc - 3600, _until = Time.now.utc)
+  def self.all_with_readings(inode, _interval = 20, _since = Time.now.utc - 3600, _until = Time.now.utc)
     begin
       logger.info("machine.all_with_readings")
 
@@ -255,23 +255,27 @@ class Machine < Base::Machine
     begin
       logger.info('machine.readings_from_stats')
 
-      performance_metrics.sampleInfo.each_with_index.map do |x,i|
-        if performance_metrics.value.empty?
-          MachineReading.new(
-              interval:     x.interval.to_s,
-              date_time:    x.timestamp.to_s,
-              cpu_usage:    0,
-              memory_bytes: 0
-          )
-        else
-          metric_readings = Hash[performance_metrics.value.map{|s| ["#{s.id.counterId}.#{s.id.instance}",s.value]}]
-          MachineReading.new(
-              interval:     x.interval.to_s,
-              date_time:    x.timestamp.to_s,
-              cpu_usage:    metric_readings["6."].nil? ? 0 : metric_readings["6."][i] == -1 ? 0 : metric_readings["6."][i].to_s,
-              memory_bytes: metric_readings["98."].nil? ? 0 : metric_readings["98."][i] == -1 ? 0: metric_readings["98."][i].to_s
-          )
+      if performance_metrics.is_a? (RbVmomi::VIM::PerfEntityMetric)
+        performance_metrics.sampleInfo.each_with_index.map do |x,i|
+          if performance_metrics.value.empty?
+            MachineReading.new(
+                interval:     x.interval.to_s,
+                date_time:    x.timestamp.to_s,
+                cpu_usage:    0,
+                memory_bytes: 0
+            )
+          else
+            metric_readings = Hash[performance_metrics.value.map{|s| ["#{s.id.counterId}.#{s.id.instance}",s.value]}]
+            MachineReading.new(
+                interval:     x.interval.to_s,
+                date_time:    x.timestamp.to_s,
+                cpu_usage:    metric_readings["6."].nil? ? 0 : metric_readings["6."][i] == -1 ? 0 : metric_readings["6."][i].to_s,
+                memory_bytes: metric_readings["98."].nil? ? 0 : metric_readings["98."][i] == -1 ? 0: metric_readings["98."][i].to_s
+            )
+          end
         end
+      else
+        Array.new
       end
     rescue => e
       logger.error(e.message)
@@ -305,9 +309,10 @@ class Machine < Base::Machine
 
       vm_disks.map do |vdisk|
         MachineDisk.new(
-            uuid:           "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaa#{vdisk.key}",
+            uuid:           vdisk.backing.uuid,
             name:           vdisk.deviceInfo.label,
             maximum_size:   vdisk.capacityInKB / 1000000,
+            backing:      vdisk.backing,
             type:           'Disk',
             vm:             properties.obj,
             stats:          [],
