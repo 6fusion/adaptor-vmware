@@ -64,7 +64,7 @@ class Machine < Base::Machine
     end
   end
 
-  def self.all_with_readings(inode, _interval = 20, _since = Time.now.utc - 3600, _until = Time.now.utc)
+  def self.all_with_readings(inode, _interval = 300, _since = Time.now.utc - 3600, _until = Time.now.utc)
     begin
       logger.info("machine.all_with_readings")
 
