@@ -28,7 +28,7 @@ class MachineDisk < Base::MachineDisk
           write_metric = "174.scsi#{vdisk.controllerKey-1000}:#{vdisk.unitNumber}"
           metric_readings = Hash[performance_metrics.value.map{|s| ["#{s.id.counterId}.#{s.id.instance}",s.value]}]
           MachineDiskReading.new(
-              usage: maximum_size,   #TODO: Needs to be replace with used storage per vDisk
+              usage: maximum_size,   #TODO: Needs to be replaced with used storage per vDisk
               read: metric_readings[read_metric].nil? ? 0 : metric_readings[read_metric][i] == -1 ? 0 : metric_readings[read_metric][i].to_s,
               write: metric_readings[write_metric].nil? ? 0 : metric_readings[write_metric][i] == -1 ? 0 : metric_readings[write_metric][i].to_s,
               date_time: x.timestamp.to_s
