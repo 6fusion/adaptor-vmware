@@ -312,7 +312,7 @@ class Machine < Base::Machine
             uuid:           vdisk.backing.uuid,
             name:           vdisk.deviceInfo.label,
             maximum_size:   vdisk.capacityInKB / 1000000,
-            backing:      vdisk.backing,
+            vdisk:          vdisk,
             type:           'Disk',
             vm:             properties.obj,
             stats:          [],
@@ -348,6 +348,7 @@ class Machine < Base::Machine
             name:         vnic.deviceInfo.label,
             mac_address:  vnic.macAddress,
             ip_address:   nic_ip_address,
+            vnic:         vnic,
             vm:           properties.obj,
             stats:        [],
             key:          vnic.key
