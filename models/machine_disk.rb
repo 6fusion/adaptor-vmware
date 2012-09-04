@@ -3,7 +3,7 @@ class MachineDisk < Base::MachineDisk
   attr_accessor :vm,
                 :stats,
                 :key,
-                :backing
+                :vdisk
 
   def readings(inode, _interval = 300, _since = Time.now.utc - 1800, _until = Time.now.utc)
     logger.info('machine_disk.readings')
@@ -20,14 +20,15 @@ class MachineDisk < Base::MachineDisk
           MachineDiskReading.new(
               usage: 0,
               read:  0,
-              write: 0
+              write: 0,
+              date_time: x.timestamp.to_s
           )
         else
           metric_readings = Hash[performance_metrics.value.map{|s| ["#{s.id.counterId}.#{s.id.instance}",s.value]}]
           MachineDiskReading.new(
               usage: maximum_size,
-              read: metric_readings["173.scsi0:0"].nil? ? 0 : metric_readings["173.scsi0:0"][i] == -1 ? 0 : metric_readings["173.scsi0:0"][i].to_s,
-              write: metric_readings["174.scsi0:0"].nil? ? 0 : metric_readings["174.scsi0:0"][i] == -1 ? 0 : metric_readings["174.scsi0:0"][i].to_s,
+              read: metric_readings["173.scsi{vdisk.controllerKey[-1]}:{vdisk.unitNumber}"].nil? ? 0 : metric_readings["173.scsi{vdisk.controllerKey[-1]}:{vdisk.unitNumber}"][i] == -1 ? 0 : metric_readings["173.scsi{vdisk.controllerKey[-1]}:{vdisk.unitNumber}"][i].to_s,
+              write: metric_readings["174.scsi{vdisk.controllerKey[-1]}:{vdisk.unitNumber}"].nil? ? 0 : metric_readings["174.scsi{vdisk.controllerKey[-1]}:{vdisk.unitNumber}"][i] == -1 ? 0 : metric_readings["174.scsi{vdisk.controllerKey[-1]}:{vdisk.unitNumber}"][i].to_s,
               date_time: x.timestamp.to_s
           )
         end
