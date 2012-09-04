@@ -1,7 +1,8 @@
 class MachineNic < Base::MachineNic
   attr_accessor :vm,
                 :stats,
-                :key
+                :key,
+                :vnic
 
   def readings(inode, _interval = 300, _since = Time.now.utc - 1800, _until = Time.now.utc)
     logger.info('machine_nic.readings')
@@ -17,7 +18,8 @@ class MachineNic < Base::MachineNic
         if performance_metrics.value.empty?
           MachineNicReading.new(
               receive:    0,
-              transmit:   0
+              transmit:   0,
+              date_time: x.timestamp.to_s
           )
         else
           metric_readings = Hash[performance_metrics.value.map{|s| ["#{s.id.counterId}.#{s.id.instance}",s.value]}]
