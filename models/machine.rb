@@ -265,12 +265,14 @@ class Machine < Base::Machine
                 memory_bytes: 0
             )
           else
+            cpu_metric = "6."
+            memory_metric = "98."
             metric_readings = Hash[performance_metrics.value.map{|s| ["#{s.id.counterId}.#{s.id.instance}",s.value]}]
             MachineReading.new(
                 interval:     x.interval.to_s,
                 date_time:    x.timestamp.to_s,
-                cpu_usage:    metric_readings["6."].nil? ? 0 : metric_readings["6."][i] == -1 ? 0 : metric_readings["6."][i].to_s,
-                memory_bytes: metric_readings["98."].nil? ? 0 : metric_readings["98."][i] == -1 ? 0: metric_readings["98."][i].to_s
+                cpu_usage:    metric_readings[cpu_metric].nil? ? 0 : metric_readings[cpu_metric][i] == -1 ? 0 : metric_readings[cpu_metric][i].to_s,
+                memory_bytes: metric_readings[memory_metric].nil? ? 0 : metric_readings[memory_metric][i] == -1 ? 0: metric_readings[memory_metric][i].to_s
             )
           end
         end
