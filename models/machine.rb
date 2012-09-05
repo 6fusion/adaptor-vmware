@@ -163,7 +163,8 @@ class Machine < Base::Machine
     logger.info("machine.start")
 
     begin
-      vm.PowerOnVM_Task.wait_for_completion
+      vm.PowerOnVM_Task
+      @power_state = "starting"
     rescue => e
       raise Exceptions::Forbidden
     end
@@ -174,6 +175,7 @@ class Machine < Base::Machine
 
     begin
       vm.ShutdownGuest
+      @power_state = "stopping"
     rescue => e
       raise Exceptions::Forbidden
     end
@@ -184,6 +186,7 @@ class Machine < Base::Machine
 
     begin
       vm.RebootGuest
+      @power_state = "restarting"
     rescue => e
       raise Exceptions::Forbidden
     end
@@ -192,7 +195,8 @@ class Machine < Base::Machine
   def force_stop(inode)
     logger.info("machine.force_stop")
     begin
-      vm.PowerOffVM_Task.wait_for_completion
+      vm.PowerOffVM_Task
+      @power_state = "stopping"
     rescue => e
       raise Exceptions::Forbidden
     end
@@ -201,7 +205,8 @@ class Machine < Base::Machine
   def force_restart(inode)
     logger.info("machine.force_restart")
     begin
-      vm.ResetVM_Task.wait_for_completion
+      vm.ResetVM_Task
+      @power_state = "restarting"
     rescue => e
       raise Exceptions::Forbidden
     end
@@ -217,6 +222,7 @@ class Machine < Base::Machine
 
     begin
       vm.Destroy_Task.wait_for_completion
+      @power_state = "deleted"
     rescue => e
       raise Exceptions::Forbidden
     end
@@ -240,7 +246,7 @@ class Machine < Base::Machine
           disks:            build_disks(properties),
           nics:             build_nics(properties),
           guest_agent:      properties_hash["guest"].toolsStatus == "toolsOk" ? true : false,
-          power_state:      properties_hash["runtime"].powerState,
+          power_state:      convert_power_state(properties_hash["runtime"].powerState),
           vm:               properties.obj,
           stats:            []
       )
@@ -361,4 +367,13 @@ class Machine < Base::Machine
       raise Exception::Unrecoverable
     end
   end
+
+  # Helper Method for creating converting machine power states.
+  def self.convert_power_state(power_state)
+    case power_state
+      when "poweredOn" then "started"
+      when "poweredOff" then "stopped"
+    end
+  end
+
 end
