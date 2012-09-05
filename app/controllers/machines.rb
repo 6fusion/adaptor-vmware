@@ -153,7 +153,6 @@ AdaptorVMware.controllers :machines, :map => "/inodes/:inode_uuid" do
       @machine = Machine.find_by_uuid(@inode, params[:uuid])
       @machine.delete(@inode)
 
-      status 204
       render 'machines/show'
     ensure
       @inode.close_session
