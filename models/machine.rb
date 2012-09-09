@@ -14,6 +14,17 @@ class Machine < Base::Machine
     end
   end
 
+  def create_from_ovf(inode, ovf)
+    begin
+      logger.info("Creating Machine(s) from OVF")
+
+
+    rescue => e
+      logger.error(e.message)
+      raise Exception::Unrecoverable
+    end
+  end
+
   def self.all(inode)
     begin
       logger.info('machine.all')
@@ -50,7 +61,7 @@ class Machine < Base::Machine
                                                               )]
                                             )]
                          }],
-          :propSet => [{:pathSet => %w(config guest runtime),
+          :propSet => [{:pathSet => %w(recentTask config guest runtime),
                         :type => "VirtualMachine"
                        }]
       )
@@ -107,7 +118,7 @@ class Machine < Base::Machine
       else
         filter_spec = RbVmomi::VIM.PropertyFilterSpec(
             :objectSet => [{:obj => vm}],
-            :propSet => [{:pathSet => %w(config guest runtime),
+            :propSet => [{:pathSet => %w(recentTask config guest runtime),
                           :type => "VirtualMachine"
                          }]
         )
@@ -235,7 +246,7 @@ class Machine < Base::Machine
     begin
       logger.info('machine.new_machine_from_vm')
       properties_hash = properties.to_hash
-
+      last_task = properties_hash["recentTask"].empty? ? "none" : properties_hash["recentTask"].last.info.descriptionId
       Machine.new(
           uuid:             properties_hash["config"].uuid,
           name:             properties_hash["config"].name,
@@ -245,8 +256,8 @@ class Machine < Base::Machine
           system:           build_system(properties),
           disks:            build_disks(properties),
           nics:             build_nics(properties),
-          guest_agent:      properties_hash["guest"].toolsStatus == "toolsOk" ? true : false,
-          power_state:      convert_power_state(properties_hash["runtime"].powerState),
+          guest_agent:      properties_hash["guest"].toolsStatus == "toolsNotInstalled" ? false : true,
+          power_state:      convert_power_state(properties_hash["guest"].toolsStatus, properties_hash["runtime"].powerState,last_task),
           vm:               properties.obj,
           stats:            []
       )
@@ -368,11 +379,29 @@ class Machine < Base::Machine
     end
   end
 
-  # Helper Method for creating converting machine power states.
-  def self.convert_power_state(power_state)
-    case power_state
-      when "poweredOn" then "started"
-      when "poweredOff" then "stopped"
+  # Helper Method for converting machine power states.
+  def self.convert_power_state(tools_status, power_status, last_task)
+    status = "#{tools_status}|#{power_status}"
+    logger.debug("Power Status: #{status}")
+    logger.debug("Last Task: #{last_task}")
+
+    case status
+      when "toolsOk|poweredOn" then "started"
+      when "toolsOld|poweredOn" then "started"
+      when "toolsNotInstalled|poweredOn" then "started"
+      when "toolsNotRunning|poweredOff" then "stopped"
+      when "toolsOld|poweredOff" then "stopped"
+      when "toolsNotInstalled|poweredOff" then "stopped"
+      when "toolsNotRunning|poweredOn"
+        case last_task
+          when "VirtualMachine.powerOn" then "starting"
+          when "VirtualMachine.powerOff" then "stopping"
+          when "VirtualMachine.shutdownGuest" then "stopping"
+          when "VirtualMachine.rebootGuest" then "restarting"
+          when "VirtualMachine.reset" then "restarting"
+          else "started"
+        end
+      else "Unknown"
     end
   end
 
