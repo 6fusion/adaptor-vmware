@@ -10,10 +10,10 @@ AdaptorVMware.controllers :machines, :map => "/inodes/:inode_uuid" do
   post :index do
     begin
       logger.info('POST - machines#index')
+      logger.debug "ACCEPT: #{request.accept}"
 
       @inode.open_session
-      @machine = Machine.new(params)
-      @machine.save(@inode)
+      @machines = Machine.create_from_ovf(@inode, params[:ovf])
 
       render 'machines/show'
     ensure
