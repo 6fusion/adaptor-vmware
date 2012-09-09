@@ -21,7 +21,7 @@ class Machine < Base::Machine
 
     rescue => e
       logger.error(e.message)
-      raise Exception::Unrecoverable
+      raise Exception::Unrecoverable.new(e.message)
     end
   end
 
@@ -71,7 +71,7 @@ class Machine < Base::Machine
       vm_properties.map {|m| new_machine_from_vm (m)}
     rescue => e
       logger.error(e.message)
-      raise Exception::Unrecoverable
+      raise Exception::Unrecoverable.new(e.message)
     end
   end
 
@@ -99,7 +99,7 @@ class Machine < Base::Machine
       machines
     rescue => e
       logger.error(e.message)
-      raise Exception::Unrecoverable
+      raise Exception::Unrecoverable.new(e.message)
     end
   end
 
@@ -114,7 +114,7 @@ class Machine < Base::Machine
       vm = search_index.FindByUuid :uuid => uuid, :vmSearch => true
 
       if vm.nil?
-        raise Exceptions::NotFound
+        raise Exceptions::NotFound.new("Machine with UUID of #{uuid} was not found")
       else
         filter_spec = RbVmomi::VIM.PropertyFilterSpec(
             :objectSet => [{:obj => vm}],
@@ -132,7 +132,7 @@ class Machine < Base::Machine
       machine
     rescue => e
       logger.error(e.message)
-      raise Exception::Unrecoverable
+      raise Exception::Unrecoverable.new(e.message)
     end
   end
 
@@ -154,7 +154,7 @@ class Machine < Base::Machine
       machine
     rescue => e
       logger.error(e.message)
-      raise Exception::Unrecoverable
+      raise Exception::Unrecoverable.new(e.message)
     end
   end
 
@@ -166,7 +166,7 @@ class Machine < Base::Machine
       readings_from_stats(stats)
     rescue => e
       logger.error(e.message)
-      raise Exception::Unrecoverable
+      raise Exception::Unrecoverable.new(e.message)
     end
   end
 
@@ -177,7 +177,7 @@ class Machine < Base::Machine
       vm.PowerOnVM_Task
       @power_state = "starting"
     rescue => e
-      raise Exceptions::Forbidden
+      raise Exceptions::Forbidden.new(e.message)
     end
   end
 
@@ -188,7 +188,7 @@ class Machine < Base::Machine
       vm.ShutdownGuest
       @power_state = "stopping"
     rescue => e
-      raise Exceptions::Forbidden
+      raise Exceptions::Forbidden.new(e.message)
     end
   end
 
@@ -199,7 +199,7 @@ class Machine < Base::Machine
       vm.RebootGuest
       @power_state = "restarting"
     rescue => e
-      raise Exceptions::Forbidden
+      raise Exceptions::Forbidden.new(e.message)
     end
   end
 
@@ -209,7 +209,7 @@ class Machine < Base::Machine
       vm.PowerOffVM_Task
       @power_state = "stopping"
     rescue => e
-      raise Exceptions::Forbidden
+      raise Exceptions::Forbidden.new(e.message)
     end
   end
 
@@ -219,7 +219,7 @@ class Machine < Base::Machine
       vm.ResetVM_Task
       @power_state = "restarting"
     rescue => e
-      raise Exceptions::Forbidden
+      raise Exceptions::Forbidden.new(e.message)
     end
   end
 
@@ -235,7 +235,7 @@ class Machine < Base::Machine
       vm.Destroy_Task.wait_for_completion
       @power_state = "deleted"
     rescue => e
-      raise Exceptions::Forbidden
+      raise Exceptions::Forbidden.new(e.message)
     end
   end
 
@@ -263,7 +263,7 @@ class Machine < Base::Machine
       )
     rescue => e
       logger.error(e.message)
-      raise Exception::Unrecoverable
+      raise Exception::Unrecoverable.new(e.message)
     end
   end
 
@@ -298,7 +298,7 @@ class Machine < Base::Machine
       end
     rescue => e
       logger.error(e.message)
-      raise Exception::Unrecoverable
+      raise Exception::Unrecoverable.new(e.message)
     end
   end
 
@@ -315,7 +315,7 @@ class Machine < Base::Machine
       )
     rescue => e
       logger.error(e.message)
-      raise Exception::Unrecoverable
+      raise Exception::Unrecoverable.new(e.message)
     end
   end
 
@@ -340,7 +340,7 @@ class Machine < Base::Machine
       end
     rescue => e
       logger.error(e.message)
-      raise Exception::Unrecoverable
+      raise Exception::Unrecoverable.new(e.message)
     end
   end
 
@@ -375,7 +375,7 @@ class Machine < Base::Machine
       end
     rescue => e
       logger.error(e.message)
-      raise Exception::Unrecoverable
+      raise Exception::Unrecoverable.new(e.message)
     end
   end
 

@@ -10,7 +10,7 @@ class Inode < Base::Inode
       @session ||= RbVmomi::VIM.connect :host => @connection, :user => credential_items[0], :password => credential_items[1] , :insecure => true
     rescue => e
       logger.error(e.message)
-      raise Exceptions::Unrecoverable
+      raise Exceptions::Unrecoverable.new(e.message)
     end
   end
 
@@ -22,7 +22,7 @@ class Inode < Base::Inode
       end
     rescue => e
       logger.error(e.message)
-      raise exceptions::Unrecoverable
+      raise exceptions::Unrecoverable.new(e.message)
     end
   end
 
