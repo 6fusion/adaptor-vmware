@@ -20,9 +20,13 @@ class Inode < Base::Inode
         @session.close
         @session = nil
       end
+
+    rescue RbVmomi::Fault => e
+      raise Exceptions::Forbidden.new(e.message)
+
     rescue => e
       logger.error(e.message)
-      raise exceptions::Unrecoverable.new(e.message)
+      raise exceptions::Unrecoverable
     end
   end
 
