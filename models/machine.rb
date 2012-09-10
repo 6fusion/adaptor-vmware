@@ -181,7 +181,7 @@ class Machine < Base::Machine
     logger.info("machine.start")
 
     begin
-      vm.PowerOnVM_Task
+      vm.PowerOnVM_Task.wait_for_completion
       @power_state = "starting"
 
     rescue RbVmomi::Fault => e
@@ -232,7 +232,7 @@ class Machine < Base::Machine
     logger.info("machine.force_stop")
 
     begin
-      vm.PowerOffVM_Task
+      vm.PowerOffVM_Task.wait_for_completion
       @power_state = "stopping"
 
     rescue RbVmomi::Fault => e
@@ -249,7 +249,7 @@ class Machine < Base::Machine
     logger.info("machine.force_restart")
 
     begin
-      vm.ResetVM_Task
+      vm.ResetVM_Task.wait_for_completion
       @power_state = "restarting"
 
     rescue RbVmomi::Fault => e
