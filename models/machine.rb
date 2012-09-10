@@ -422,28 +422,33 @@ class Machine < Base::Machine
 
   # Helper Method for converting machine power states.
   def self.convert_power_state(tools_status, power_status, last_task)
-    status = "#{tools_status}|#{power_status}"
-    logger.debug("Power Status: #{status}")
-    logger.debug("Last Task: #{last_task}")
+   begin
+      status = "#{tools_status}|#{power_status}"
+      logger.debug("Power Status: #{status}")
+      logger.debug("Last Task: #{last_task}")
 
-    case status
-      when "toolsOk|poweredOn" then "started"
-      when "toolsOld|poweredOn" then "started"
-      when "toolsNotInstalled|poweredOn" then "started"
-      when "toolsNotRunning|poweredOff" then "stopped"
-      when "toolsOld|poweredOff" then "stopped"
-      when "toolsNotInstalled|poweredOff" then "stopped"
-      when "toolsNotRunning|poweredOn"
-        case last_task
-          when "VirtualMachine.powerOn" then "starting"
-          when "VirtualMachine.powerOff" then "stopping"
-          when "VirtualMachine.shutdownGuest" then "stopping"
-          when "VirtualMachine.rebootGuest" then "restarting"
-          when "VirtualMachine.reset" then "restarting"
-          else "started"
-        end
-      else "Unknown"
-    end
+      case status
+        when "toolsOk|poweredOn" then "started"
+        when "toolsOld|poweredOn" then "started"
+        when "toolsNotInstalled|poweredOn" then "started"
+        when "toolsNotRunning|poweredOff" then "stopped"
+        when "toolsOld|poweredOff" then "stopped"
+        when "toolsNotInstalled|poweredOff" then "stopped"
+        when "toolsNotRunning|poweredOn"
+          case last_task
+            when "VirtualMachine.powerOn" then "starting"
+            when "VirtualMachine.powerOff" then "stopping"
+            when "VirtualMachine.shutdownGuest" then "stopping"
+            when "VirtualMachine.rebootGuest" then "restarting"
+            when "VirtualMachine.reset" then "restarting"
+            else "started"
+          end
+        else "Unknown"
+      end
+   rescue => e
+     logger.error(e.message)
+     raise Exception::Unrecoverable
+   end
   end
 
 end
