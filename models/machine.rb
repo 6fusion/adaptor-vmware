@@ -15,9 +15,9 @@ class Machine < Base::Machine
   end
 
   def create_from_ovf(inode, ovf)
-    begin
-      logger.info("Creating Machine(s) from OVF")
+    logger.info("Creating Machine(s) from OVF")
 
+    begin
 
     rescue => e
       logger.error(e.message)
@@ -26,9 +26,9 @@ class Machine < Base::Machine
   end
 
   def self.all(inode)
-    begin
-      logger.info('machine.all')
+    logger.info('machine.all')
 
+    begin
       # Set the property collector variable and root folder variables
       property_collector = inode.session.serviceContent.propertyCollector
       root_folder =  inode.session.serviceContent.rootFolder
@@ -77,9 +77,9 @@ class Machine < Base::Machine
   end
 
   def self.all_with_readings(inode, _interval = 300, _since = Time.now.utc - 3600, _until = Time.now.utc)
-    begin
-      logger.info("machine.all_with_readings")
+    logger.info("machine.all_with_readings")
 
+    begin
       # Retrieve all machines and virtual machine references
       machines = self.all(inode)
       vms = machines.map {|m| m.vm}
@@ -106,8 +106,9 @@ class Machine < Base::Machine
   end
 
   def self.find_by_uuid(inode, uuid)
+    logger.info('machine.find_by_uuid')
+
     begin
-      logger.info('machine.find_by_uuid')
       # Connect to vCenter and set the property collector and the searchindex variables
       property_collector = inode.session.serviceContent.propertyCollector
       search_index = inode.session.searchIndex
@@ -140,8 +141,9 @@ class Machine < Base::Machine
   end
 
   def self.find_by_uuid_with_readings(inode, uuid, _interval = 300, _since = Time.now.utc - 86400, _until = Time.now.utc)
+    logger.info('machine.find_by_uuid_with_readings')
+
     begin
-      logger.info('machine.find_by_uuid_with_readings')
       machine = self.find_by_uuid(inode,uuid)
       vms = [machine.vm]
 
@@ -155,7 +157,6 @@ class Machine < Base::Machine
 
       # Return updated machine object
       machine
-
     rescue => e
       logger.error(e.message)
       raise Exception::Unrecoverable
@@ -228,6 +229,7 @@ class Machine < Base::Machine
 
   def force_stop(inode)
     logger.info("machine.force_stop")
+
     begin
       vm.PowerOffVM_Task
       @power_state = "stopping"
@@ -244,6 +246,7 @@ class Machine < Base::Machine
 
   def force_restart(inode)
     logger.info("machine.force_restart")
+
     begin
       vm.ResetVM_Task
       @power_state = "restarting"
@@ -284,8 +287,9 @@ class Machine < Base::Machine
 
   # Helper method for creating machine objects..
   def self.new_machine_from_vm(properties)
+    logger.info('machine.new_machine_from_vm')
+
     begin
-      logger.info('machine.new_machine_from_vm')
       properties_hash = properties.to_hash
       last_task = properties_hash["recentTask"].empty? ? "none" : properties_hash["recentTask"].last.info.descriptionId
       Machine.new(
@@ -310,9 +314,9 @@ class Machine < Base::Machine
 
   # Helper Method for creating readings objects.
   def readings_from_stats(performance_metrics)
-    begin
-      logger.info('machine.readings_from_stats')
+    logger.info('machine.readings_from_stats')
 
+    begin
       if performance_metrics.is_a? (RbVmomi::VIM::PerfEntityMetric)
         performance_metrics.sampleInfo.each_with_index.map do |x,i|
           if performance_metrics.value.empty?
@@ -345,8 +349,9 @@ class Machine < Base::Machine
 
 # Helper Method for creating system objects.
   def self.build_system(properties)
+    logger.info('machine.build_system')
+
     begin
-      logger.info('machine.build_system')
       properties_hash = properties.to_hash
       x64_arch = properties_hash["config"].guestId.include? "64"
 
@@ -362,8 +367,9 @@ class Machine < Base::Machine
 
   # Helper Method for creating disk objects.
   def self.build_disks(properties)
+    logger.info('machine.build_disks')
+
     begin
-      logger.info('machine.build_disks')
       properties_hash = properties.to_hash
       vm_disks = properties_hash["config"].hardware.device.grep(RbVmomi::VIM::VirtualDisk)
 
@@ -387,8 +393,9 @@ class Machine < Base::Machine
 
   # Helper Method for creating nic objects.
   def self.build_nics(properties)
+    logger.info('machine.build_nics')
+
     begin
-      logger.info('machine.build_nics')
       properties_hash = properties.to_hash
       vm_nics = properties_hash["config"].hardware.device.grep(RbVmomi::VIM::VirtualE1000) + properties_hash["config"].hardware.device.grep(RbVmomi::VIM::VirtualPCNet32) + properties_hash["config"].hardware.device.grep(RbVmomi::VIM::VirtualVmxnet)
 
@@ -422,10 +429,10 @@ class Machine < Base::Machine
 
   # Helper Method for converting machine power states.
   def self.convert_power_state(tools_status, power_status, last_task)
-   begin
+    logger.info('machine.convert_power_state')
+
+    begin
       status = "#{tools_status}|#{power_status}"
-      logger.debug("Power Status: #{status}")
-      logger.debug("Last Task: #{last_task}")
 
       case status
         when "toolsOk|poweredOn" then "started"
