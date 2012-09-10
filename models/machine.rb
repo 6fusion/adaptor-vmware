@@ -34,6 +34,7 @@ class Machine < Base::Machine
       root_folder =  inode.session.serviceContent.rootFolder
 
       # Create a filter to retrieve properties for all machines
+      #TODO: Only goes 1 level deep in the folder structure.  Needs to be corrected
       filter_spec = RbVmomi::VIM.PropertyFilterSpec(
           :objectSet => [{
                              :obj => root_folder,
