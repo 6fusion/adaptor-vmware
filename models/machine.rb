@@ -34,33 +34,30 @@ class Machine < Base::Machine
       root_folder =  inode.session.serviceContent.rootFolder
 
       # Create a filter to retrieve properties for all machines
-      #TODO: Only goes 1 level deep in the folder structure.  Needs to be corrected
+      recurse_folders = RbVmomi::VIM.SelectionSpec(
+          :name => "ParentFolder"
+      )
+
+      find_machines = RbVmomi::VIM.TraversalSpec(
+          :name => "Datacenters",
+          :type => "Datacenter",
+          :path => "vmFolder",
+          :skip => false,
+          :selectSet => [recurse_folders]
+      )
+
+      find_folders = RbVmomi::VIM.TraversalSpec(
+          :name => "ParentFolder",
+          :type => "Folder",
+          :path => "childEntity",
+          :skip => false,
+          :selectSet => [recurse_folders,find_machines]
+      )
+
       filter_spec = RbVmomi::VIM.PropertyFilterSpec(
           :objectSet => [{
                              :obj => root_folder,
-                             :selectSet => [RbVmomi::VIM.TraversalSpec(
-                                                :name => "RootFolders",
-                                                :type => "Folder",
-                                                :path => "childEntity",
-                                                :skip => false,
-                                                :selectSet =>[RbVmomi::VIM.TraversalSpec(
-                                                                  :name => "Datacenters",
-                                                                  :type => "Datacenter",
-                                                                  :path => "vmFolder",
-                                                                  :skip => false,
-                                                                  :selectSet => [RbVmomi::VIM.TraversalSpec(
-                                                                                     :name => "Folders",
-                                                                                     :type => "Folder",
-                                                                                     :path => "childEntity",
-                                                                                     :skip => false,
-                                                                                     :selectSet => [RbVmomi::VIM.TraversalSpec(
-                                                                                                        :name => "SubFolders",
-                                                                                                        :type => "Folder",
-                                                                                                        :path => "childEntity",
-                                                                                                        :skip => false)]
-                                                                                 )]
-                                                              )]
-                                            )]
+                             :selectSet => [find_folders]
                          }],
           :propSet => [{:pathSet => %w(recentTask config guest runtime),
                         :type => "VirtualMachine"
