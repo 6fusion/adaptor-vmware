@@ -59,7 +59,7 @@ class Machine < Base::Machine
                              :obj => root_folder,
                              :selectSet => [find_folders]
                          }],
-          :propSet => [{:pathSet => %w(recentTask config guest runtime),
+          :propSet => [{:pathSet => %w(config guest layoutEx recentTask runtime),
                         :type => "VirtualMachine"
                        }]
       )
@@ -119,7 +119,7 @@ class Machine < Base::Machine
       else
         filter_spec = RbVmomi::VIM.PropertyFilterSpec(
             :objectSet => [{:obj => vm}],
-            :propSet => [{:pathSet => %w(recentTask config guest runtime),
+            :propSet => [{:pathSet => %w(config guest layoutEx recentTask runtime),
                           :type => "VirtualMachine"
                          }]
         )
@@ -363,6 +363,24 @@ class Machine < Base::Machine
     end
   end
 
+# Helper Method to calculate disk used space
+  def self.build_disk_files(disk_key, file_layout)
+    logger.info('machine.build_disk_files')
+
+    begin
+      disk_files = []
+      file_layout.disk.find{|n| n.key==disk_key}.chain.map do |f|
+        f.fileKey.map do |k|
+          disk_files << file_layout.file.find{|m| m.key==k}
+        end
+      end
+      disk_files
+    rescue => e
+      logger.error(e.message)
+      raise Exception::Unrecoverable
+    end
+  end
+
   # Helper Method for creating disk objects.
   def self.build_disks(properties)
     logger.info('machine.build_disks')
@@ -377,10 +395,11 @@ class Machine < Base::Machine
             name:           vdisk.deviceInfo.label,
             maximum_size:   vdisk.capacityInKB / 1000000,
             vdisk:          vdisk,
+            vdisk_files:    build_disk_files(vdisk.key,properties_hash["layoutEx"]),
             type:           'Disk',
+            key:            vdisk.key,
             vm:             properties.obj,
-            stats:          [],
-            key:            vdisk.key
+            stats:          []
         )
       end
     rescue => e

@@ -3,7 +3,8 @@ class MachineDisk < Base::MachineDisk
   attr_accessor :vm,
                 :stats,
                 :key,
-                :vdisk
+                :vdisk,
+                :vdisk_files
 
   def readings(inode, _interval = 300, _since = Time.now.utc - 1800, _until = Time.now.utc)
     logger.info('machine_disk.readings')
@@ -28,7 +29,7 @@ class MachineDisk < Base::MachineDisk
           write_metric = "174.scsi#{vdisk.controllerKey-1000}:#{vdisk.unitNumber}"
           metric_readings = Hash[performance_metrics.value.map{|s| ["#{s.id.counterId}.#{s.id.instance}",s.value]}]
           MachineDiskReading.new(
-              usage: maximum_size,   #TODO: Needs to be replaced with used storage per vDisk
+              usage: vdisk_files.map(&:size).inject(0, :+) / 1000000000,
               read: metric_readings[read_metric].nil? ? 0 : metric_readings[read_metric][i] == -1 ? 0 : metric_readings[read_metric][i].to_s,
               write: metric_readings[write_metric].nil? ? 0 : metric_readings[write_metric][i] == -1 ? 0 : metric_readings[write_metric][i].to_s,
               date_time: x.timestamp.to_s
