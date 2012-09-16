@@ -2,6 +2,11 @@ class Machine < Base::Machine
   attr_accessor :vm,
                 :stats
 
+  KB = 1024
+  MB = 1024**2
+  GB = 1024**3
+  TB = 1024**4
+
   def stats=(stats)
     @stats = stats
 
@@ -319,8 +324,8 @@ class Machine < Base::Machine
         performance_metrics.sampleInfo.each_with_index.map do |x,i|
           if performance_metrics.value.empty?
             MachineReading.new(
-                interval:     x.interval.to_s,
-                date_time:    x.timestamp.to_s,
+                interval:     x.interval,
+                date_time:    x.timestamp,
                 cpu_usage:    0,
                 memory_bytes: 0
             )
@@ -329,10 +334,10 @@ class Machine < Base::Machine
             memory_metric = "98."
             metric_readings = Hash[performance_metrics.value.map{|s| ["#{s.id.counterId}.#{s.id.instance}",s.value]}]
             MachineReading.new(
-                interval:     x.interval.to_s,
-                date_time:    x.timestamp.to_s,
-                cpu_usage:    metric_readings[cpu_metric].nil? ? 0 : metric_readings[cpu_metric][i] == -1 ? 0 : metric_readings[cpu_metric][i].to_s,
-                memory_bytes: metric_readings[memory_metric].nil? ? 0 : metric_readings[memory_metric][i] == -1 ? 0: metric_readings[memory_metric][i].to_s
+                interval:     x.interval,
+                date_time:    x.timestamp,
+                cpu_usage:    metric_readings[cpu_metric].nil? ? 0 : metric_readings[cpu_metric][i] == -1 ? 0 : metric_readings[cpu_metric][i],
+                memory_bytes: metric_readings[memory_metric].nil? ? 0 : metric_readings[memory_metric][i] == -1 ? 0: metric_readings[memory_metric][i]
             )
           end
         end
@@ -393,7 +398,7 @@ class Machine < Base::Machine
         MachineDisk.new(
             uuid:           vdisk.backing.uuid,
             name:           vdisk.deviceInfo.label,
-            maximum_size:   vdisk.capacityInKB / 1000000,
+            maximum_size:   vdisk.capacityInKB * KB / GB,
             vdisk:          vdisk,
             vdisk_files:    build_disk_files(vdisk.key,properties_hash["layoutEx"]),
             type:           'Disk',

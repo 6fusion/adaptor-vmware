@@ -6,6 +6,11 @@ class MachineDisk < Base::MachineDisk
                 :vdisk,
                 :vdisk_files
 
+  KB = 1024
+  MB = 1024**2
+  GB = 1024**3
+  TB = 1024**4
+
   def readings(inode, _interval = 300, _since = Time.now.utc - 1800, _until = Time.now.utc)
     logger.info('machine_disk.readings')
 
@@ -22,17 +27,17 @@ class MachineDisk < Base::MachineDisk
               usage: 0,
               read:  0,
               write: 0,
-              date_time: x.timestamp.to_s
+              date_time: x.timestamp
           )
         else
           read_metric = "174.scsi#{vdisk.controllerKey-1000}:#{vdisk.unitNumber}"
           write_metric = "174.scsi#{vdisk.controllerKey-1000}:#{vdisk.unitNumber}"
           metric_readings = Hash[performance_metrics.value.map{|s| ["#{s.id.counterId}.#{s.id.instance}",s.value]}]
           MachineDiskReading.new(
-              usage: vdisk_files.map(&:size).inject(0, :+) / 1000000000,
-              read: metric_readings[read_metric].nil? ? 0 : metric_readings[read_metric][i] == -1 ? 0 : metric_readings[read_metric][i].to_s,
-              write: metric_readings[write_metric].nil? ? 0 : metric_readings[write_metric][i] == -1 ? 0 : metric_readings[write_metric][i].to_s,
-              date_time: x.timestamp.to_s
+              usage: vdisk_files.map(&:size).inject(0, :+) / GB,
+              read: metric_readings[read_metric].nil? ? 0 : metric_readings[read_metric][i] == -1 ? 0 : metric_readings[read_metric][i],
+              write: metric_readings[write_metric].nil? ? 0 : metric_readings[write_metric][i] == -1 ? 0 : metric_readings[write_metric][i],
+              date_time: x.timestamp
           )
         end
       end

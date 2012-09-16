@@ -19,16 +19,16 @@ class MachineNic < Base::MachineNic
           MachineNicReading.new(
               receive:    0,
               transmit:   0,
-              date_time: x.timestamp.to_s
+              date_time: x.timestamp
           )
         else
           receive_metric =  "148.#{key}"
           transmit_metric = "149.#{key}"
           metric_readings = Hash[performance_metrics.value.map{|s| ["#{s.id.counterId}.#{s.id.instance}",s.value]}]
           MachineNicReading.new(
-              date_time:  x.timestamp.to_s,
-              receive:    metric_readings[receive_metric].nil? ? 0 : metric_readings[receive_metric][i] == -1 ? 0 : metric_readings[receive_metric][i].to_s,
-              transmit:   metric_readings[transmit_metric].nil? ? 0 : metric_readings[transmit_metric][i] == -1 ? 0 : metric_readings[transmit_metric][i].to_s
+              date_time:  x.timestamp,
+              receive:    metric_readings[receive_metric].nil? ? 0 : metric_readings[receive_metric][i] == -1 ? 0 : metric_readings[receive_metric][i],
+              transmit:   metric_readings[transmit_metric].nil? ? 0 : metric_readings[transmit_metric][i] == -1 ? 0 : metric_readings[transmit_metric][i]
           )
         end
       end
