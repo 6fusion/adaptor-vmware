@@ -11,7 +11,7 @@ class MachineDisk < Base::MachineDisk
   GB = 1024**3
   TB = 1024**4
 
-  def readings(inode, _interval = 300, _since = Time.now.utc - 1800, _until = Time.now.utc)
+  def readings(inode, _interval = 300, _since = 5.minutes.ago.utc, _until = Time.now.utc)
     logger.info('machine_disk.readings')
 
     #Create machine disk readings

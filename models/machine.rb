@@ -79,7 +79,7 @@ class Machine < Base::Machine
     end
   end
 
-  def self.all_with_readings(inode, _interval = 300, _since = Time.now.utc - 3600, _until = Time.now.utc)
+  def self.all_with_readings(inode, _interval = 300, _since = 5.minutes.ago.utc, _until = Time.now.utc)
     logger.info("machine.all_with_readings")
 
     begin
@@ -143,7 +143,7 @@ class Machine < Base::Machine
     end
   end
 
-  def self.find_by_uuid_with_readings(inode, uuid, _interval = 300, _since = Time.now.utc - 86400, _until = Time.now.utc)
+  def self.find_by_uuid_with_readings(inode, uuid, _interval = 300, _since = 5.minutes.ago.utc, _until = Time.now.utc)
     logger.info('machine.find_by_uuid_with_readings')
 
     begin
@@ -166,7 +166,7 @@ class Machine < Base::Machine
     end
   end
 
-  def readings(inode, _interval = 300, _since = Time.now.utc - 1800, _until = Time.now.utc)
+  def readings(inode, _interval = 300, _since = 5.minutes.ago.utc, _until = Time.now.utc)
     begin
       logger.info("machine.readings")
 
