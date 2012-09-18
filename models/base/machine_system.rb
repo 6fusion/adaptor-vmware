@@ -4,7 +4,7 @@ class Base::MachineSystem < Main
                 :operating_system
 
   validates :architecture,
-            :length => { :maximum => 32 }
+    :length => { :maximum => 32 }
   validates :operating_system,
-            :length => { :maximum => 255 }
+    :length => { :maximum => 255 }
 end

@@ -3,7 +3,7 @@ AdaptorVMware.controllers :machines, :map => "/inodes/:inode_uuid" do
     logger.info('machines#before')
 
     content_type 'application/json'
-    @inode = Inode.find_by_uuid(params[:inode_uuid])
+    @inode = INode.find_by_uuid(params[:inode_uuid])
   end
 
   # Creates

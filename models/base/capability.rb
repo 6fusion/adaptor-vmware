@@ -29,11 +29,11 @@ class Base::Capability < Main
   validates :name,
     :presence => true
 
-# Should return a list of capabilities for an iNode
-#
-# @param [Inode] inode iNode instance that defines where the action is to take place
-# @return [Array<Capability>]
-  def self.all(i_node)
+  # Should return a list of capabilities for an iNode
+  #
+  # @param [INode] inode iNode instance that defines where the action is to take place
+  # @return [Array<Capability>]
+  def self.all(inode)
     logger.info('Base::Capability.all')
     raise Exceptions::NotImplemented
   end

@@ -109,7 +109,7 @@ class Machine < Base::Machine
   end
 
   def self.find_by_uuid(inode, uuid)
-    logger.info('machine.find_by_uuid')
+    logger.info('Machine.find_by_uuid')
 
     begin
       # Connect to vCenter and set the property collector and the searchindex variables

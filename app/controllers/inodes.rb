@@ -6,10 +6,10 @@ AdaptorVMware.controllers :inodes, :priority => :low do
 
   # Creates
   post :index do
-    logger.info('inodes#index')
+    logger.info('POST - inodes#index')
 
     uuid = params['uuid']
-    @inode = Inode.new(params)
+    @inode = INode.new(params)
     @inode.save(uuid)
     render 'inodes/show'
   end
@@ -17,7 +17,7 @@ AdaptorVMware.controllers :inodes, :priority => :low do
   get :show, "/inodes/:uuid" do
     logger.info('inodes#show')
 
-    @inode = Inode.find_by_uuid(params[:uuid])
+    @inode = INode.find_by_uuid(params[:uuid])
     render 'inodes/show'
   end
 
@@ -29,7 +29,7 @@ AdaptorVMware.controllers :inodes, :priority => :low do
 
     if params.present?
       uuid = params.delete('uuid')
-      @inode = Inode.find_by_uuid(uuid)
+      @inode = INode.find_by_uuid(uuid)
       @inode.update(uuid, params) if params.present?
     end
     render 'inodes/show'
@@ -40,7 +40,7 @@ AdaptorVMware.controllers :inodes, :priority => :low do
     logger.info('DELETE - inodes#index')
 
     uuid = params.delete('uuid')
-    @inode = Inode.find_by_uuid(uuid)
+    @inode = INode.find_by_uuid(uuid)
     @inode.delete(uuid)
     status 204
     render 'inodes/delete'

@@ -5,7 +5,7 @@ class Base::MachineNicReading < Main
                 :date_time
 
   validates :receive,
-            :numericality => { :only_integer => true, :greater_than_or_equal_to => 0 }
+    :numericality => { :only_integer => true, :greater_than_or_equal_to => 0 }
   validates :transmit,
-            :numericality => { :only_integer => true, :greater_than_or_equal_to => 0 }
+    :numericality => { :only_integer => true, :greater_than_or_equal_to => 0 }
 end

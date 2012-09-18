@@ -1,13 +1,10 @@
-class Inode < Base::Inode
-  attr_reader :session
+class INode < Base::INode
+  attr_reader :uuid, :session, :host_ip_address, :user, :password
 
   def open_session
     begin
-      #Converts the credentials in "username|password" format to a hash
-      credential_items = @credentials.split "|"
-
       # Connect to vCenter if the session is not already established
-      @session ||= RbVmomi::VIM.connect :host => @connection, :user => credential_items[0], :password => credential_items[1] , :insecure => true
+      @session ||= RbVmomi::VIM.connect :host => @host_ip_address, :user => @user, :password => @password, :insecure => true
     rescue => e
       logger.error(e.message)
       raise Exceptions::Unrecoverable.new(e.message)
@@ -31,25 +28,25 @@ class Inode < Base::Inode
   end
 
   def self.find_by_uuid(uuid)
-    logger.info("Inode.find_by_uuid(#{uuid})")
+    logger.info("INode.find_by_uuid(#{uuid})")
 
     super
   end
 
   def update(uuid, params)
-    logger.info("Inode.update(#{uuid})")
+    logger.info("INode.update(#{uuid})")
 
     super
   end
 
   def save(uuid)
-    logger.info("Inode.save(#{uuid})")
+    logger.info("INode.save(#{uuid})")
 
     super
   end
 
   def delete(uuid)
-    logger.info("Inode.delete(#{uuid})")
+    logger.info("INode.delete(#{uuid})")
 
     super
   end

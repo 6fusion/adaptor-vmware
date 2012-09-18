@@ -1,14 +1,14 @@
 # @api public
 class Base::Machine < Main
   attr_accessor :uuid,
-                :name,
-                :cpu_count,
-                :cpu_speed,
-                :maximum_memory,
-                :system,
-                :disks,
-                :nics,
-                :guest_agent
+    :name,
+    :cpu_count,
+    :cpu_speed,
+    :maximum_memory,
+    :system,
+    :disks,
+    :nics,
+    :guest_agent
 
   # @example Possible machine power states include:
   #
@@ -27,24 +27,24 @@ class Base::Machine < Main
   attr_accessor :power_state
 
   validates :uuid,
-            :presence => true,
-            :length => { :maximum => 40 }
+    :presence => true,
+    :length => { :maximum => 40 }
   validates :name,
-            :presence => true
+    :presence => true
   validates :cpu_count,
-            :numericality => { :only_integer => true, :greater_than => 0 }
+    :numericality => { :only_integer => true, :greater_than => 0 }
   validates :cpu_speed,
-            :numericality => { :greater_than => 0 }
+    :numericality => { :greater_than => 0 }
   validates :maximum_memory,
-            :numericality => { :only_integer => true, :greater_than => 0 }
+    :numericality => { :only_integer => true, :greater_than => 0 }
   validates :guest_agent,
-            :presence => true
+    :presence => true
   validates :power_state,
-            :presence => true
+    :presence => true
 
   # This is where you would call your cloud service and get a list of machines
   #
-  # @param [Inode] inode iNode instance that defines where the action is to take place
+  # @param [INode] inode iNode instance that defines where the action is to take place
   # @return [Array<Machine>]
   def self.all(inode)
     logger.info('Machine.all')
@@ -54,7 +54,7 @@ class Base::Machine < Main
   # This is where you would call your cloud service and find the machine matching
   # the uuid passed.
   #
-  # @param [Inode] inode iNode instance that defines where the action is to take place
+  # @param [INode] inode iNode instance that defines where the action is to take place
   # @param [String] uuid The specific identifier for the Machine
   # @return [Machine]
   def self.find_by_uuid(inode, uuid)
@@ -66,7 +66,7 @@ class Base::Machine < Main
   # find a specific machine's readings.
   # This request should support interval (frequency), since (start_date), and until (end_date)
   #
-  # @param [Inode] inode iNode instance that defines where the action is to take place
+  # @param [INode] inode iNode instance that defines where the action is to take place
   # @param [Integer] _interval The frequency the readins should be return for the requested date range
   # @param [Time] _since The beginning date/time for the requested readings
   # @param [Time] _until The ending date/time for the requested readings
@@ -79,7 +79,7 @@ class Base::Machine < Main
   # Management
   # This is where you would call your cloud service and start a machine
   #
-  # @param [Inode] inode iNode instance that defines where the action is to take place
+  # @param [INode] inode iNode instance that defines where the action is to take place
   # @return [nil]
   def start(inode)
     logger.info("machine.start")
@@ -88,7 +88,7 @@ class Base::Machine < Main
 
   # This is where you would call your cloud service and stop a machine
   #
-  # @param [Inode] inode iNode instance that defines where the action is to take place
+  # @param [INode] inode iNode instance that defines where the action is to take place
   # @return [nil]
   def stop(inode)
     logger.info("machine.stop")
@@ -97,7 +97,7 @@ class Base::Machine < Main
 
   # This is where you would call your cloud service and restart a machine
   #
-  # @param [Inode] inode iNode instance that defines where the action is to take place
+  # @param [INode] inode iNode instance that defines where the action is to take place
   # @return [nil]
   def restart(inode)
     logger.info("machine.restart")
@@ -106,7 +106,7 @@ class Base::Machine < Main
 
   # This is where you would call your cloud service and force stop a machine
   #
-  # @param [Inode] inode iNode instance that defines where the action is to take place
+  # @param [INode] inode iNode instance that defines where the action is to take place
   # @return [nil]
   def force_stop(inode)
     logger.info("machine.force_stop")
@@ -115,7 +115,7 @@ class Base::Machine < Main
 
   # This is where you would call your cloud service to create a new virtual machine
   #
-  # @param [Inode] inode iNode instance that defines where the action is to take place
+  # @param [INode] inode iNode instance that defines where the action is to take place
   # @return [nil]
   def save(inode)
     logger.info("machine.save")
@@ -124,7 +124,7 @@ class Base::Machine < Main
 
   # This is where you could call your cloud service to delete a virtual machine
   #
-  # @param [Inode] inode iNode instance that defines where the action is to take place
+  # @param [INode] inode iNode instance that defines where the action is to take place
   # @return [nil]
   def delete(inode)
     logger.info("machine.delete")

@@ -1,1 +1,2 @@
-'models' --query '@api.text == "public"'
+--query '@api.text == "public"'
+models/**/*.rb

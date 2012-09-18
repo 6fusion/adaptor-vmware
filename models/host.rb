@@ -1,4 +1,3 @@
-# @api public
 class Host < Base::Host
   def self.all(inode)
     logger.info('Host.all')
