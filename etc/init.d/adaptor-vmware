@@ -11,25 +11,30 @@
 . /etc/rc.d/init.d/functions
 
 RETVAL=0
-
 runlevel=$(set -- $(runlevel); eval "echo \$$#" )
+prog=adaptor-vmware
 
 start()
 {
-	echo -n $"Starting $prog: "
-	if [ "`pidof -x god`" = "" ]
-	then
-		/usr/local/bin/god -c /etc/god.conf
+	if [ -f /var/run/adaptor-vmware.pid ]; then
+		echo "Already running"
+		exit 1
 	fi
-	/usr/local/bin/god start all
+	echo -n $"Starting $prog: "
+	/usr/bin/padrino start --chdir=/opt/6fusion/adaptor-vmware --pid=/var/run/adaptor-vmware.pid > /var/log/adaptor-vmware 2>&1 &
+	RETVAL=$?
+	[ $RETVAL -eq 0 ] && success || failure
 	echo
+	return $RETVAL
 }
 
 stop()
 {
 	echo -n $"Stopping $prog: "
-    	/usr/local/bin/god stop all
+	/usr/bin/padrino stop --chdir=/opt/6fusion/adaptor-vmware --pid=/var/run/adaptor-vmware.pid
+	RETVAL=$?
 	echo
+	return $RETVAL
 }
 
 case "$1" in
@@ -50,7 +55,7 @@ case "$1" in
 		restart
 		;;
 	status)
-        	/usr/local/bin/god status all
+        	status -p /var/run/adaptor-vmware.pid adaptor-vmware
 		RETVAL=$?
 		;;
 	*)
