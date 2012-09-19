@@ -402,6 +402,7 @@ class Machine < Base::Machine
             vdisk:          vdisk,
             vdisk_files:    build_disk_files(vdisk.key,properties_hash["layoutEx"]),
             type:           'Disk',
+            thin:           vdisk.backing.thinProvisioned,
             key:            vdisk.key,
             vm:             properties.obj,
             stats:          []
