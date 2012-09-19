@@ -7,6 +7,7 @@
 #
 
 # source function library
+# source function library
 . /etc/rc.d/init.d/functions
 
 RETVAL=0
@@ -18,16 +19,16 @@ start()
 	echo -n $"Starting $prog: "
 	if [ "`pidof -x god`" = "" ]
 	then
-		god -c /opt/6fusion/etc/god.conf
+		/usr/local/bin/god -c /etc/god.conf
 	fi
-	god start all
+	/usr/local/bin/god start all
 	echo
 }
 
 stop()
 {
 	echo -n $"Stopping $prog: "
-    god stop all
+    	/usr/local/bin/god stop all
 	echo
 }
 
@@ -49,7 +50,7 @@ case "$1" in
 		restart
 		;;
 	status)
-        god status all
+        	/usr/local/bin/god status all
 		RETVAL=$?
 		;;
 	*)
@@ -57,4 +58,3 @@ case "$1" in
 		RETVAL=1
 esac
 exit $RETVAL
-
