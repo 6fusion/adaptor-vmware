@@ -95,6 +95,9 @@ class Machine < Base::Machine
       stats = performance_manager.retrieve_stats(vms,metrics,_interval,_since,_until)
       stats.each do |stat|
         machines.each do |machine|
+          if stat.empty? then   #TODO: Does not work when there is at least one reading
+            stat = add_missing_timestamps(machine.vm, _since, _until, _interval)
+          end
           machine.stats = stat if machine.vm == stat.entity
         end
       end
@@ -156,6 +159,10 @@ class Machine < Base::Machine
       # Collects Performance information and set the machine.stats property
       metrics = {"cpu.usagemhz.average" => "","mem.consumed.average" => "","virtualDisk.read.average" => "*","virtualDisk.write.average" => "*","net.received.average" => "*","net.transmitted.average" => "*"}
       stats = performance_manager.retrieve_stats(vms,metrics,_interval,_since,_until)
+      if stats.empty? then
+        stats = add_missing_timestamps(machine.vm, _since, _until, _interval)
+      end
+
       machine.stats = stats.first
 
       # Return updated machine object
@@ -367,7 +374,27 @@ class Machine < Base::Machine
       raise Exception::Unrecoverable
     end
   end
+#Helper Method to add missing timestamps
+  def self.add_missing_timestamps(_vm, _since, _until, _interval)
+    logger.info('machine.add_missing_timestamps')
 
+    begin
+      stats = []
+      no_of_readings = ((_until - _since) / _interval).to_i
+      no_of_readings.times do
+        reading = RbVmomi::VIM::PerfEntityMetric(
+                    :sampleInfo => [RbVmomi::VIM::PerfSampleInfo(:timestamp => Time.now.utc,:interval => _interval)],
+                    :value => [],
+                    :entity => _vm)
+        stats << reading
+      end
+
+      stats
+    rescue => e
+      logger.error(e.message)
+      raise Exception::Unrecoverable
+    end
+  end
 # Helper Method to calculate disk used space
   def self.build_disk_files(disk_key, file_layout)
     logger.info('machine.build_disk_files')

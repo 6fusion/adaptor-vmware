@@ -24,7 +24,7 @@ class MachineDisk < Base::MachineDisk
       performance_metrics.sampleInfo.each_with_index.map do |x,i|
         if performance_metrics.value.empty?
           MachineDiskReading.new(
-              usage: 0,
+              usage: vdisk_files.map(&:size).inject(0, :+) / GB,
               read:  0,
               write: 0,
               date_time: x.timestamp
