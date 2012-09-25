@@ -54,6 +54,15 @@ For additonal information that may be helpful developing your adaptor look here:
 
 ** Do NOT modify the INode model unless you have a specific storage strategy.  This is the only model where a basic implementation has already been done for you.
 
+== Optional Linux startup scripts
+
+The etc/init.d/adaptor-vmware will start/stop/restart the adaptor.  It assumes the installation adaptor-vmware project is /opt/6fusion/adaptor-vmware and will start the project using the default Padriono/Thin client.   To make use of these scripts:
+
+$ mkdir -p /opt/6fusion
+$ cd /opt/6fusion
+$ git clone git@github.com:6fusion/adaptor-vmware.git
+$ ln -s adaptor-vmware/etc/init.d/adaptor-vmware /etc/init.d/adaptor-vmware
+
 == Copyright
 
 Copyright 2012 6fusion, Inc.  See {LICENSE}[https://github.com/6fusion/adaptor-template/blob/master/LICENSE.rdoc] for details.
