@@ -1,3 +1,44 @@
+require 'time'
+
+class Time
+  def self.hour_ago
+    now - 3600
+  end
+  def self.yesterday
+    now - 86400
+  end
+
+  def to_datetime
+    # Convert seconds + microseconds into a fractional number of seconds
+    seconds = sec + Rational(usec, 10**6)
+
+    # Convert a UTC offset measured in minutes to one measured in a
+    # fraction of a day.
+    offset = Rational(utc_offset, 60 * 60 * 24)
+    DateTime.new(year, month, day, hour, min, seconds, offset)
+  end
+
+  def self.round_to_highest_5_minutes(_time)
+    _offset = 0
+    if ((_time.min / 5).round * 5) < _time.min
+      _offset = 300
+    end
+    _rounded = Time.new(_time.year, _time.month, _time.day, _time.hour, ((_time.min / 5).round * 5), 0, "+00:00")
+    _rounded += _offset
+    _rounded
+  end
+
+  def self.round_to_lowest_5_minutes(_time)
+    _offset = 0
+    if ((_time.min / 5).round * 5) < _time.min
+      _offset = 300
+    end
+    _rounded = Time.new(_time.year, _time.month, _time.day, _time.hour, ((_time.min / 5).round * 5), 0, "+00:00")
+    _rounded -= _offset
+    _rounded
+  end
+end
+
 RbVmomi::VIM::PerformanceManager
 class RbVmomi::VIM::PerformanceManager
 
@@ -17,7 +58,8 @@ class RbVmomi::VIM::PerformanceManager
 
   # This method is used to retrieve the metrics for a list of virtual machines
   def retrieve_stats (objects, metrics, interval,start_time,end_time)
-
+    logger.info(start_time.to_s)
+    logger.info(end_time.to_s)
     metric_ids = metrics.map do |x, y|
       RbVmomi::VIM::PerfMetricId(:counterId => perfcounter_hash[x].key, :instance => y)
     end

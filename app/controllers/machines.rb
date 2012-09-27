@@ -38,10 +38,17 @@ AdaptorVMware.controllers :machines, :map => "/inodes/:inode_uuid" do
   get :index, :map => 'machines/readings' do
     begin
       logger.info('GET - machines#readings')
+      _interval = params[:interval].blank? ? 300 : params[:interval]
+      _since = params[:since].blank? ? 5.minutes.ago.utc : Time.iso8601(params[:since])
+      _until = params[:until].blank? ? Time.now.utc : Time.iso8601(params[:until])
 
+      start = Time.round_to_highest_5_minutes(_since)
+      finish = Time.round_to_lowest_5_minutes(_until)
+      if finish < start
+        finish = start+300
+      end
       @inode.open_session
-      @machines = Machine.all_with_readings(@inode)
-
+      @machines = Machine.all_with_readings(@inode, _interval, start, finish)
       render 'machines/readings'
     ensure
       @inode.close_session
@@ -64,8 +71,12 @@ AdaptorVMware.controllers :machines, :map => "/inodes/:inode_uuid" do
     begin
       logger.info('GET - machines.uuid#readings')
 
+      _interval = params[:interval].blank? ? 300 : params[:interval]
+      _since = params[:since].blank? ? 5.minutes.ago.utc : Time.iso8601(params[:since])
+      _until = params[:until].blank? ? Time.now.utc : Time.iso8601(params[:until])
+      logger.info(_since.to_s)
       @inode.open_session
-      @machine = Machine.find_by_uuid_with_readings(@inode, params[:uuid])
+      @machine = Machine.find_by_uuid_with_readings(@inode, params[:uuid], _interval, _since, _until)
 
       render 'machines/readings'
     ensure

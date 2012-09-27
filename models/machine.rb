@@ -95,9 +95,7 @@ class Machine < Base::Machine
       stats = performance_manager.retrieve_stats(vms,metrics,_interval,_since,_until)
       stats.each do |stat|
         machines.each do |machine|
-          if stat.empty? then   #TODO: Does not work when there is at least one reading
-            stat = add_missing_timestamps(machine.vm, _since, _until, _interval)
-          end
+    
           machine.stats = stat if machine.vm == stat.entity
         end
       end
@@ -176,9 +174,23 @@ class Machine < Base::Machine
   def readings(inode, _interval = 300, _since = 5.minutes.ago.utc, _until = Time.now.utc)
     begin
       logger.info("machine.readings")
-
+      timestamps = {}
+      if _since < Time.now.utc
+        start = Time.round_to_highest_5_minutes(_since)
+        finish = Time.round_to_lowest_5_minutes(_until)
+        if finish <= start
+          finish = start+300
+        end
+        intervals = ((finish - start) / _interval).round
+        i = 1
+        while i <= intervals do
+          timestamps[start+(i*300)] = false
+          logger.info("ts - "+(start+(i*300)).iso8601.to_s)
+          i += 1
+        end 
+      end
       #Create machine readings
-      readings_from_stats(stats)
+      readings_from_stats(stats,timestamps,_interval)
 
     rescue => e
       logger.error(e.message)
@@ -323,38 +335,36 @@ class Machine < Base::Machine
   end
 
   # Helper Method for creating readings objects.
-  def readings_from_stats(performance_metrics)
+  def readings_from_stats(performance_metrics, timestamps, interval)
     logger.info('machine.readings_from_stats')
-
-    begin
-      if performance_metrics.is_a? (RbVmomi::VIM::PerfEntityMetric)
-        performance_metrics.sampleInfo.each_with_index.map do |x,i|
-          if performance_metrics.value.empty?
-            MachineReading.new(
-                interval:     x.interval,
-                date_time:    x.timestamp,
-                cpu_usage:    0,
-                memory_bytes: 0
-            )
-          else
-            cpu_metric = "6."
-            memory_metric = "98."
-            metric_readings = Hash[performance_metrics.value.map{|s| ["#{s.id.counterId}.#{s.id.instance}",s.value]}]
-            MachineReading.new(
-                interval:     x.interval,
-                date_time:    x.timestamp,
-                cpu_usage:    metric_readings[cpu_metric].nil? ? 0 : metric_readings[cpu_metric][i] == -1 ? 0 : metric_readings[cpu_metric][i],
-                memory_bytes: metric_readings[memory_metric].nil? ? 0 : metric_readings[memory_metric][i] == -1 ? 0: metric_readings[memory_metric][i]
-            )
-          end
+    result = []
+    if performance_metrics.is_a? (RbVmomi::VIM::PerfEntityMetric)
+      performance_metrics.sampleInfo.each_with_index.map do |x,i|
+        if !performance_metrics.value.empty?
+          cpu_metric = "6."
+          memory_metric = "98."
+          metric_readings = Hash[performance_metrics.value.map{|s| ["#{s.id.counterId}.#{s.id.instance}",s.value]}]
+          result <<  MachineReading.new(
+              interval:     x.interval,
+              date_time:    x.timestamp,
+              cpu_usage:    metric_readings[cpu_metric].nil? ? 0 : metric_readings[cpu_metric][i] == -1 ? 0 : metric_readings[cpu_metric][i],
+              memory_bytes: metric_readings[memory_metric].nil? ? 0 : metric_readings[memory_metric][i] == -1 ? 0: metric_readings[memory_metric][i]
+          )
+          timestamps[x.timestamp] = true
         end
-      else
-        Array.new
       end
-    rescue => e
-      logger.error(e.message)
-      raise Exception::Unrecoverable
     end
+    timestamps.keys.each do | timestamp |
+      if !timestamps[timestamp]
+        result <<  MachineReading.new(
+            interval: interval,
+            cpu_usage:  0,
+            memory_bytes: 0,
+            date_time: timestamp.iso8601.to_s
+        )
+      end
+    end
+    result
   end
 
 # Helper Method for creating system objects.
