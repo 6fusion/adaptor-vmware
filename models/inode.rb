@@ -4,6 +4,7 @@ class INode < Base::INode
   def open_session
     begin
       # Connect to vCenter if the session is not already established
+      logger.info("INode.open_session")
       @session ||= RbVmomi::VIM.connect :host => @host_ip_address, :user => @user, :password => @password, :insecure => true
     rescue => e
       logger.error(e.message)
@@ -12,6 +13,7 @@ class INode < Base::INode
   end
 
   def close_session
+    logger.info("INode.close_session")
     begin
       unless @session.nil?
         @session.close
