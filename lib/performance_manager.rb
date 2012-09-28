@@ -1,6 +1,8 @@
 require 'time'
 
 class Time
+
+
   def self.hour_ago
     now - 3600
   end
@@ -18,24 +20,32 @@ class Time
     DateTime.new(year, month, day, hour, min, seconds, offset)
   end
 
-  def self.round_to_highest_5_minutes(_time)
-    _offset = 0
-    if ((_time.min / 5).round * 5) < _time.min
-      _offset = 300
-    end
-    _rounded = Time.new(_time.year, _time.month, _time.day, _time.hour, ((_time.min / 5).round * 5), 0, "+00:00")
-    _rounded += _offset
-    _rounded
+#  def self.round_to_highest_5_minutes(_time)
+#    _offset = 0
+#    if ((_time.min / 5).round * 5) < _time.min
+#      _offset = 300
+#    end
+#    _rounded = Time.new(_time.year, _time.month, _time.day, _time.hour, ((_time.min / 5).round * 5), 0, "+00:00")
+#    _rounded += _offset
+#    _rounded
+#  end
+#
+#  def self.round_to_lowest_5_minutes(_time)
+#    _offset = 0
+#    if ((_time.min / 5).round * 5) < _time.min
+#      _offset = 300
+#    end
+#    _rounded = Time.new(_time.year, _time.month, _time.day, _time.hour, ((_time.min / 5).round * 5), 0, "+00:00")
+#    _rounded -= _offset
+#    _rounded
+#  end
+
+  def round(seconds = 60)
+    Time.at((self.to_f / seconds).round * seconds)
   end
 
-  def self.round_to_lowest_5_minutes(_time)
-    _offset = 0
-    if ((_time.min / 5).round * 5) < _time.min
-      _offset = 300
-    end
-    _rounded = Time.new(_time.year, _time.month, _time.day, _time.hour, ((_time.min / 5).round * 5), 0, "+00:00")
-    _rounded -= _offset
-    _rounded
+  def floor(seconds = 60)
+    Time.at((self.to_f / seconds).floor * seconds)
   end
 end
 
