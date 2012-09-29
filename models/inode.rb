@@ -6,6 +6,9 @@ class INode < Base::INode
       # Connect to vCenter if the session is not already established
       logger.info("INode.open_session")
       @session ||= RbVmomi::VIM.connect :host => @host_ip_address, :user => @user, :password => @password, :insecure => true
+      if (Time.now.utc - @session.serviceInstance.CurrentTime).abs > 5
+        raise Exceptions::Forbidden.new("Local time is more than 5 minute out of sync with the hypervisor's time. Local time is #{Time.now.utc} and the hypervisor's time is #{@session.serviceInstance.CurrentTime}.")
+      end
     rescue => e
       logger.error(e.message)
       raise Exceptions::Unrecoverable.new(e.message)
@@ -21,7 +24,7 @@ class INode < Base::INode
       end
 
     rescue RbVmomi::Fault => e
-      raise Exceptions::Forbidden.new(e.message)
+      raise Exceptions::Unrecoverable.new(e.message)
 
     rescue => e
       logger.error(e.message)
