@@ -1,6 +1,6 @@
 class Capability < Base::Capability
 
-  SUPPORTED_CAPABILITIES = %w(machines,machines_readings,machine,start,stop,restart,force_stop,force_restart,delete)
+  SUPPORTED_CAPABILITIES = %w(machines machines_readings machine start stop restart force_stop force_restart delete)
 
   def self.all(inode)
     logger.info('Capability.all')
