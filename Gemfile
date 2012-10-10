@@ -1,32 +1,31 @@
 source :rubygems
-
-           # Server requirements
-gem 'thin' # or mongrel
-           # gem 'trinidad', :platform => 'jruby'
-
-           # Project requirements
-gem 'rake'
-
-# Test requirements
-gem 'mocha', group: 'test'
-gem 'rspec', group: 'test'
-gem 'rack-test', require: 'rack/test', group: 'test'
-
-# Padrino Stable Gem
 gem 'padrino', '0.10.7'
 
-# Component requirements
 gem 'rabl'
 gem 'yajl-ruby', require: 'yajl'
 gem 'haml'
 gem 'activemodel', require: 'active_model'
 gem 'activesupport', require: 'active_support/time'
 gem 'rbvmomi'
+gem 'rake'
 
-# Or Padrino Edge
-# gem 'padrino', :git => 'git://github.com/padrino/padrino-framework.git'
+platform :jruby do
+  gem 'jruby-openssl'
+  torquebox_version = "2.0.3"
+  gem "torquebox-rake-support", torquebox_version
+  gem "torquebox", torquebox_version
+end
 
-# Or Individual Gems
-# %w(core gen helpers cache mailer admin).each do |g|
-#   gem 'padrino-' + g, '0.10.7'
-# end
+group :development do
+  gem 'thin'
+  gem 'vagrant'
+  gem 'capistrano'
+  gem 'capistrano-ext'
+  gem 'capistrano_colors'
+end
+
+group :test do
+  gem 'mocha'
+  gem 'rspec'
+  gem 'rack-test', require: 'rack/test'
+end
