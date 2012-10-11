@@ -19,7 +19,7 @@ platform :jruby do
 end
 
 group :development do
-  gem 'thin'
+  #gem 'thin'
   gem 'vagrant'
   gem 'capistrano'
   gem 'capistrano-ext'
