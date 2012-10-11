@@ -137,6 +137,7 @@ DEPENDENCIES
   capistrano_colors
   haml
   jruby-openssl
+  json-jruby
   mocha
   padrino (= 0.10.7)
   rabl

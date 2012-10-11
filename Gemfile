@@ -2,7 +2,7 @@ source :rubygems
 gem 'padrino', '0.10.7'
 
 gem 'rabl'
-gem 'yajl-ruby', require: 'yajl'
+gem 'yajl-ruby', require: 'yajl', :platform => :mri_19
 gem 'haml'
 gem 'activemodel', require: 'active_model'
 gem 'activesupport', require: 'active_support/time'
@@ -11,6 +11,7 @@ gem 'rake'
 
 platform :jruby do
   gem 'jruby-openssl'
+  gem 'json-jruby', require: 'json'
   torquebox_version = "2.0.3"
   gem "torquebox-rake-support", torquebox_version
   gem "torquebox", torquebox_version
