@@ -191,11 +191,12 @@ class Machine < Base::Machine
       #Create machine readings
       logger.info('machine.readings_from_stats')
       result = []
+      performance_manager = inode.session.serviceContent.perfManager
       if stats.is_a? (RbVmomi::VIM::PerfEntityMetric)
         stats.sampleInfo.each_with_index.map do |x,i|
           if stats.value.empty?.eql?(false)
-            cpu_metric = "6."
-            memory_metric = "98."
+            cpu_metric = "#{performance_manager.perfcounter_hash["cpu.usagemhz.average"].key}."
+            memory_metric = "#{performance_manager.perfcounter_hash["mem.consumed.average"].key}."
             metric_readings = Hash[stats.value.map{|s| ["#{s.id.counterId}.#{s.id.instance}",s.value]}]
             result <<  MachineReading.new(
                 interval:     x.interval,

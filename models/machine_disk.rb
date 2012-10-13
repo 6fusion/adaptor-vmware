@@ -34,11 +34,12 @@ class MachineDisk < Base::MachineDisk
 
     #Create machine disk readings from stats variable
     result = []
+    performance_manager = inode.session.serviceContent.perfManager
     if stats.is_a? (RbVmomi::VIM::PerfEntityMetric)
       stats.sampleInfo.each_with_index.map do |x,i|
         if stats.value.empty?.eql?(false)
-          read_metric = "174.scsi#{vdisk.controllerKey-1000}:#{vdisk.unitNumber}"
-          write_metric = "174.scsi#{vdisk.controllerKey-1000}:#{vdisk.unitNumber}"
+          read_metric = "#{performance_manager.perfcounter_hash["virtualDisk.read.average"].key}.scsi#{vdisk.controllerKey-1000}:#{vdisk.unitNumber}"
+          write_metric = "#{performance_manager.perfcounter_hash["virtualDisk.write.average"].key}.scsi#{vdisk.controllerKey-1000}:#{vdisk.unitNumber}"
           metric_readings = Hash[stats.value.map{|s| ["#{s.id.counterId}.#{s.id.instance}",s.value]}]
           result <<  MachineDiskReading.new(
               usage: vdisk_files.map(&:size).inject(0, :+) / GB,
