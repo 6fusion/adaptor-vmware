@@ -60,17 +60,19 @@ namespace :logs do
   desc "tail production log files"
   task :rails, :roles => :app do
     run "tail -f #{shared_path}/log/#{deploy_env}.log" do |channel, stream, data|
-      puts data
+      print data
       break if stream == :err
     end
+    puts
   end
 
   desc "tail production log files"
   task :torquebox, :roles => :app do
     run "tail -f /var/log/torquebox/torquebox.log" do |channel, stream, data|
-      puts data
+      print data
       break if stream == :err
     end
+    puts
   end
 
   desc 'truncate logs'
@@ -80,6 +82,8 @@ namespace :logs do
     run "#{sudo} rm -f /opt/torquebox/jboss/standalone/log/**/*.log"
     run "#{sudo} rm -f /opt/torquebox/jboss/standalone/log/*.{log,log.*}"
   end
+
+  alias_task :default => :torquebox
 end
 
 namespace :torquebox do
