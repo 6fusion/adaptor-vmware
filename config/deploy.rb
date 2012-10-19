@@ -83,7 +83,7 @@ namespace :logs do
     run "#{sudo} rm -f /opt/torquebox/jboss/standalone/log/*.{log,log.*}"
   end
 
-  alias_task :default => :torquebox
+  alias_task :default, :torquebox
 end
 
 namespace :torquebox do
