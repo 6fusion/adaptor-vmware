@@ -26,7 +26,7 @@ class Machine < Base::Machine
 
     rescue => e
       logger.error(e.message)
-      raise Exception::Unrecoverable
+      raise Exceptions::Unrecoverable
     end
   end
 
@@ -75,7 +75,7 @@ class Machine < Base::Machine
 
     rescue => e
       logger.error(e.message)
-      raise Exception::Unrecoverable
+      raise Exceptions::Unrecoverable
     end
   end
 
@@ -105,7 +105,7 @@ class Machine < Base::Machine
 
     rescue => e
       logger.error(e.message)
-      raise Exception::Unrecoverable
+      raise Exceptions::Unrecoverable
     end
   end
 
@@ -121,7 +121,7 @@ class Machine < Base::Machine
       vm                 = search_index.FindByUuid :uuid => uuid, :vmSearch => true
 
       if vm.nil?
-        raise Exceptions::NotFound.new("Machine with UUID of #{uuid} was not found")
+        raise Exceptionss::NotFound.new("Machine with UUID of #{uuid} was not found")
       else
         filter_spec   = RbVmomi::VIM.PropertyFilterSpec(
           :objectSet => [{ :obj => vm }],
@@ -140,7 +140,7 @@ class Machine < Base::Machine
 
     rescue => e
       logger.error(e.message)
-      raise Exception::Unrecoverable
+      raise Exceptions::Unrecoverable
     end
   end
 
@@ -164,7 +164,7 @@ class Machine < Base::Machine
       machine
     rescue => e
       logger.error(e.message)
-      raise Exception::Unrecoverable
+      raise Exceptions::Unrecoverable
     end
   end
 
@@ -222,7 +222,7 @@ class Machine < Base::Machine
 
     rescue => e
       logger.error(e.message)
-      raise Exception::Unrecoverable
+      raise Exceptions::Unrecoverable
     end
   end
 
@@ -235,11 +235,11 @@ class Machine < Base::Machine
 
     rescue RbVmomi::Fault => e
       logger.error(e.message)
-      raise Exceptions::Forbidden.new(e.message)
+      raise Exceptionss::Forbidden.new(e.message)
 
     rescue => e
       logger.error(e.message)
-      raise Exceptions::Unrecoverable
+      raise Exceptionss::Unrecoverable
     end
   end
 
@@ -252,11 +252,11 @@ class Machine < Base::Machine
 
     rescue RbVmomi::Fault => e
       logger.error(e.message)
-      raise Exceptions::Forbidden.new(e.message)
+      raise Exceptionss::Forbidden.new(e.message)
 
     rescue => e
       logger.error(e.message)
-      raise Exceptions::Unrecoverable
+      raise Exceptionss::Unrecoverable
     end
   end
 
@@ -269,11 +269,11 @@ class Machine < Base::Machine
 
     rescue RbVmomi::Fault => e
       logger.error(e.message)
-      raise Exceptions::Forbidden.new(e.message)
+      raise Exceptionss::Forbidden.new(e.message)
 
     rescue => e
       logger.error(e.message)
-      raise Exceptions::Unrecoverable
+      raise Exceptionss::Unrecoverable
     end
   end
 
@@ -286,11 +286,11 @@ class Machine < Base::Machine
 
     rescue RbVmomi::Fault => e
       logger.error(e.message)
-      raise Exceptions::Forbidden.new(e.message)
+      raise Exceptionss::Forbidden.new(e.message)
 
     rescue => e
       logger.error(e.message)
-      raise Exceptions::Unrecoverable
+      raise Exceptionss::Unrecoverable
     end
   end
 
@@ -303,17 +303,17 @@ class Machine < Base::Machine
 
     rescue RbVmomi::Fault => e
       logger.error(e.message)
-      raise Exceptions::Forbidden.new(e.message)
+      raise Exceptionss::Forbidden.new(e.message)
 
     rescue => e
       logger.error(e.message)
-      raise Exceptions::Unrecoverable
+      raise Exceptionss::Unrecoverable
     end
   end
 
   def save(inode)
     logger.info("machine.save")
-    raise Exceptions::NotImplemented
+    raise Exceptionss::NotImplemented
   end
 
   def delete(inode)
@@ -325,11 +325,11 @@ class Machine < Base::Machine
 
     rescue RbVmomi::Fault => e
       logger.error(e.message)
-      raise Exceptions::Forbidden.new(e.message)
+      raise Exceptionss::Forbidden.new(e.message)
 
     rescue => e
       logger.error(e.message)
-      raise Exceptions::Unrecoverable
+      raise Exceptionss::Unrecoverable
     end
   end
 
@@ -359,7 +359,7 @@ class Machine < Base::Machine
       )
     rescue => e
       logger.error(e.message)
-      raise Exception::Unrecoverable
+      raise Exceptions::Unrecoverable
     end
   end
 
@@ -377,7 +377,7 @@ class Machine < Base::Machine
       )
     rescue => e
       logger.error(e.message)
-      raise Exception::Unrecoverable
+      raise Exceptions::Unrecoverable
     end
   end
 
@@ -395,7 +395,7 @@ class Machine < Base::Machine
       disk_files
     rescue => e
       logger.error(e.message)
-      raise Exception::Unrecoverable
+      raise Exceptions::Unrecoverable
     end
   end
 
@@ -423,7 +423,7 @@ class Machine < Base::Machine
       end
     rescue => e
       logger.error(e.message)
-      raise Exception::Unrecoverable
+      raise Exceptions::Unrecoverable
     end
   end
 
@@ -458,7 +458,7 @@ class Machine < Base::Machine
       end
     rescue => e
       logger.error(e.message)
-      raise Exception::Unrecoverable
+      raise Exceptions::Unrecoverable
     end
   end
 
@@ -502,7 +502,7 @@ class Machine < Base::Machine
       end
     rescue => e
       logger.error(e.message)
-      raise Exception::Unrecoverable
+      raise Exceptions::Unrecoverable
     end
   end
 
