@@ -14,7 +14,7 @@ Bundler.require(:default, PADRINO_ENV)
 Padrino::Logger::Config[:test][:log_level]  = :info
 Padrino::Logger::Config[:test][:stream]  = :to_file
 #
-# ## Configure your I18n
+## Configure your I18n
 #
 # I18n.default_locale = :en
 #
