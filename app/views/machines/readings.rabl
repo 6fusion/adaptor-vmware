@@ -13,10 +13,10 @@ child :disks => :disks do
   node :readings do |r|
     r.readings(@inode, _interval, _since, _until).map do |r|
       {
-        usage:     r.usage,
-        read:      r.read,
-        write:     r.write,
-        date_time: r.date_time
+        :usage => r.usage,
+        :read => r.read,
+        :write => r.write,
+        :date_time => r.date_time
       }
     end
   end
@@ -28,9 +28,9 @@ child :nics => :nics do
   node :readings do |r|
     r.readings(@inode, _interval, _since, _until).map do |r|
       {
-        date_time: r.date_time,
-        receive:   r.receive,
-        transmit:  r.transmit
+        :date_time => r.date_time,
+        :receive => r.receive,
+        :transmit => r.transmit
       }
     end
   end
@@ -39,10 +39,10 @@ end
 node :readings do |o|
   o.readings(@inode, _interval, _since, _until).map do |r|
     {
-      interval:     r.interval,
-      date_time:    r.date_time,
-      cpu_usage:    r.cpu_usage,
-      memory_bytes: r.memory_bytes
+      :interval => r.interval,
+      :date_time => r.date_time,
+      :cpu_usage => r.cpu_usage,
+      :memory_bytes => r.memory_bytes
     }
   end
 end
