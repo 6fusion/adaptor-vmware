@@ -7,7 +7,7 @@ _interval = params[:interval].blank? ? 300 : params[:interval]
 _since = params[:since].blank? ? 5.minutes.ago.utc : Time.iso8601(params[:since])
 _until = params[:until].blank? ? Time.now.utc : Time.iso8601(params[:until])
 
-child disks: :disks do
+child :disks => :disks do
   extends 'machines/disks'
 
   node :readings do |r|
@@ -22,7 +22,7 @@ child disks: :disks do
   end
 end
 
-child nics: :nics do
+child :nics => :nics do
   extends 'machines/nics'
 
   node :readings do |r|
