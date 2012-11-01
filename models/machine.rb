@@ -341,7 +341,6 @@ class Machine < Base::Machine
 
     begin
       properties_hash = properties.to_hash
-      last_task       = properties_hash["recentTask"].empty? ? "none" : properties_hash["recentTask"].last.info.descriptionId
       Machine.new({
                     :uuid           => properties_hash["config"].uuid,
                     :name           => properties_hash["config"].name,
@@ -352,7 +351,7 @@ class Machine < Base::Machine
                     :disks          => build_disks(properties),
                     :nics           => build_nics(properties),
                     :guest_agent    => properties_hash["guest"].toolsStatus == "toolsNotInstalled" ? false : true,
-                    :power_state    => convert_power_state(properties_hash["guest"].toolsStatus, properties_hash["runtime"].powerState, last_task),
+                    :power_state    => convert_power_state(properties_hash["guest"].toolsStatus, properties_hash["runtime"].powerState),
                     :vm             => properties.obj,
                     :stats          => []
                   }
@@ -463,40 +462,27 @@ class Machine < Base::Machine
   end
 
   # Helper Method for converting machine power states.
-  def self.convert_power_state(tools_status, power_status, last_task)
+  def self.convert_power_state(tools_status, power_status)
     logger.info('machine.convert_power_state')
 
     begin
       status = "#{tools_status}|#{power_status}"
 
       case status
-        when "toolsOk|poweredOn" then
+        when "toolsOk|poweredOn" 
           "started"
-        when "toolsOld|poweredOn" then
+        when "toolsOld|poweredOn" 
           "started"
-        when "toolsNotInstalled|poweredOn" then
+        when "toolsNotInstalled|poweredOn" 
           "started"
-        when "toolsNotRunning|poweredOff" then
+        when "toolsNotRunning|poweredOff" 
           "stopped"
-        when "toolsOld|poweredOff" then
+        when "toolsOld|poweredOff" 
           "stopped"
-        when "toolsNotInstalled|poweredOff" then
+        when "toolsNotInstalled|poweredOff" 
           "stopped"
         when "toolsNotRunning|poweredOn"
-          case last_task
-            when "VirtualMachine.powerOn" then
-              "starting"
-            when "VirtualMachine.powerOff" then
-              "stopping"
-            when "VirtualMachine.shutdownGuest" then
-              "stopping"
-            when "VirtualMachine.rebootGuest" then
-              "restarting"
-            when "VirtualMachine.reset" then
-              "restarting"
-            else
-              "started"
-          end
+          "started"
         else
           "Unknown"
       end
