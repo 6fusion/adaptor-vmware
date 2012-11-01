@@ -36,42 +36,42 @@ class Machine < Base::Machine
     begin
       # Set the property collector variable and root folder variables
       property_collector = inode.session.serviceContent.propertyCollector
-      root_folder =  inode.session.serviceContent.rootFolder
+      root_folder        = inode.session.serviceContent.rootFolder
 
       # Create a filter to retrieve properties for all machines
-      recurse_folders = RbVmomi::VIM.SelectionSpec(
-          :name => "ParentFolder"
+      recurse_folders    = RbVmomi::VIM.SelectionSpec(
+        :name => "ParentFolder"
       )
 
       find_machines = RbVmomi::VIM.TraversalSpec(
-          :name => "Datacenters",
-          :type => "Datacenter",
-          :path => "vmFolder",
-          :skip => false,
-          :selectSet => [recurse_folders]
+        :name      => "Datacenters",
+        :type      => "Datacenter",
+        :path      => "vmFolder",
+        :skip      => false,
+        :selectSet => [recurse_folders]
       )
 
       find_folders = RbVmomi::VIM.TraversalSpec(
-          :name => "ParentFolder",
-          :type => "Folder",
-          :path => "childEntity",
-          :skip => false,
-          :selectSet => [recurse_folders,find_machines]
+        :name      => "ParentFolder",
+        :type      => "Folder",
+        :path      => "childEntity",
+        :skip      => false,
+        :selectSet => [recurse_folders, find_machines]
       )
 
-      filter_spec = RbVmomi::VIM.PropertyFilterSpec(
-          :objectSet => [{
-                             :obj => root_folder,
-                             :selectSet => [find_folders]
-                         }],
-          :propSet => [{:pathSet => %w(config guest layoutEx recentTask runtime),
-                        :type => "VirtualMachine"
+      filter_spec   = RbVmomi::VIM.PropertyFilterSpec(
+        :objectSet => [{
+                         :obj       => root_folder,
+                         :selectSet => [find_folders]
+                       }],
+        :propSet   => [{ :pathSet => %w(config guest layoutEx recentTask runtime),
+                         :type    => "VirtualMachine"
                        }]
       )
 
       # Retrieve properties for all machines and create machine objects
       vm_properties = property_collector.RetrieveProperties(:specSet => [filter_spec])
-      vm_properties.map {|m| new_machine_from_vm (m)}
+      vm_properties.map { |m| new_machine_from_vm (m) }
 
     rescue => e
       logger.error(e.message)
@@ -85,15 +85,15 @@ class Machine < Base::Machine
 
     begin
       # Retrieve all machines and virtual machine references
-      machines = self.all(inode)
-      vms = machines.map {|m| m.vm}
+      machines            = self.all(inode)
+      vms                 = machines.map { |m| m.vm }
 
       # Connect to vCenter and set the performance manager variable
       performance_manager = inode.session.serviceContent.perfManager
 
       # Collects Performance information and set the machine.stats object
-      metrics = {"cpu.usagemhz.average" => "","mem.consumed.average" => "","virtualDisk.read.average" => "*","virtualDisk.write.average" => "*","net.received.average" => "*","net.transmitted.average" => "*"}
-      stats = performance_manager.retrieve_stats(vms,metrics,_interval,_since,_until)
+      metrics             = { "cpu.usagemhz.average" => "", "mem.consumed.average" => "", "virtualDisk.read.average" => "*", "virtualDisk.write.average" => "*", "net.received.average" => "*", "net.transmitted.average" => "*" }
+      stats               = performance_manager.retrieve_stats(vms, metrics, _interval, _since, _until)
       stats.each do |stat|
         machines.each do |machine|
           machine.stats = stat if machine.vm == stat.entity
@@ -115,24 +115,24 @@ class Machine < Base::Machine
     begin
       # Connect to vCenter and set the property collector and the searchindex variables
       property_collector = inode.session.serviceContent.propertyCollector
-      search_index = inode.session.searchIndex
+      search_index       = inode.session.searchIndex
 
       # Search for the virtual machine by UUID and set the property filter variable
-      vm = search_index.FindByUuid :uuid => uuid, :vmSearch => true
+      vm                 = search_index.FindByUuid :uuid => uuid, :vmSearch => true
 
       if vm.nil?
         raise Exceptions::NotFound.new("Machine with UUID of #{uuid} was not found")
       else
-        filter_spec = RbVmomi::VIM.PropertyFilterSpec(
-            :objectSet => [{:obj => vm}],
-            :propSet => [{:pathSet => %w(config guest layoutEx recentTask runtime),
-                          :type => "VirtualMachine"
+        filter_spec   = RbVmomi::VIM.PropertyFilterSpec(
+          :objectSet => [{ :obj => vm }],
+          :propSet   => [{ :pathSet => %w(config guest layoutEx recentTask runtime),
+                           :type    => "VirtualMachine"
                          }]
         )
 
         # Retrieve properties create the machine object
         vm_properties = property_collector.RetrieveProperties(:specSet => [filter_spec])
-        machine = new_machine_from_vm(vm_properties.first)
+        machine       = new_machine_from_vm(vm_properties.first)
       end
 
       # Return the updated machine object
@@ -148,15 +148,15 @@ class Machine < Base::Machine
     logger.info('machine.find_by_uuid_with_readings')
 
     begin
-      machine = self.find_by_uuid(inode,uuid)
-      vms = [machine.vm]
+      machine             = self.find_by_uuid(inode, uuid)
+      vms                 = [machine.vm]
 
       # Connect to vCenter and set the performance manager variable
       performance_manager = inode.session.serviceContent.perfManager
 
       # Collects Performance information and set the machine.stats property
-      metrics = {"cpu.usagemhz.average" => "","mem.consumed.average" => "","virtualDisk.read.average" => "*","virtualDisk.write.average" => "*","net.received.average" => "*","net.transmitted.average" => "*"}
-      stats = performance_manager.retrieve_stats(vms,metrics,_interval,_since,_until)
+      metrics             = { "cpu.usagemhz.average" => "", "mem.consumed.average" => "", "virtualDisk.read.average" => "*", "virtualDisk.write.average" => "*", "net.received.average" => "*", "net.transmitted.average" => "*" }
+      stats               = performance_manager.retrieve_stats(vms, metrics, _interval, _since, _until)
 
       machine.stats = stats.first
 
@@ -173,48 +173,47 @@ class Machine < Base::Machine
       logger.info("machine.readings")
 
       #Create list of timestamps
-      timestamps = {}
+      timestamps = { }
       if _since < Time.now.utc
-        start = _since.round(5.minutes).utc
+        start  = _since.round(5.minutes).utc
         finish = _until.floor(5.minutes).utc
         if finish <= start
           finish = start+300
         end
         intervals = ((finish - start) / _interval).round
-        i = 1
+        i         = 1
         while i <= intervals do
           timestamps[start+(i*300)] = false
           logger.info("ts - "+(start+(i*300)).iso8601.to_s)
           i += 1
-        end 
+        end
       end
       #Create machine readings
       logger.info('machine.readings_from_stats')
       result = []
-      performance_manager = inode.session.serviceContent.perfManager
-      if stats.is_a? (RbVmomi::VIM::PerfEntityMetric)
-        stats.sampleInfo.each_with_index.map do |x,i|
+      if stats.is_a?(RbVmomi::VIM::PerfEntityMetric)
+        stats.sampleInfo.each_with_index.map do |x, i|
           if stats.value.empty?.eql?(false)
-            cpu_metric = "#{performance_manager.perfcounter_hash["cpu.usagemhz.average"].key}."
-            memory_metric = "#{performance_manager.perfcounter_hash["mem.consumed.average"].key}."
-            metric_readings = Hash[stats.value.map{|s| ["#{s.id.counterId}.#{s.id.instance}",s.value]}]
-            result <<  MachineReading.new(
-                interval:     x.interval,
-                date_time:    x.timestamp,
-                cpu_usage:    metric_readings[cpu_metric].nil? ? 0 : metric_readings[cpu_metric][i] == -1 ? 0 : metric_readings[cpu_metric][i],
-                memory_bytes: metric_readings[memory_metric].nil? ? 0 : metric_readings[memory_metric][i] == -1 ? 0: metric_readings[memory_metric][i]
+            cpu_metric      = "6."
+            memory_metric   = "98."
+            metric_readings = Hash[stats.value.map { |s| ["#{s.id.counterId}.#{s.id.instance}", s.value] }]
+            result << MachineReading.new({
+                                           :interval     => x.interval,
+                                           :date_time    => x.timestamp,
+                                           :cpu_usage    => metric_readings[cpu_metric].nil? ? 0 : metric_readings[cpu_metric][i] == -1 ? 0 : metric_readings[cpu_metric][i],
+                                           :memory_bytes => metric_readings[memory_metric].nil? ? 0 : metric_readings[memory_metric][i] == -1 ? 0 : metric_readings[memory_metric][i] }
             )
             timestamps[x.timestamp] = true
           end
         end
       end
-      timestamps.keys.each do | timestamp |
+      timestamps.keys.each do |timestamp|
         if timestamps[timestamp].eql?(false)
-          result <<  MachineReading.new(
-              interval: _interval,
-              cpu_usage:  0,
-              memory_bytes: 0,
-              date_time: timestamp.iso8601.to_s
+          result << MachineReading.new({
+                                         :interval     => _interval,
+                                         :cpu_usage    => 0,
+                                         :memory_bytes => 0,
+                                         :date_time    => timestamp.iso8601.to_s }
           )
         end
       end
@@ -341,20 +340,21 @@ class Machine < Base::Machine
 
     begin
       properties_hash = properties.to_hash
-      last_task = properties_hash["recentTask"].empty? ? "none" : properties_hash["recentTask"].last.info.descriptionId
-      Machine.new(
-          uuid:             properties_hash["config"].uuid,
-          name:             properties_hash["config"].name,
-          cpu_count:        properties_hash["config"].hardware.numCPU,
-          cpu_speed:        properties_hash["runtime"].host.hardware.cpuInfo.hz / 1000000 ,
-          maximum_memory:   properties_hash["config"].hardware.memoryMB,
-          system:           build_system(properties),
-          disks:            build_disks(properties),
-          nics:             build_nics(properties),
-          guest_agent:      properties_hash["guest"].toolsStatus == "toolsNotInstalled" ? false : true,
-          power_state:      convert_power_state(properties_hash["guest"].toolsStatus, properties_hash["runtime"].powerState,last_task),
-          vm:               properties.obj,
-          stats:            []
+      last_task       = properties_hash["recentTask"].empty? ? "none" : properties_hash["recentTask"].last.info.descriptionId
+      Machine.new({
+                    :uuid           => properties_hash["config"].uuid,
+                    :name           => properties_hash["config"].name,
+                    :cpu_count      => properties_hash["config"].hardware.numCPU,
+                    :cpu_speed      => properties_hash["runtime"].host.hardware.cpuInfo.hz / 1000000,
+                    :maximum_memory => properties_hash["config"].hardware.memoryMB,
+                    :system         => build_system(properties),
+                    :disks          => build_disks(properties),
+                    :nics           => build_nics(properties),
+                    :guest_agent    => properties_hash["guest"].toolsStatus == "toolsNotInstalled" ? false : true,
+                    :power_state    => convert_power_state(properties_hash["guest"].toolsStatus, properties_hash["runtime"].powerState, last_task),
+                    :vm             => properties.obj,
+                    :stats          => []
+                  }
       )
     rescue => e
       logger.error(e.message)
@@ -368,11 +368,11 @@ class Machine < Base::Machine
 
     begin
       properties_hash = properties.to_hash
-      x64_arch = properties_hash["config"].guestId.include? "64"
+      x64_arch        = properties_hash["config"].guestId.include? "64"
 
-      MachineSystem.new(
-          architecture:     x64_arch ? "x64" : "x32",
-          operating_system: properties_hash["config"].guestId
+      MachineSystem.new({
+                          :architecture     => x64_arch ? "x64" : "x32",
+                          :operating_system => properties_hash["config"].guestId }
       )
     rescue => e
       logger.error(e.message)
@@ -386,9 +386,9 @@ class Machine < Base::Machine
 
     begin
       disk_files = []
-      file_layout.disk.find{|n| n.key==disk_key}.chain.map do |f|
+      file_layout.disk.find { |n| n.key==disk_key }.chain.map do |f|
         f.fileKey.map do |k|
-          disk_files << file_layout.file.find{|m| m.key==k}
+          disk_files << file_layout.file.find { |m| m.key==k }
         end
       end
       disk_files
@@ -404,21 +404,21 @@ class Machine < Base::Machine
 
     begin
       properties_hash = properties.to_hash
-      vm_disks = properties_hash["config"].hardware.device.grep(RbVmomi::VIM::VirtualDisk)
+      vm_disks        = properties_hash["config"].hardware.device.grep(RbVmomi::VIM::VirtualDisk)
 
       vm_disks.map do |vdisk|
-        MachineDisk.new(
-            uuid:           vdisk.backing.uuid,
-            name:           vdisk.deviceInfo.label,
-            maximum_size:   vdisk.capacityInKB * KB / GB,
-            vdisk:          vdisk,
-            vdisk_files:    build_disk_files(vdisk.key,properties_hash["layoutEx"]),
-            type:           'Disk',
-            thin:           vdisk.backing.thinProvisioned,
-            key:            vdisk.key,
-            vm:             properties.obj,
-            stats:          []
-        )
+        MachineDisk.new({
+                          :uuid         => vdisk.backing.uuid,
+                          :name         => vdisk.deviceInfo.label,
+                          :maximum_size => vdisk.capacityInKB * KB / GB,
+                          :vdisk        => vdisk,
+                          :vdisk_files  => build_disk_files(vdisk.key, properties_hash["layoutEx"]),
+                          :type         => 'Disk',
+                          :thin         => vdisk.backing.thinProvisioned,
+                          :key          => vdisk.key,
+                          :vm           => properties.obj,
+                          :stats        => []
+        })
       end
     rescue => e
       logger.error(e.message)
@@ -432,29 +432,28 @@ class Machine < Base::Machine
 
     begin
       properties_hash = properties.to_hash
-      vm_nics = properties_hash["config"].hardware.device.grep(RbVmomi::VIM::VirtualE1000) + properties_hash["config"].hardware.device.grep(RbVmomi::VIM::VirtualPCNet32) + properties_hash["config"].hardware.device.grep(RbVmomi::VIM::VirtualVmxnet)
+      vm_nics         = properties_hash["config"].hardware.device.grep(RbVmomi::VIM::VirtualE1000) + properties_hash["config"].hardware.device.grep(RbVmomi::VIM::VirtualPCNet32) + properties_hash["config"].hardware.device.grep(RbVmomi::VIM::VirtualVmxnet)
 
       vm_nics.map do |vnic|
 
         if properties_hash["guest"].net.empty?
           nic_ip_address = "Unknown"
-        elsif
-        properties_hash["guest"].net.find{|x| x.deviceConfigId == vnic.key}.nil?
+        elsif properties_hash["guest"].net.find { |x| x.deviceConfigId == vnic.key }.nil?
           nic_ip_address = "Unknown"
         else
-          nic_ip_address =  properties_hash["guest"].net.find{|x| x.deviceConfigId == vnic.key}.ipAddress.join(",")
+          nic_ip_address = properties_hash["guest"].net.find { |x| x.deviceConfigId == vnic.key }.ipAddress.join(",")
         end
 
-        MachineNic.new(
-            uuid:        "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaa#{vnic.key}",
-            name:         vnic.deviceInfo.label,
-            mac_address:  vnic.macAddress,
-            ip_address:   nic_ip_address,
-            vnic:         vnic,
-            vm:           properties.obj,
-            stats:        [],
-            key:          vnic.key
-        )
+        MachineNic.new({
+                         :uuid        => "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaa#{vnic.key}",
+                         :name        => vnic.deviceInfo.label,
+                         :mac_address => vnic.macAddress,
+                         :ip_address  => nic_ip_address,
+                         :vnic        => vnic,
+                         :vm          => properties.obj,
+                         :stats       => [],
+                         :key         => vnic.key
+        })
       end
     rescue => e
       logger.error(e.message)
@@ -470,27 +469,40 @@ class Machine < Base::Machine
       status = "#{tools_status}|#{power_status}"
 
       case status
-        when "toolsOk|poweredOn" then "started"
-        when "toolsOld|poweredOn" then "started"
-        when "toolsNotInstalled|poweredOn" then "started"
-        when "toolsNotRunning|poweredOff" then "stopped"
-        when "toolsOld|poweredOff" then "stopped"
-        when "toolsNotInstalled|poweredOff" then "stopped"
+        when "toolsOk|poweredOn" then
+          "started"
+        when "toolsOld|poweredOn" then
+          "started"
+        when "toolsNotInstalled|poweredOn" then
+          "started"
+        when "toolsNotRunning|poweredOff" then
+          "stopped"
+        when "toolsOld|poweredOff" then
+          "stopped"
+        when "toolsNotInstalled|poweredOff" then
+          "stopped"
         when "toolsNotRunning|poweredOn"
           case last_task
-            when "VirtualMachine.powerOn" then "starting"
-            when "VirtualMachine.powerOff" then "stopping"
-            when "VirtualMachine.shutdownGuest" then "stopping"
-            when "VirtualMachine.rebootGuest" then "restarting"
-            when "VirtualMachine.reset" then "restarting"
-            else "started"
+            when "VirtualMachine.powerOn" then
+              "starting"
+            when "VirtualMachine.powerOff" then
+              "stopping"
+            when "VirtualMachine.shutdownGuest" then
+              "stopping"
+            when "VirtualMachine.rebootGuest" then
+              "restarting"
+            when "VirtualMachine.reset" then
+              "restarting"
+            else
+              "started"
           end
-        else "Unknown"
+        else
+          "Unknown"
       end
-   rescue => e
-     logger.error(e.message)
-     raise Exception::Unrecoverable
-   end
+    rescue => e
+      logger.error(e.message)
+      raise Exception::Unrecoverable
+    end
   end
 
 end

@@ -17,7 +17,7 @@ class Capability < Base::Capability
   def self.all(inode)
     logger.info('Capability.all')
     SUPPORTED_CAPABILITIES.map do |capability|
-      Capability.new(name: capability)
+      Capability.new(:name => capability)
     end
   end
 end
