@@ -78,4 +78,4 @@ then
 else 
 	echo "Using: $GEM_HOME" # don't use colors in interactive shells
 fi
-
+alias cap="rvm ruby-1.9.3-p0@global do cap"
