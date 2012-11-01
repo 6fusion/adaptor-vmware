@@ -11,7 +11,7 @@ GEM
     blankslate (2.1.2.4)
     bouncy-castle-java (1.5.0146.1)
     builder (3.0.4)
-    capistrano (2.13.4)
+    capistrano (2.13.5)
       highline
       net-scp (>= 1.0.0)
       net-sftp (>= 2.0.0)
@@ -86,7 +86,7 @@ GEM
       mail (~> 2.3.0)
       padrino-core (= 0.10.7)
     polyglot (0.3.3)
-    rabl (0.7.3)
+    rabl (0.7.6)
       activesupport (>= 2.3.14)
       multi_json (~> 1.0)
     rack (1.4.1)
@@ -146,7 +146,7 @@ GEM
     torquebox-transactions (2.0.3)
       torquebox-core (= 2.0.3)
     torquebox-web (2.0.3-java)
-    treetop (1.4.11)
+    treetop (1.4.12)
       polyglot
       polyglot (>= 0.3.1)
     trollop (2.0)
