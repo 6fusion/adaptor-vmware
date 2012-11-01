@@ -19,7 +19,7 @@ environment_id="jruby-1.6.7.2@adaptor-vmware"
 #
 # Uncomment following line if you want options to be set only for given project.
 #
-PROJECT_JRUBY_OPTS=( --1.9 )
+PROJECT_JRUBY_OPTS=( --1.8 )
 #
 # The variable PROJECT_JRUBY_OPTS requires the following to be run in shell:
 #
