@@ -198,6 +198,8 @@ class Machine < Base::Machine
             cpu_metric = "#{performance_manager.perfcounter_hash["cpu.usagemhz.average"].key}."
             memory_metric = "#{performance_manager.perfcounter_hash["mem.consumed.average"].key}."
             metric_readings = Hash[stats.value.map { |s| ["#{s.id.counterId}.#{s.id.instance}", s.value] }]
+            logger.info "memory_metric:\n#{metric_readings[memory_metric].inspect}\n"
+            logger.info "cpu_metric:\n#{metric_readings[cpu_metric].inspect}\n"
             result << MachineReading.new({
                                            :interval     => x.interval,
                                            :date_time    => x.timestamp,
