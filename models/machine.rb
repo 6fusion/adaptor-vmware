@@ -48,7 +48,7 @@ class Machine < Base::Machine
       find_vapp_to_vapp = RbVmomi::VIM.TraversalSpec(
         :name      => "vapp_to_vapp",
         :type      => "VirtualApp",
-        :path      => "resourcePool",
+        :path      => "resourcePool"
         )
 
       vapp_recursion = RbVmomi::VIM.SelectionSpec(
