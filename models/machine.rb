@@ -38,26 +38,57 @@ class Machine < Base::Machine
       property_collector = inode.session.serviceContent.propertyCollector
       root_folder        = inode.session.serviceContent.rootFolder
 
-      # Create a filter to retrieve properties for all machines
-      recurse_folders    = RbVmomi::VIM.SelectionSpec(
-        :name => "ParentFolder"
-      )
+   
+      find_vapp_to_vm = RbVmomi::VIM.TraversalSpec(
+        :name      => "vapp_to_vm",
+        :type      => "VirtualApp",
+        :path      => "vm"
+        )
 
-      find_machines = RbVmomi::VIM.TraversalSpec(
+      find_vapp_to_vapp = RbVmomi::VIM.TraversalSpec(
+        :name      => "vapp_to_vapp",
+        :type      => "VirtualApp",
+        :path      => "resourcePool",
+        )
+
+      vapp_recursion = RbVmomi::VIM.SelectionSpec(
+        :name = "vapp_to_vapp"
+        )
+
+      vapp_to_vm = RbVmomi::VIM.SelectionSpec(
+        :name = "vapp_to_vm"
+        )
+
+      vapp_to_vm_ss = [vapp_recursion, vapp_to_vm]
+
+
+      visit_folders = RbVmomi::VIM.SelectionSpec(
+        :name = "visit_folders"
+        )
+
+      datacent_to_vm_folder = RbVmomi::VIM.TraversalSpec(
         :name      => "Datacenters",
         :type      => "Datacenter",
         :path      => "vmFolder",
-        :skip      => false,
-        :selectSet => [recurse_folders]
+        :skip      => false
       )
 
+      visit_folders_array = [visit_folders]
+
       find_folders = RbVmomi::VIM.TraversalSpec(
-        :name      => "ParentFolder",
+        :name      => "visit_folders",
         :type      => "Folder",
         :path      => "childEntity",
         :skip      => false,
-        :selectSet => [recurse_folders, find_machines]
+        :selectSet => [visit_folders_array, datacent_to_vm_folder,find_vapp_to_vm,find_vapp_to_vapp]
       )
+
+   # # Create a filter to retrieve properties for all machines
+   #    recurse_folders    = RbVmomi::VIM.SelectionSpec(
+   #      :name => "ParentFolder"
+   #    )
+
+
 
       filter_spec   = RbVmomi::VIM.PropertyFilterSpec(
         :objectSet => [{
