@@ -52,18 +52,18 @@ class Machine < Base::Machine
         )
 
       vapp_recursion = RbVmomi::VIM.SelectionSpec(
-        :name = "vapp_to_vapp"
+        :name => "vapp_to_vapp"
         )
 
       vapp_to_vm = RbVmomi::VIM.SelectionSpec(
-        :name = "vapp_to_vm"
+        :name => "vapp_to_vm"
         )
 
       vapp_to_vm_ss = [vapp_recursion, vapp_to_vm]
 
 
       visit_folders = RbVmomi::VIM.SelectionSpec(
-        :name = "visit_folders"
+        :name => "visit_folders"
         )
 
       datacent_to_vm_folder = RbVmomi::VIM.TraversalSpec(
