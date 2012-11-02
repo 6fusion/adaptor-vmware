@@ -201,7 +201,7 @@ class Machine < Base::Machine
             result << MachineReading.new({
                                            :interval     => x.interval,
                                            :date_time    => x.timestamp,
-                                           :cpu_usage    => metric_readings[cpu_metric].nil? ? 0 : metric_readings[cpu_metric][i] == -1 ? 0 : metric_readings[cpu_metric][i] / (@cpu_count * @cpu_speed),
+                                           :cpu_usage    => metric_readings[cpu_metric].nil? ? 0 : metric_readings[cpu_metric][i] == -1 ? 0 : metric_readings[cpu_metric][i].to_f / (@cpu_count * @cpu_speed.to_f).to_f,
                                            :memory_bytes => metric_readings[memory_metric].nil? ? 0 : metric_readings[memory_metric][i] == -1 ? 0 : metric_readings[memory_metric][i] * 1024 }
             )
             timestamps[x.timestamp] = true
