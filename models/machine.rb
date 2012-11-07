@@ -113,7 +113,7 @@ class Machine < Base::Machine
       performance_manager = inode.session.serviceContent.perfManager
 
       # Collects Performance information and set the machine.stats object
-      metrics             = { "cpu.usagemhz.average" => "", "mem.consumed.average" => "", "virtualDisk.read.average" => "*", "virtualDisk.write.average" => "*", "net.received.average" => "*", "net.transmitted.average" => "*" }
+      metrics             = { "cpu.usage.average" => "","cpu.usagemhz.average" => "", "mem.consumed.average" => "", "virtualDisk.read.average" => "*", "virtualDisk.write.average" => "*", "net.received.average" => "*", "net.transmitted.average" => "*" }
       stats               = performance_manager.retrieve_stats(vms, metrics, _interval, _since, _until)
       stats.each do |stat|
         machines.each do |machine|
@@ -176,7 +176,7 @@ class Machine < Base::Machine
       performance_manager = inode.session.serviceContent.perfManager
 
       # Collects Performance information and set the machine.stats property
-      metrics             = { "cpu.usagemhz.average" => "", "mem.consumed.average" => "", "virtualDisk.read.average" => "*", "virtualDisk.write.average" => "*", "net.received.average" => "*", "net.transmitted.average" => "*" }
+      metrics             = { "cpu.usage.average" => "","cpu.usagemhz.average" => "", "mem.consumed.average" => "", "virtualDisk.read.average" => "*", "virtualDisk.write.average" => "*", "net.received.average" => "*", "net.transmitted.average" => "*" }
       stats               = performance_manager.retrieve_stats(vms, metrics, _interval, _since, _until)
 
       machine.stats = stats.first
@@ -216,13 +216,14 @@ class Machine < Base::Machine
       if stats.is_a?(RbVmomi::VIM::PerfEntityMetric)
         stats.sampleInfo.each_with_index.map do |x, i|
           if stats.value.empty?.eql?(false)
-            cpu_metric = "#{performance_manager.perfcounter_hash["cpu.usagemhz.average"].key}."
+            cpu_metric_usagemhz = "#{performance_manager.perfcounter_hash["cpu.usagemhz.average"].key}."
+            cpu_metric_usage = "#{performance_manager.perfcounter_hash["cpu.usage.average"].key}."
             memory_metric = "#{performance_manager.perfcounter_hash["mem.consumed.average"].key}."
             metric_readings = Hash[stats.value.map { |s| ["#{s.id.counterId}.#{s.id.instance}", s.value] }]
             result << MachineReading.new({
                                            :interval     => x.interval,
                                            :date_time    => x.timestamp,
-                                           :cpu_usage    => metric_readings[cpu_metric].nil? ? 0 : metric_readings[cpu_metric][i] == -1 ? 0 : metric_readings[cpu_metric][i].to_f / (@cpu_count * @cpu_speed.to_f).to_f,
+                                           :cpu_usage    => metric_readings[cpu_metric_usage].nil? ? 0 : metric_readings[cpu_metric_usage][i] == -1 ? 0 : metric_readings[cpu_metric_usage][i].to_f / (@cpu_count * @cpu_speed.to_f).to_f,
                                            :memory_bytes => metric_readings[memory_metric].nil? ? 0 : metric_readings[memory_metric][i] == -1 ? 0 : metric_readings[memory_metric][i] * 1024 }
             )
             timestamps[x.timestamp] = true
