@@ -231,7 +231,7 @@ class Machine < Base::Machine
             logger.info("cpu.usage.average="+metric_readings[cpu_metric_usage][i].to_s)
             logger.info("CPU Count="+cpu_count.to_s)
             logger.info("CPU Speed="+cpu_speed.to_s)
-            logger.info("CPU Metric Usage="+((metric_readings[cpu_metric_usage][i].to_f / 1000).to_s)
+            logger.info("CPU Metric Usage="+((metric_readings[cpu_metric_usage][i].to_f / 1000).to_s))
             logger.info("cpu.usagemhz.average="+metric_readings[cpu_metric_usagemhz][i].to_s)
           end
         end
