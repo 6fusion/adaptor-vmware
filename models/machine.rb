@@ -223,7 +223,7 @@ class Machine < Base::Machine
             result << MachineReading.new({
                                            :interval     => x.interval,
                                            :date_time    => x.timestamp,
-                                           :cpu_usage    => metric_readings[cpu_metric_usage].nil? ? 0 : metric_readings[cpu_metric_usage][i] == -1 ? 0 : (metric_readings[cpu_metric_usage][i].to_f / 100).to_f / (@cpu_count * @cpu_speed.to_f).to_f,
+                                           :cpu_usage    => metric_readings[cpu_metric_usage].nil? ? 0 : metric_readings[cpu_metric_usage][i] == -1 ? 0 : (metric_readings[cpu_metric_usage][i].to_f / 1000).to_f / (@cpu_count * @cpu_speed.to_f).to_f,
                                            :memory_bytes => metric_readings[memory_metric].nil? ? 0 : metric_readings[memory_metric][i] == -1 ? 0 : metric_readings[memory_metric][i] * 1024 }
             )
             timestamps[x.timestamp] = true
@@ -231,7 +231,7 @@ class Machine < Base::Machine
             logger.info("cpu.usage.average="+metric_readings[cpu_metric_usage][i].to_s)
             logger.info("CPU Count="+cpu_count.to_s)
             logger.info("CPU Speed="+cpu_speed.to_s)
-            logger.info("CPU Metric Usage="+((metric_readings[cpu_metric_usage][i].to_f / 100).to_f / (@cpu_count * @cpu_speed.to_f).to_f).to_s)
+            logger.info("CPU Metric Usage="+((metric_readings[cpu_metric_usage][i].to_f / 1000).to_f / (@cpu_count * @cpu_speed.to_f).to_f).to_s)
             logger.info("cpu.usagemhz.average="+metric_readings[cpu_metric_usagemhz][i].to_s)
           end
         end
