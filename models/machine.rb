@@ -227,6 +227,7 @@ class Machine < Base::Machine
                                            :memory_bytes => metric_readings[memory_metric].nil? ? 0 : metric_readings[memory_metric][i] == -1 ? 0 : metric_readings[memory_metric][i] * 1024 }
             )
             timestamps[x.timestamp] = true
+            logger.info("Machine="+@name)
             logger.info("cpu.usage.average="+metric_readings[cpu_metric_usage][i].to_s)
             logger.info("CPU Count="+cpu_count.to_s)
             logger.info("CPU Speed="+cpu_speed.to_s)
