@@ -41,7 +41,7 @@ class MachineDisk < Base::MachineDisk
           read_metric = "#{performance_manager.perfcounter_hash["virtualDisk.read.average"].key}.scsi#{vdisk.controllerKey-1000}:#{vdisk.unitNumber}"
           write_metric = "#{performance_manager.perfcounter_hash["virtualDisk.write.average"].key}.scsi#{vdisk.controllerKey-1000}:#{vdisk.unitNumber}"
           metric_readings = Hash[stats.value.map { |s| ["#{s.id.counterId}.#{s.id.instance}", s.value] }]
-          logger.debug("Disk Usage "+vdisk_files.map(&:size).inject(0, :+))
+          logger.debug("Disk Usage "+vdisk_files.map(&:size).inject(0, :+).to_s)
           result << MachineDiskReading.new({ :usage     => vdisk_files.map(&:size).inject(0, :+),
                                              :read      => metric_readings[read_metric].nil? ? 0 : metric_readings[read_metric][i] == -1 ? 0 : metric_readings[read_metric][i],
                                              :write     => metric_readings[write_metric].nil? ? 0 : metric_readings[write_metric][i] == -1 ? 0 : metric_readings[write_metric][i],
