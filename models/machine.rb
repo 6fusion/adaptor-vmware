@@ -434,7 +434,7 @@ class Machine < Base::Machine
       properties_hash = properties.to_hash
       vm_disks        = properties_hash["config"].hardware.device.grep(RbVmomi::VIM::VirtualDisk)
       vm_disks.map do |vdisk|
-        logger.debug("Disk "+vdisk.deviceInfo.label.to_s+" size "+(vdisk.capacityInKB * KB / GB).to_s)
+        logger.debug(properties_hash["config"].name+" Disk "+vdisk.deviceInfo.label.to_s+" size "+(vdisk.capacityInKB * KB / GB).to_s)
         MachineDisk.new({
                           :uuid         => vdisk.backing.uuid,
                           :name         => vdisk.deviceInfo.label,
