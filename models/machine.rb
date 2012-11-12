@@ -411,7 +411,7 @@ class Machine < Base::Machine
 # Helper Method to calculate disk used space
   def self.build_disk_files(disk_key, file_layout)
     logger.info('machine.build_disk_files')
-
+    logger.debug(disk_key.to_s+"="+file_layout.to_s)
     begin
       disk_files = []
       file_layout.disk.find { |n| n.key==disk_key }.chain.map do |f|
