@@ -369,6 +369,7 @@ class Machine < Base::Machine
 
     begin
       properties_hash = properties.to_hash
+      logger.debug('Machine Name='+properties_hash["config"].name.to_s)
       Machine.new({
                     :uuid           => properties_hash["config"].uuid,
                     :name           => properties_hash["config"].name,
@@ -411,7 +412,6 @@ class Machine < Base::Machine
 # Helper Method to calculate disk used space
   def self.build_disk_files(disk_key, file_layout)
     logger.info('machine.build_disk_files')
-    logger.debug(disk_key.to_s+"="+file_layout.to_s)
     begin
       disk_files = []
       file_layout.disk.find { |n| n.key==disk_key }.chain.map do |f|
