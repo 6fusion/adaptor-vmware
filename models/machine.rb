@@ -38,26 +38,47 @@ class Machine < Base::Machine
       property_collector = inode.session.serviceContent.propertyCollector
       root_folder        = inode.session.serviceContent.rootFolder
 
-      # Create a filter to retrieve properties for all machines
-      recurse_folders    = RbVmomi::VIM.SelectionSpec(
-        :name => "ParentFolder"
+   
+      find_vapp_to_vm = RbVmomi::VIM.TraversalSpec(
+        :name      => "vapp_to_vm",
+        :type      => "VirtualApp",
+        :path      => "vm"
+        )
+
+      find_vapp_to_vapp = RbVmomi::VIM.TraversalSpec(
+        :name      => "vapp_to_vapp",
+        :type      => "VirtualApp",
+        :path      => "resourcePool",
+        :selectSet => [
+          RbVmomi::VIM.SelectionSpec(:name => "vapp_to_vapp"),
+          RbVmomi::VIM.SelectionSpec(:name => "vapp_to_vm")
+        ]
       )
 
-      find_machines = RbVmomi::VIM.TraversalSpec(
+      selection_spec = RbVmomi::VIM.SelectionSpec(:name => "visit_folders")
+
+      datacenter_to_vm_folder = RbVmomi::VIM.TraversalSpec(
         :name      => "Datacenters",
         :type      => "Datacenter",
         :path      => "vmFolder",
         :skip      => false,
-        :selectSet => [recurse_folders]
+        :selectSet => [selection_spec]
       )
 
       find_folders = RbVmomi::VIM.TraversalSpec(
-        :name      => "ParentFolder",
+        :name      => "visit_folders",
         :type      => "Folder",
         :path      => "childEntity",
         :skip      => false,
-        :selectSet => [recurse_folders, find_machines]
+        :selectSet => [ selection_spec,datacenter_to_vm_folder,find_vapp_to_vm,find_vapp_to_vapp]
       )
+
+   # # Create a filter to retrieve properties for all machines
+   #    recurse_folders    = RbVmomi::VIM.SelectionSpec(
+   #      :name => "ParentFolder"
+   #    )
+
+
 
       filter_spec   = RbVmomi::VIM.PropertyFilterSpec(
         :objectSet => [{
@@ -92,7 +113,7 @@ class Machine < Base::Machine
       performance_manager = inode.session.serviceContent.perfManager
 
       # Collects Performance information and set the machine.stats object
-      metrics             = { "cpu.usagemhz.average" => "", "mem.consumed.average" => "", "virtualDisk.read.average" => "*", "virtualDisk.write.average" => "*", "net.received.average" => "*", "net.transmitted.average" => "*" }
+      metrics             = { "cpu.usage.average" => "","cpu.usagemhz.average" => "", "mem.consumed.average" => "", "virtualDisk.read.average" => "*", "virtualDisk.write.average" => "*", "net.received.average" => "*", "net.transmitted.average" => "*" }
       stats               = performance_manager.retrieve_stats(vms, metrics, _interval, _since, _until)
       stats.each do |stat|
         machines.each do |machine|
@@ -155,7 +176,7 @@ class Machine < Base::Machine
       performance_manager = inode.session.serviceContent.perfManager
 
       # Collects Performance information and set the machine.stats property
-      metrics             = { "cpu.usagemhz.average" => "", "mem.consumed.average" => "", "virtualDisk.read.average" => "*", "virtualDisk.write.average" => "*", "net.received.average" => "*", "net.transmitted.average" => "*" }
+      metrics             = { "cpu.usage.average" => "","cpu.usagemhz.average" => "", "mem.consumed.average" => "", "virtualDisk.read.average" => "*", "virtualDisk.write.average" => "*", "net.received.average" => "*", "net.transmitted.average" => "*" }
       stats               = performance_manager.retrieve_stats(vms, metrics, _interval, _since, _until)
 
       machine.stats = stats.first
@@ -195,7 +216,8 @@ class Machine < Base::Machine
       if stats.is_a?(RbVmomi::VIM::PerfEntityMetric)
         stats.sampleInfo.each_with_index.map do |x, i|
           if stats.value.empty?.eql?(false)
-            cpu_metric = "#{performance_manager.perfcounter_hash["cpu.usagemhz.average"].key}."
+            cpu_metric_usagemhz = "#{performance_manager.perfcounter_hash["cpu.usagemhz.average"].key}."
+            cpu_metric_usage = "#{performance_manager.perfcounter_hash["cpu.usage.average"].key}."
             memory_metric = "#{performance_manager.perfcounter_hash["mem.consumed.average"].key}."
             metric_readings = Hash[stats.value.map { |s| ["#{s.id.counterId}.#{s.id.instance}", s.value] }]
             logger.info "memory_metric:\n#{metric_readings[memory_metric].inspect}\n"
@@ -203,10 +225,16 @@ class Machine < Base::Machine
             result << MachineReading.new({
                                            :interval     => x.interval,
                                            :date_time    => x.timestamp,
-                                           :cpu_usage    => metric_readings[cpu_metric].nil? ? 0 : metric_readings[cpu_metric][i] == -1 ? 0 : metric_readings[cpu_metric][i],
-                                           :memory_bytes => metric_readings[memory_metric].nil? ? 0 : metric_readings[memory_metric][i] == -1 ? 0 : metric_readings[memory_metric][i] }
+                                           :cpu_usage    => metric_readings[cpu_metric_usage].nil? ? 0 : metric_readings[cpu_metric_usage][i] == -1 ? 0 : (metric_readings[cpu_metric_usage][i].to_f / (100**2)).to_f,
+                                           :memory_bytes => metric_readings[memory_metric].nil? ? 0 : metric_readings[memory_metric][i] == -1 ? 0 : metric_readings[memory_metric][i] * 1024 }
             )
             timestamps[x.timestamp] = true
+            logger.debug("Machine="+@name)
+            logger.debug("cpu.usage.average="+metric_readings[cpu_metric_usage][i].to_s)
+            logger.debug("CPU Count="+cpu_count.to_s)
+            logger.debug("CPU Speed="+cpu_speed.to_s)
+            logger.debug("CPU Metric Usage="+(metric_readings[cpu_metric_usage][i].to_f / (100**2)).to_s)
+            logger.debug("cpu.usagemhz.average="+metric_readings[cpu_metric_usagemhz][i].to_s)
           end
         end
       end
