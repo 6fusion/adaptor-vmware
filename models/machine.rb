@@ -414,9 +414,11 @@ class Machine < Base::Machine
     logger.info('machine.build_disk_files')
     begin
       disk_files = []
-      file_layout.disk.find { |n| n.key==disk_key }.chain.map do |f|
-        f.fileKey.map do |k|
-          disk_files << file_layout.file.find { |m| m.key==k }
+      if !file_layout.disk.nil?
+        file_layout.disk.find { |n| n.key==disk_key }.chain.map do |f|
+          f.fileKey.map do |k|
+            disk_files << file_layout.file.find { |m| m.key==k }
+          end
         end
       end
       disk_files
