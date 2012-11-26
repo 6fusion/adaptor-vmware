@@ -1,17 +1,24 @@
 class Capability < Base::Capability
 
+  # SUPPORTED_CAPABILITIES = %w(
+  #   inode 
+  #   machines 
+  #   machines_readings 
+  #   machine 
+  #   machine_readings 
+  #   start 
+  #   stop 
+  #   restart 
+  #   force_stop 
+  #   force_restart 
+  #   delete
+  #   )
   SUPPORTED_CAPABILITIES = %w(
     inode 
     machines 
     machines_readings 
     machine 
     machine_readings 
-    start 
-    stop 
-    restart 
-    force_stop 
-    force_restart 
-    delete
     )
 
   def self.all(inode)
