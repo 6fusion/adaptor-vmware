@@ -7,7 +7,8 @@ gem 'haml'
 gem 'activemodel', :require => 'active_model'
 gem 'activesupport', :require => 'active_support/time'
 gem 'rbvmomi'
-gem 'rake'
+gem 'rake', :require => false
+gem 'newrelic_rpm'
 
 platform :jruby do
   gem 'jruby-openssl'
