@@ -23,7 +23,7 @@
 #  | take_snapshot      | no                      |                                                                                         |
 #  | revert_to_snapshot | no                      |                                                                                         |
 #  |--------------------+-------------------------+-----------------------------------------------------------------------------------------|
-class Base::Capability < Mainclass Capability < Base::Capability
+class Base::Capability < Base::Capability
 
   SUPPORTED_CAPABILITIES = %w(
     machines 
