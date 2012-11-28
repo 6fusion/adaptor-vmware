@@ -7,7 +7,9 @@ gem 'haml'
 gem 'activemodel', :require => 'active_model'
 gem 'activesupport', :require => 'active_support/time'
 gem 'rbvmomi'
-gem 'rake'
+gem 'rake', :require => false
+gem 'padrino-rpm', :git => 'https://github.com/Asquera/padrino-rpm.git'
+gem 'newrelic_rpm'
 
 platform :jruby do
   gem 'jruby-openssl'
