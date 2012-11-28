@@ -1,0 +1,1 @@
+server 'adaptor2.6fusion.gin', :app

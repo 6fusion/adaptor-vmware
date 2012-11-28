@@ -26,16 +26,16 @@ class MachineNic < Base::MachineNic
     #Create machine nic readings
     result = []
     performance_manager = inode.session.serviceContent.perfManager
-    if stats.is_a? (RbVmomi::VIM::PerfEntityMetric)
+    if stats.is_a?(RbVmomi::VIM::PerfEntityMetric)
       stats.sampleInfo.each_with_index.map do |x,i|
         if stats.value.empty?.eql?(false)
           receive_metric =  "#{performance_manager.perfcounter_hash["net.received.average"].key}.#{key}"
           transmit_metric = "#{performance_manager.perfcounter_hash["net.transmitted.average"].key}.#{key}"
           metric_readings = Hash[stats.value.map{|s| ["#{s.id.counterId}.#{s.id.instance}",s.value]}]
           result << MachineNicReading.new(
-              date_time:  x.timestamp,
-              receive:    metric_readings[receive_metric].nil? ? 0 : metric_readings[receive_metric][i] == -1 ? 0 : metric_readings[receive_metric][i],
-              transmit:   metric_readings[transmit_metric].nil? ? 0 : metric_readings[transmit_metric][i] == -1 ? 0 : metric_readings[transmit_metric][i]
+              :date_time => x.timestamp,
+              :receive => metric_readings[receive_metric].nil? ? 0 : metric_readings[receive_metric][i] == -1 ? 0 : metric_readings[receive_metric][i],
+              :transmit => metric_readings[transmit_metric].nil? ? 0 : metric_readings[transmit_metric][i] == -1 ? 0 : metric_readings[transmit_metric][i]
           )
           timestamps[x.timestamp] = true
         end
@@ -44,9 +44,9 @@ class MachineNic < Base::MachineNic
     timestamps.keys.each do | timestamp |
       if timestamps[timestamp].eql?(false)
         result <<  MachineNicReading.new(
-            receive:  0,
-            transmit: 0,
-            date_time: timestamp.iso8601.to_s
+            :receive => 0,
+            :transmit => 0,
+            :date_time => timestamp.iso8601.to_s
         )
       end
     end

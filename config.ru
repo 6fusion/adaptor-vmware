@@ -6,4 +6,9 @@
 
 require File.expand_path("../config/boot.rb", __FILE__)
 
+if ENV['RACK_ENV'] != 'production'
+  require 'new_relic/rack/developer_mode'
+  use NewRelic::Rack::DeveloperMode
+end
+
 run Padrino.application
