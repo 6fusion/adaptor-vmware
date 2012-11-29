@@ -1,5 +1,9 @@
 # Do not modify this file
 collection @machines if @machines.present?
+
+node(:total) {|m| @machines.total_count }
+node(:total_pages) {|m| @machines.num_pages }
+
 object @machine if @machine.present?
 extends 'machines/base'
 

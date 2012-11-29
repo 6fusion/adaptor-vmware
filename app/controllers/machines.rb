@@ -27,7 +27,7 @@ AdaptorVMware.controllers :machines, :map => "/inodes/:inode_uuid" do
       logger.info('GET - machines#index')
 
       @inode.open_session
-      @machines = Machine.all(@inode)
+      @machines = Machine.all (@inode)
 
       render 'machines/index'
     ensure
@@ -43,8 +43,10 @@ AdaptorVMware.controllers :machines, :map => "/inodes/:inode_uuid" do
       _since = params[:since].blank? ? 5.minutes.ago.utc : Time.iso8601(params[:since])
       _until = params[:until].blank? ? Time.now.utc : Time.iso8601(params[:until])
 
+      params[:per_page] ||= 5
+      
       @inode.open_session
-      @machines = Machine.all_with_readings(@inode, _interval, _since, _until)
+      @machines = Kaminari::paginate_array(Machine.all_with_readings(@inode, _interval, _since, _until)).page(params[:page]).per(params[:per_page])
       render 'machines/readings'
     ensure
       @inode.close_session
