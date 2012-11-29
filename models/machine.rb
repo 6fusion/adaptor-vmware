@@ -9,13 +9,16 @@ class Machine < Base::Machine
 
   def stats=(stats)
     @stats = stats
-
-    @disks.each do |disk|
-      disk.stats = stats
+    if @disks.nil?.eql?(false)
+      @disks.each do |disk|
+        disk.stats = stats
+      end
     end
 
-    @nics.each do |nic|
-      nic.stats = stats
+    if @nics.nil?.eql?(false)
+      @nics.each do |nic|
+        nic.stats = stats
+      end
     end
   end
 
@@ -72,13 +75,6 @@ class Machine < Base::Machine
         :skip      => false,
         :selectSet => [ selection_spec,datacenter_to_vm_folder,find_vapp_to_vm,find_vapp_to_vapp]
       )
-
-   # # Create a filter to retrieve properties for all machines
-   #    recurse_folders    = RbVmomi::VIM.SelectionSpec(
-   #      :name => "ParentFolder"
-   #    )
-
-
 
       filter_spec   = RbVmomi::VIM.PropertyFilterSpec(
         :objectSet => [{
