@@ -10,6 +10,7 @@ gem 'rbvmomi'
 gem 'rake', :require => false
 gem 'padrino-rpm', :git => 'https://github.com/Asquera/padrino-rpm.git'
 gem 'newrelic_rpm'
+gem 'kaminari', :require => 'kaminari/sinatra'
 
 platform :jruby do
   gem 'jruby-openssl'
