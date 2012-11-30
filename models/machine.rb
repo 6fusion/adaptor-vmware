@@ -6,7 +6,8 @@ class Machine < Base::Machine
   MB = 1024**2
   GB = 1024**3
   TB = 1024**4
-
+  @@cache = {}
+  
   def stats=(stats)
     @stats = stats
     if @disks.nil?.eql?(false)
@@ -35,6 +36,10 @@ class Machine < Base::Machine
 
   def self.all(inode)
     logger.info('machine.all')
+    machines = self.get_machines_cache(inode.uuid)
+    if machines.nil?.eql?(false)
+      return machines 
+    end
 
     begin
       # Set the property collector variable and root folder variables
@@ -88,12 +93,21 @@ class Machine < Base::Machine
 
       # Retrieve properties for all machines and create machine objects
       vm_properties = property_collector.RetrieveProperties(:specSet => [filter_spec])
-      vm_properties.map { |m| new_machine_from_vm (m) }
-
+      machines = vm_properties.map { |m| new_machine_from_vm (m) }
+      self.set_machines_cache(inode.uuid,machines)
+      return machines
     rescue => e
       logger.error(e.message)
       raise Exceptions::Unrecoverable
     end
+  end
+
+  def self.get_machines_cache(uuid)
+    @@cache[uuid]
+  end
+
+  def self.set_machines_cache(uuid,machines)
+    @@cache[uuid] = machines
   end
 
   def self.all_with_readings(inode, _interval = 300, _since = 5.minutes.ago.utc, _until = Time.now.utc)
