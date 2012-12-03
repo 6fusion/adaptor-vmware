@@ -116,6 +116,7 @@ class Machine < Base::Machine
 
     begin
       # Retrieve all machines and virtual machine references
+      inode.open_session
       machines            = self.all(inode)
       vms                 = machines.map { |m| m.vm }
 
@@ -137,6 +138,8 @@ class Machine < Base::Machine
     rescue => e
       logger.error(e.message)
       raise Exceptions::Unrecoverable
+    ensure
+      inode.close_session
     end
   end
 

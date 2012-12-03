@@ -61,6 +61,8 @@ GEM
     kaminari (0.14.1)
       actionpack (>= 3.0.0)
       activesupport (>= 3.0.0)
+    macaddr (1.6.1)
+      systemu (~> 2.5.0)
     mail (2.3.3)
       i18n (>= 0.4.0)
       mime-types (~> 1.16)
@@ -141,6 +143,7 @@ GEM
       multi_json (~> 1.0)
       rack (~> 1.0)
       tilt (~> 1.1, != 1.3.0)
+    systemu (2.5.2)
     thor (0.15.4)
     tilt (1.3.3)
     torquebox (2.0.3)
@@ -182,6 +185,8 @@ GEM
     trollop (2.0)
     url_mount (0.2.1)
       rack
+    uuid (2.3.6)
+      macaddr (~> 1.0)
     vagrant (0.5.4)
       archive-tar-minitar (= 0.5.2)
       erubis (>= 2.6.6)
@@ -219,6 +224,8 @@ DEPENDENCIES
   rbvmomi
   rspec
   torquebox (= 2.0.3)
+  torquebox-cache (= 2.0.3)
   torquebox-rake-support (= 2.0.3)
+  uuid
   vagrant
   yajl-ruby
