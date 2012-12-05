@@ -6,7 +6,8 @@ class Machine < Base::Machine
   MB = 1024**2
   GB = 1024**3
   TB = 1024**4
-  @@cache = {}
+  # @@cache = {}
+  @@hz_cache = {}
   
   def stats=(stats)
     @stats = stats
@@ -36,10 +37,10 @@ class Machine < Base::Machine
 
   def self.all(inode)
     logger.info('machine.all')
-    machines = self.get_machines_cache(inode.uuid)
-    if machines.nil?.eql?(false)
-      return machines 
-    end
+    # machines = self.get_machines_cache(inode.uuid)
+    # if machines.nil?.eql?(false)
+    #   return machines 
+    # end
 
     begin
       # Set the property collector variable and root folder variables
@@ -93,21 +94,15 @@ class Machine < Base::Machine
 
       # Retrieve properties for all machines and create machine objects
       vm_properties = property_collector.RetrieveProperties(:specSet => [filter_spec])
-      machines = vm_properties.map { |m| new_machine_from_vm (m) }
-      self.set_machines_cache(inode.uuid,machines)
+
+      machines = vm_properties.map { |m| new_machine_from_vm(inode,m) }
+      # self.set_machines_cache(inode.uuid,machines)
       return machines
+
     rescue => e
       logger.error(e.message)
       raise Exceptions::Unrecoverable
     end
-  end
-
-  def self.get_machines_cache(uuid)
-    @@cache[uuid]
-  end
-
-  def self.set_machines_cache(uuid,machines)
-    @@cache[uuid] = machines
   end
 
   def self.all_with_readings(inode, _interval = 300, _since = 5.minutes.ago.utc, _until = Time.now.utc)
@@ -166,7 +161,7 @@ class Machine < Base::Machine
 
         # Retrieve properties create the machine object
         vm_properties = property_collector.RetrieveProperties(:specSet => [filter_spec])
-        machine       = new_machine_from_vm(vm_properties.first)
+        machine       = new_machine_from_vm(inode, vm_properties.first)
       end
 
       # Return the updated machine object
@@ -378,18 +373,50 @@ class Machine < Base::Machine
 
   private
 
+  # def self.get_machines_cache(uuid)
+  #   @@cache[uuid]
+  # end
+
+  # def self.set_machines_cache(uuid,machines)
+  #   @@cache[uuid] = machines
+  # end
+
+  def self.get_host_hz(inode,moref)
+    host_cache = @@hz_cache[inode.uuid]
+    if host_cache.nil?
+      @@hz_cache[inode.uuid] = {}
+    end
+    @@hz_cache[inode.uuid][moref]
+  end
+
+  def self.set_host_hz(inode,moref,hz)    
+    host_cache = @@hz_cache[inode.uuid]
+    if host_cache.nil?
+      @@hz_cache[inode.uuid] = {}
+    end
+    @@hz_cache[inode.uuid][moref] = hz
+    hz
+  end
+
   # Helper method for creating machine objects..
-  def self.new_machine_from_vm(properties)
+  def self.new_machine_from_vm(inode, properties)
     logger.info('machine.new_machine_from_vm')
 
     begin
       properties_hash = properties.to_hash
       logger.debug('Machine Name='+properties_hash["config"].name.to_s)
+      hz = self.get_host_hz(inode, properties_hash["runtime"].host._ref)
+      if hz.nil?    
+        logger.info('adding host hz cache for '+properties_hash["runtime"].host._ref)
+        hz = self.set_host_hz(inode, properties_hash["runtime"].host._ref,properties_hash["runtime"].host.hardware.cpuInfo.hz)
+      else
+        logger.info('found host hz cache for '+properties_hash["runtime"].host._ref)
+      end
       Machine.new({
                     :uuid           => properties_hash["config"].uuid,
                     :name           => properties_hash["config"].name,
                     :cpu_count      => properties_hash["config"].hardware.numCPU,
-                    :cpu_speed      => properties_hash["runtime"].host.hardware.cpuInfo.hz / 1000000,
+                    :cpu_speed      => hz / 1000000,
                     :maximum_memory => properties_hash["config"].hardware.memoryMB,
                     :system         => build_system(properties),
                     :disks          => build_disks(properties),
