@@ -42,25 +42,28 @@ AdaptorVMware.controllers :machines, :map => "/inodes/:inode_uuid" do
 
     params[:per_page] ||= 5
 
-    if params[:session_id].nil?
-      @session_id = ResultCache.session_id
-      ResultCache.new.put(@session_id, Machine.new.background(:ttl => 10*60*1000).all_with_readings(@inode, _interval, _since, _until))
-      status 102
-      body @session_id.to_s
-    else
-      @future = ResultCache.new.get(params[:session_id])
-      case
-        when @future.complete?
-          @machines = @future.result
-          render 'machines/readings'
-        when @future.error?
-          raise Exceptions::Unrecoverable.new(@future.error)
-        else
-          status 102
-          headers "Retry-After" => 5
-          body params[:session_id].to_s
-      end
-    end
+    @machines = Machine.all_with_readings(@indoe,_interval,_since,_until)
+    render 'machines/readings'
+
+    #if params[:session_id].nil?
+    #  @session_id = ResultCache.session_id
+    #  ResultCache.new.put(@session_id, Machine.new.background(:ttl => 10*60*1000).all_with_readings(@inode, _interval, _since, _until))
+    #  status 102
+    #  body @session_id.to_s
+    #else
+    #  @future = ResultCache.new.get(params[:session_id])
+    #  case
+    #    when @future.complete?
+    #      @machines = @future.result
+    #      render 'machines/readings'
+    #    when @future.error?
+    #      raise Exceptions::Unrecoverable.new(@future.error)
+    #    else
+    #      status 102
+    #      headers "Retry-After" => 5
+    #      body params[:session_id].to_s
+    #  end
+    #end
     #@machines = Kaminari::paginate_array(Machine.all_with_readings(@inode, _interval, _since, _until)).page(params[:page]).per(params[:per_page])
     #render 'machines/readings'
   end
