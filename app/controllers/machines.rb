@@ -25,10 +25,8 @@ AdaptorVMware.controllers :machines, :map => "/inodes/:inode_uuid" do
   get :index do
     begin
       logger.info('GET - machines#index')
-
       @inode.open_session
-      @machines = Machine.all (@inode)
-
+      @machines = Machine.all(@inode)
       render 'machines/index'
     ensure
       @inode.close_session
@@ -36,21 +34,35 @@ AdaptorVMware.controllers :machines, :map => "/inodes/:inode_uuid" do
   end
 
   get :index, :map => 'machines/readings' do
-    begin
-      logger.info('GET - machines#readings')
+    logger.info('GET - machines#readings')
 
-      _interval = params[:interval].blank? ? 300 : params[:interval]
-      _since = params[:since].blank? ? 5.minutes.ago.utc : Time.iso8601(params[:since])
-      _until = params[:until].blank? ? Time.now.utc : Time.iso8601(params[:until])
+    _interval = params[:interval].blank? ? 300 : params[:interval]
+    _since    = params[:since].blank? ? 5.minutes.ago.utc : Time.iso8601(params[:since])
+    _until    = params[:until].blank? ? Time.now.utc : Time.iso8601(params[:until])
 
-      params[:per_page] ||= 5
-      
-      @inode.open_session
-      @machines = Kaminari::paginate_array(Machine.all_with_readings(@inode, _interval, _since, _until)).page(params[:page]).per(params[:per_page])
-      render 'machines/readings'
-    ensure
-      @inode.close_session
+    params[:per_page] ||= 5
+
+    if params[:session_id].nil?
+      @session_id = ResultCache.session_id
+      ResultCache.new.put(@session_id, Machine.background(:ttl => 10*60*1000).all_with_readings(@inode, _interval, _since, _until))
+      status 102
+      body @session_id.to_s
+    else
+      @future = ResultCache.new.get(params[:session_id])
+      case
+        when @future.complete?
+          @machines = @future.result
+          render 'machines/readings'
+        when @future.error?
+          raise Exceptions::Unrecoverable.new(@future.error)
+        else
+          status 102
+          headers "Retry-After" => 5
+          body params[:session_id].to_s
+      end
     end
+    #@machines = Kaminari::paginate_array(Machine.all_with_readings(@inode, _interval, _since, _until)).page(params[:page]).per(params[:per_page])
+    #render 'machines/readings'
   end
 
   get :show, :map => "machines/:uuid" do
@@ -70,8 +82,8 @@ AdaptorVMware.controllers :machines, :map => "/inodes/:inode_uuid" do
       logger.info('GET - machines.uuid#readings')
 
       _interval = params[:interval].blank? ? 300 : params[:interval]
-      _since = params[:since].blank? ? 5.minutes.ago.utc : Time.iso8601(params[:since])
-      _until = params[:until].blank? ? Time.now.utc : Time.iso8601(params[:until])
+      _since    = params[:since].blank? ? 5.minutes.ago.utc : Time.iso8601(params[:since])
+      _until    = params[:until].blank? ? Time.now.utc : Time.iso8601(params[:until])
 
       @inode.open_session
       @machine = Machine.find_by_uuid_with_readings(@inode, params[:uuid], _interval, _since, _until)
@@ -136,7 +148,7 @@ AdaptorVMware.controllers :machines, :map => "/inodes/:inode_uuid" do
       render 'machines/show'
     ensure
       @inode.close_session
-  end
+    end
   end
 
   put :show, :map => 'machines/:uuid/force_restart' do
@@ -150,7 +162,7 @@ AdaptorVMware.controllers :machines, :map => "/inodes/:inode_uuid" do
       render 'machines/show'
     ensure
       @inode.close_session
-  end
+    end
   end
 
   # Deletes
