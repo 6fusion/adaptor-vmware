@@ -110,7 +110,7 @@ class Machine < Base::Machine
   end
 
   def all_with_readings(inode, _interval = 300, _since = 5.minutes.ago.utc, _until = Time.now.utc)
-    Machine.all_with_readings(inode, _interval = 300, _since = 5.minutes.ago.utc, _until = Time.now.utc)
+    Machine.all_with_readings(inode, _interval, _since, _until)
   end
 
   def self.all_with_readings(inode, _interval = 300, _since = 5.minutes.ago.utc, _until = Time.now.utc)
