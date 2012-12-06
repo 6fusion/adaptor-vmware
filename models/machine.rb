@@ -1,6 +1,6 @@
 class Machine < Base::Machine
   include TorqueBox::Messaging::Backgroundable
-  
+
   attr_accessor :vm,
                 :stats
 
@@ -107,6 +107,10 @@ class Machine < Base::Machine
       logger.error(e.message)
       raise Exceptions::Unrecoverable
     end
+  end
+
+  def all_with_readings(inode, _interval = 300, _since = 5.minutes.ago.utc, _until = Time.now.utc)
+    Machine.all_with_readings(inode, _interval = 300, _since = 5.minutes.ago.utc, _until = Time.now.utc)
   end
 
   def self.all_with_readings(inode, _interval = 300, _since = 5.minutes.ago.utc, _until = Time.now.utc)

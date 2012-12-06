@@ -44,7 +44,7 @@ AdaptorVMware.controllers :machines, :map => "/inodes/:inode_uuid" do
 
     if params[:session_id].nil?
       @session_id = ResultCache.session_id
-      ResultCache.new.put(@session_id, Machine.background(:ttl => 10*60*1000).all_with_readings(@inode, _interval, _since, _until))
+      ResultCache.new.put(@session_id, Machine.new.background(:ttl => 10*60*1000).all_with_readings(@inode, _interval, _since, _until))
       status 102
       body @session_id.to_s
     else
