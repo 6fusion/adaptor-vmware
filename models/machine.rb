@@ -1,6 +1,10 @@
 class Machine < Base::Machine
+  include TorqueBox::Messaging::Backgroundable
+  
   attr_accessor :vm,
                 :stats
+
+
 
   KB = 1024
   MB = 1024**2
