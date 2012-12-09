@@ -123,6 +123,7 @@ public class VMwareInventory
             vm.put("power_state",pTables[i].get("runtime.powerState"));
             VirtualDevice[] vds =  (VirtualDevice[]) pTables[i].get("config.hardware.device");
             List<Map> vm_disks=new ArrayList<Map>();
+            List<Map> vm_nics=new ArrayList<Map>();
             for(VirtualDevice vd:vds) {
                 // if virtual disk then
                 if(vd instanceof VirtualDisk) {
@@ -165,29 +166,35 @@ public class VMwareInventory
                     }
 
                 } else if ((vd instanceof VirtualPCNet32) || (vd instanceof VirtualE1000) || (vd instanceof VirtualVmxnet)) {
+
+                    HashMap<String, Object> nic_hash = new HashMap<String, Object>();
                     VirtualEthernetCard vNic = (VirtualEthernetCard) vd;
-                    printNic(vNic);
+                    nic_hash.put("mac_address",vNic.getMacAddress());
+                    nic_hash.put("name",vNic.getDeviceInfo().getLabel());
+                    nic_hash.put("key",vNic.getKey());
+                    nic_hash.put("uuid","aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaa"+vNic.getKey());
+                    // printNic(vNic);
                     if ((pTables[i].get("guest.net") != null) && (pTables[i].get("guest.net") instanceof GuestNicInfo[]) ){
-                        System.out.println(pTables[i].get("guest.net").toString());
-                        System.out.println(pTables[i].get("guest.net").getClass().toString());
+
                         GuestNicInfo[] guestNicInfo = ( GuestNicInfo[]) pTables[i].get("guest.net");
                         for(int j=0; j < guestNicInfo.length; j++) {
                             if (guestNicInfo[j].getDeviceConfigId() == vNic.getKey()) {
                                 if (guestNicInfo[j] != null) {
                                     if (guestNicInfo[j].getIpAddress() != null)  {
-                                        System.out.println(guestNicInfo[j].getIpAddress().length);
-                                        System.out.println("IP Address="+guestNicInfo[j].getIpAddress()[0]);
+                                        nic_hash.put("ip_address", guestNicInfo[j].getIpAddress()[0]);
                                     }
                                 }
                             }
 
                         }
                     }
+                    vm_nics.add(nic_hash);
                 } //else {
                   //  System.out.format("virtualDevice:%s%n",vd.getClass().getName());
                 //}
             }
             vm.put("disks",vm_disks);
+            vm.put("nics",vm_nics);
             this.vmMap.put(vms[i].getMOR().get_value().toString(), vm);
             System.out.println("# of VMs="+i);
         }    
