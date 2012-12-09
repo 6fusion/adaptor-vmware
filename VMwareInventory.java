@@ -45,9 +45,8 @@ public class VMwareInventory
 
 
         VMwareInventory vmware_inventory = new VMwareInventory(si);
-        //vmware_inventory.printHosts();
+        vmware_inventory.printHosts();
         vmware_inventory.printVMs();
-        //vmware_inventory.jsonVMs();
         si.getServerConnection().logout();
     }
 
@@ -61,26 +60,6 @@ public class VMwareInventory
         {
             return;
         }
-        // VirtualMachine vm = (VirtualMachine) vms[0];
-        
-        // System.out.println("retrieve a property from a single managed object.");
-        // VirtualMachineToolsStatus status = (VirtualMachineToolsStatus) vm.getPropertyByPath("guest.toolsStatus");
-        // System.out.println("toolStatus:" + status);
-        
-        // System.out.println("\nretrieve multiple properties from a single managed object.");
-        // Hashtable props = vm.getPropertiesByPaths(new String[] {"name", 
-        //         "config.cpuFeatureMask",
-        //         "config.hardware.device",
-        //         "guest.toolsStatus",
-        //         "guest.guestId",
-        //         "config.uuid",
-        //         "runtime.powerState",
-        //         "config.hardware.memoryMB",
-        //         "config.hardware.numCPU"});
-        // System.out.println(vm);
-        // System.out.println(props);
-        
-        System.out.println("\nretrieve multiple properties from multiple managed objects.");
         Hashtable[] pTables = PropertyCollectorUtil.retrieveProperties(vms, "VirtualMachine",
                 new String[] {"name",
                 "config.hardware.device",
@@ -101,10 +80,7 @@ public class VMwareInventory
             vm.put("name",pTables[i].get("name"));
             vm.put("cpu_count",pTables[i].get("config.hardware.numCPU"));
             
-            ManagedObjectReference host_mor = (ManagedObjectReference)pTables[i].get("runtime.host");
-            String host_key = host_mor.get_value().toString();
-            HashMap<String, Object> host_hash = this.hostMap.get(host_key);
-            long hz = (long) host_hash.get("hz");
+            long hz = get_host_hz((ManagedObjectReference) pTables[i].get("runtime.host"));
             vm.put("cpu_speed",hz / 1000000);
 
             vm.put("maximum_memory",pTables[i].get("config.hardware.memoryMB"));
@@ -170,37 +146,23 @@ public class VMwareInventory
                     vm_disks.add(disk_hash);
 
                 } else if ((vd instanceof VirtualPCNet32) || (vd instanceof VirtualE1000) || (vd instanceof VirtualVmxnet)) {
-
                     HashMap<String, Object> nic_hash = new HashMap<String, Object>();
                     VirtualEthernetCard vNic = (VirtualEthernetCard) vd;
                     nic_hash.put("mac_address",vNic.getMacAddress());
                     nic_hash.put("name",vNic.getDeviceInfo().getLabel());
                     nic_hash.put("key",vNic.getKey());
                     nic_hash.put("uuid","aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaa"+vNic.getKey());
-                    // printNic(vNic);
                     if ((pTables[i].get("guest.net") != null) && (pTables[i].get("guest.net") instanceof GuestNicInfo[]) ){
-
                         GuestNicInfo[] guestNicInfo = ( GuestNicInfo[]) pTables[i].get("guest.net");
-                        for(int j=0; j < guestNicInfo.length; j++) {
-                            if (guestNicInfo[j].getDeviceConfigId() == vNic.getKey()) {
-                                if (guestNicInfo[j] != null) {
-                                    if (guestNicInfo[j].getIpAddress() != null)  {
-                                        nic_hash.put("ip_address", guestNicInfo[j].getIpAddress()[0]);
-                                    }
-                                }
-                            }
-
-                        }
+                        String ip_address = parse_nic_ip_address(vNic, guestNicInfo);
+                        nic_hash.put("ip_address", ip_address);     
                     }
                     vm_nics.add(nic_hash);
-                } //else {
-                  //  System.out.format("virtualDevice:%s%n",vd.getClass().getName());
-                //}
+                } 
             }
             vm.put("disks",vm_disks);
             vm.put("nics",vm_nics);
             this.vmMap.put(vms[i].getMOR().get_value().toString(), vm);
-            System.out.println("# of VMs="+i);
         }    
         System.out.println("============ Data Centers ============");
             ManagedEntity[] dcs = new InventoryNavigator(rootFolder).searchManagedEntities(
@@ -209,10 +171,30 @@ public class VMwareInventory
         {
                 System.out.println("Datacenter["+i+"]=" + dcs[i].getName());
         }
-            
-  
-  
     }
+
+    private long get_host_hz(ManagedObjectReference host_mor)
+    {
+        String host_key = host_mor.get_value().toString();
+        HashMap<String, Object> host_hash = this.hostMap.get(host_key);
+        long hz = (long) host_hash.get("hz");
+        return hz;
+    }
+
+    private String parse_nic_ip_address(VirtualEthernetCard vNic, GuestNicInfo[] guestNicInfo)
+    {
+        for(int j=0; j < guestNicInfo.length; j++) {
+            if (guestNicInfo[j].getDeviceConfigId() == vNic.getKey()) {
+                if (guestNicInfo[j] != null) {
+                    if (guestNicInfo[j].getIpAddress() != null)  {
+                        return(guestNicInfo[j].getIpAddress()[0]);
+                    }
+                }
+            }
+        }
+        return "";
+    }
+
     private void gatherHosts() throws Exception
     {
         System.out.println("\n============ Hosts ============");
