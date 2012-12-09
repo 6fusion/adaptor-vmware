@@ -1,4 +1,3 @@
-# Do not modify this file
 collection @machines if @machines.present?
 
 node(:total) {|m| @machines.total_count }
