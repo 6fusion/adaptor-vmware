@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
 import java.util.ArrayList;
+// import net.sf.json.JSONObject;
 
 import com.vmware.vim25.*;
 import com.vmware.vim25.mo.*;
@@ -20,7 +21,7 @@ public class VMwareInventory
     private ServiceInstance si = null;
     private Folder rootFolder = null;
     // Hash of host-morefID to host hash of attributes / values
-    private HashMap<String, HashMap<String, Object>> hostMap = new HashMap<String, HashMap<String, Object>>();
+    public HashMap<String, HashMap<String, Object>> hostMap = new HashMap<String, HashMap<String, Object>>();
     // Hash of vm-UUID to vm hash of attributes / values
     private HashMap<String, HashMap<String, Object>> vmMap = new HashMap<String, HashMap<String, Object>>();
     public static long KB = 1024;
@@ -37,14 +38,15 @@ public class VMwareInventory
     public static void main(String[] args) throws Exception
     {
 
-        // ServiceInstance si = new ServiceInstance(new URL("https://vcenter5.6fusion.gin/sdk"), "Administrator", "7u8i&U*I", true);
+        ServiceInstance si = new ServiceInstance(new URL("https://vcenter5.6fusion.gin/sdk"), "Administrator", "7u8i&U*I", true);
         // ServiceInstance si = new ServiceInstance(new URL("https://stress-vcenter.6fusion.lab/sdk"), "Administrator", "1q2w!Q@W", true);
-        ServiceInstance si = new ServiceInstance(new URL("https://192.168.221.10/sdk"), "gcorey", "dontknow", true);
+        // ServiceInstance si = new ServiceInstance(new URL("https://192.168.221.10/sdk"), "gcorey", "dontknow", true);
 
 
         VMwareInventory vmware_inventory = new VMwareInventory(si);
-        vmware_inventory.printHosts();
+        //vmware_inventory.printHosts();
         vmware_inventory.printVMs();
+        //vmware_inventory.jsonVMs();
         si.getServerConnection().logout();
     }
 
@@ -100,8 +102,7 @@ public class VMwareInventory
             
             ManagedObjectReference host_mor = (ManagedObjectReference)pTables[i].get("runtime.host");
             String host_key = host_mor.get_value().toString();
-            System.out.println("looking up "+host_key);
-            HashMap<String, Object> host_hash = (HashMap<String, Object>) this.hostMap.get(host_key);
+            HashMap<String, Object> host_hash = this.hostMap.get(host_key);
             long hz = (long) host_hash.get("hz");
             vm.put("cpu_speed",hz / 1000000);
 
@@ -120,26 +121,25 @@ public class VMwareInventory
             }
             vm.put("architecture",x64_arch);
             vm.put("operating_system",guest_agent);
-            vm.put("power_state",pTables[i].get("runtime.powerState"));
+            vm.put("power_state",pTables[i].get("runtime.powerState").toString());
             VirtualDevice[] vds =  (VirtualDevice[]) pTables[i].get("config.hardware.device");
-            List<Map> vm_disks=new ArrayList<Map>();
-            List<Map> vm_nics=new ArrayList<Map>();
+            List<Map <String, Object>> vm_disks=new ArrayList<Map<String, Object>>();
+            List<Map <String, Object>> vm_nics=new ArrayList<Map<String, Object>>();
             for(VirtualDevice vd:vds) {
                 // if virtual disk then
                 if(vd instanceof VirtualDisk) {
                     HashMap<String, Object> disk_hash = new HashMap<String, Object>();
                     VirtualDisk vDisk = (VirtualDisk) vd;
-                    disk_hash.put("maximum_size",vDisk.getCapacityInKB() * this.KB / this.GB);
+                    disk_hash.put("maximum_size",(vDisk.getCapacityInKB() * VMwareInventory.KB) / VMwareInventory.GB);
                     disk_hash.put("type","Disk");
                     if(vDisk.getBacking() instanceof VirtualDiskFlatVer2BackingInfo){
                         VirtualDiskFlatVer2BackingInfo rdmBaking = (VirtualDiskFlatVer2BackingInfo) vDisk.getBacking();
-                        System.out.println("getThinProvisioned="+rdmBaking.getThinProvisioned());
-                        System.out.println("getUuid="+rdmBaking.getUuid());                   
                         disk_hash.put("thin",rdmBaking.getThinProvisioned());
                         disk_hash.put("uuid",rdmBaking.getUuid());     
                     } 
                     disk_hash.put("key",vd.getKey());
-                    vm_disks.add(disk_hash);
+                    // Determine disk usage.  Usage is not considered a metric in VMware.
+                    long usage = 0;
                     if  (pTables[i].get("layoutEx.disk") != null) {
                         //   find layoutex.disk that matches the VirtualDisk.getKey()
                         VirtualMachineFileLayoutExDiskLayout[] layoutexDisks = (VirtualMachineFileLayoutExDiskLayout[])pTables[i].get("layoutEx.disk");
@@ -156,6 +156,7 @@ public class VMwareInventory
                                         for (int n=0; n < filekeys.length; n++) {
                                             if (layoutexFiles[m].getKey() == filekeys[n]) {
                                                 //              Add to vdisk_files
+                                                usage += layoutexFiles[m].size;
                                                 System.out.println("machinedisk.files="+layoutexFiles[m]);
                                             }
                                         }
@@ -164,6 +165,8 @@ public class VMwareInventory
                             }
                         }
                     }
+                    disk_hash.put("usage",usage);
+                    vm_disks.add(disk_hash);
 
                 } else if ((vd instanceof VirtualPCNet32) || (vd instanceof VirtualE1000) || (vd instanceof VirtualVmxnet)) {
 
@@ -236,14 +239,37 @@ public class VMwareInventory
     }
 
     public void printVMs()
-    {
+    {   int i = 0;
+        System.out.println("[");
         for (String moref: this.vmMap.keySet()) {
+            i++;
+            String comma = "";
+            System.out.print(comma);
+            System.out.println("{");
             for (Map.Entry<String,Object> entry : this.vmMap.get(moref).entrySet()) {
-                System.out.println(moref+" "+entry.getKey()+" "+entry.getValue());
+                System.out.print(comma);
+                printJSON(entry);     
+                comma=",";
             }
+            System.out.println("}");
         }
+        System.out.println("]");
+        System.out.println("Total # of VMs"+i);
     }
 
+    public void printJSON(Map.Entry<String, Object> entry){
+        if (entry.getValue() instanceof String) {
+            System.out.println('"'+entry.getKey()+'"'+'='+'"'+entry.getValue()+'"');
+        }
+        else if (entry.getValue() instanceof Map) {
+            System.out.println("[");
+            System.out.println('"'+entry.getKey()+'"'+"="+entry.getValue());
+            System.out.println("]");
+        }
+        else  {
+            System.out.println('"'+entry.getKey()+'"'+"="+entry.getValue());
+        } 
+    }
     public void printHosts()
     {
         for (String moref: this.hostMap.keySet()) {
