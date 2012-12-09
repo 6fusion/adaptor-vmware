@@ -146,17 +146,7 @@ public class VMwareInventory
                     vm_disks.add(disk_hash);
 
                 } else if ((vd instanceof VirtualPCNet32) || (vd instanceof VirtualE1000) || (vd instanceof VirtualVmxnet)) {
-                    HashMap<String, Object> nic_hash = new HashMap<String, Object>();
-                    VirtualEthernetCard vNic = (VirtualEthernetCard) vd;
-                    nic_hash.put("mac_address",vNic.getMacAddress());
-                    nic_hash.put("name",vNic.getDeviceInfo().getLabel());
-                    nic_hash.put("key",vNic.getKey());
-                    nic_hash.put("uuid","aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaa"+vNic.getKey());
-                    if ((pTables[i].get("guest.net") != null) && (pTables[i].get("guest.net") instanceof GuestNicInfo[]) ){
-                        GuestNicInfo[] guestNicInfo = ( GuestNicInfo[]) pTables[i].get("guest.net");
-                        String ip_address = parse_nic_ip_address(vNic, guestNicInfo);
-                        nic_hash.put("ip_address", ip_address);     
-                    }
+                    HashMap<String, Object> nic_hash = get_nic((VirtualEthernetCard) vd, pTables, i);
                     vm_nics.add(nic_hash);
                 } 
             }
@@ -179,6 +169,21 @@ public class VMwareInventory
         HashMap<String, Object> host_hash = this.hostMap.get(host_key);
         long hz = (long) host_hash.get("hz");
         return hz;
+    }
+
+    private HashMap<String, Object> get_nic(VirtualEthernetCard vNic, Hashtable[] pTables, int i)
+    {
+        HashMap<String, Object> nic_hash = new HashMap<String, Object>();
+        nic_hash.put("mac_address",vNic.getMacAddress());
+        nic_hash.put("name",vNic.getDeviceInfo().getLabel());
+        nic_hash.put("key",vNic.getKey());
+        nic_hash.put("uuid","aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaa"+vNic.getKey());
+        if ((pTables[i].get("guest.net") != null) && (pTables[i].get("guest.net") instanceof GuestNicInfo[]) ){
+            GuestNicInfo[] guestNicInfo = ( GuestNicInfo[]) pTables[i].get("guest.net");
+            String ip_address = parse_nic_ip_address(vNic, guestNicInfo);
+            nic_hash.put("ip_address", ip_address);     
+        }
+        return nic_hash;
     }
 
     private String parse_nic_ip_address(VirtualEthernetCard vNic, GuestNicInfo[] guestNicInfo)
