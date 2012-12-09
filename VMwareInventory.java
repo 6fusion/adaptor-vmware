@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
 import java.util.ArrayList;
+import java.lang.Math;
 // import net.sf.json.JSONObject;
 
 import com.vmware.vim25.*;
@@ -25,9 +26,9 @@ public class VMwareInventory
     // Hash of vm-UUID to vm hash of attributes / values
     private HashMap<String, HashMap<String, Object>> vmMap = new HashMap<String, HashMap<String, Object>>();
     public static long KB = 1024;
-    public static long MB = 1024^2;
-    public static long GB = 1024^3;
-    public static long TB = 1024^4;
+    public static double MB = Math.pow(1024,2);
+    public static double GB = Math.pow(1024,3);
+    public static double TB = Math.pow(1024,4);
     public VMwareInventory(ServiceInstance si ) throws Exception
     {
         this.si = si;
