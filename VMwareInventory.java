@@ -1,3 +1,8 @@
+/**
+ * @author      Geoff Corey <gcorey@6fusion.com>
+ * @version     0.1                 
+ * @since       2012-12-09        
+ */
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.rmi.RemoteException;
@@ -29,20 +34,38 @@ public class VMwareInventory
     public static double MB = Math.pow(1024,2);
     public static double GB = Math.pow(1024,3);
     public static double TB = Math.pow(1024,4);
+
+    /**
+ * Short one line description.                           (1)
+ *
+ * Longer description. If there were any, it would be    [2]
+ * here.
+ * <p>
+ * And even more explanations to follow in consecutive
+ * paragraphs separated by HTML paragraph breaks.
+ *
+ * @param  variable Description text text text.          (3)
+ * @return Description text text text.
+ */
     public VMwareInventory(ServiceInstance si ) throws Exception
     {
         this.si = si;
-        gatherHosts();
         gatherVirtualMachines();
     }
-
+    /**
+     * main
+     *
+     * Example connection to vCenter and printing out hosts and virtual machines.
+     *
+     */
     public static void main(String[] args) throws Exception
     {
+        if (args.length != 3) {
+                System.err.println("Usage: VMwareInventory https://10.10.10.10/sdk username password ");
+                System.exit(1);
+        }
 
-        ServiceInstance si = new ServiceInstance(new URL("https://vcenter5.6fusion.gin/sdk"), "Administrator", "7u8i&U*I", true);
-        // ServiceInstance si = new ServiceInstance(new URL("https://stress-vcenter.6fusion.lab/sdk"), "Administrator", "1q2w!Q@W", true);
-        // ServiceInstance si = new ServiceInstance(new URL("https://192.168.221.10/sdk"), "gcorey", "dontknow", true);
-
+        ServiceInstance si = new ServiceInstance(new URL(args[0]), args[1], args[2], true);
 
         VMwareInventory vmware_inventory = new VMwareInventory(si);
         vmware_inventory.printHosts();
@@ -50,9 +73,51 @@ public class VMwareInventory
         si.getServerConnection().logout();
     }
 
+    /**
+     * gatherVirtualMachines
+     *
+     * Populates hostMap and vmMap.
+     * <p>
+     * JSON representation of vmMap.
+     *
+     * {
+     *   "vm-109": {
+     *       "nics": [
+     *           {
+     *               "ip_address": "Unknown",
+     *               "mac_address": "00:50:56:83:64:d5",
+     *               "uuid": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaa4000",
+     *               "name": "Network adapter 1"
+     *           }
+     *       ],
+     *       "system": {
+     *           "operating_system": "debian4Guest",
+     *           "architecture": "x32"
+     *       },
+     *       "maximum_memory": 256,
+     *       "disks": [
+     *           {
+     *               "uuid": "6000C29e-d736-6461-d86c-df1603e11a67",
+     *               "type": "Disk",
+     *               "maximum_size": 0,
+     *               "name": "Hard disk 1",
+     *               "thin": false
+     *           }
+     *       ],
+     *       "cpu_count": 1,
+     *       "uuid": "42038ec5-83ff-867c-aa71-b1a1e59da225",
+     *       "power_state": "started",
+     *       "guest_agent": false,
+     *       "name": "base-dsl-1012",
+     *        "cpu_speed": 2666
+     *    }
+     * }
+     * vmMap Key:    VirtualMachien MORef
+     * vmMap Values: uuid, name, cpu_count, cpu_speed, maximum_memory, guest_agent architecture,
+     *               operating_system, power_state, disks and nics
+     */
     public void gatherVirtualMachines() throws Exception
     {
-        
         Folder rootFolder = this.si.getRootFolder();
         ManagedEntity[] vms = new InventoryNavigator(rootFolder).searchManagedEntities("VirtualMachine");
         
@@ -60,6 +125,8 @@ public class VMwareInventory
         {
             return;
         }
+        gatherHosts();
+
         Hashtable[] pTables = PropertyCollectorUtil.retrieveProperties(vms, "VirtualMachine",
                 new String[] {"name",
                 "config.hardware.device",
@@ -105,44 +172,7 @@ public class VMwareInventory
             for(VirtualDevice vd:vds) {
                 // if virtual disk then
                 if(vd instanceof VirtualDisk) {
-                    HashMap<String, Object> disk_hash = new HashMap<String, Object>();
-                    VirtualDisk vDisk = (VirtualDisk) vd;
-                    disk_hash.put("maximum_size",(vDisk.getCapacityInKB() * VMwareInventory.KB) / VMwareInventory.GB);
-                    disk_hash.put("type","Disk");
-                    if(vDisk.getBacking() instanceof VirtualDiskFlatVer2BackingInfo){
-                        VirtualDiskFlatVer2BackingInfo rdmBaking = (VirtualDiskFlatVer2BackingInfo) vDisk.getBacking();
-                        disk_hash.put("thin",rdmBaking.getThinProvisioned());
-                        disk_hash.put("uuid",rdmBaking.getUuid());     
-                    } 
-                    disk_hash.put("key",vd.getKey());
-                    // Determine disk usage.  Usage is not considered a metric in VMware.
-                    long usage = 0;
-                    if  (pTables[i].get("layoutEx.disk") != null) {
-                        //   find layoutex.disk that matches the VirtualDisk.getKey()
-                        VirtualMachineFileLayoutExDiskLayout[] layoutexDisks = (VirtualMachineFileLayoutExDiskLayout[])pTables[i].get("layoutEx.disk");
-                        for (int j=0; j < layoutexDisks.length; j++) {
-                            VirtualMachineFileLayoutExDiskLayout diskLayout = layoutexDisks[j];
-                            if (diskLayout.getKey() == vd.getKey()) {
-                                //      Iterate over layoutex.disk.chain of disk units
-                                VirtualMachineFileLayoutExDiskUnit[] diskUnits = diskLayout.getChain();
-                                for(int k=0; k < diskUnits.length; k++) {
-                                    //         Find layoutex.file where getKey matches any chainfilekey     
-                                    VirtualMachineFileLayoutExFileInfo[] layoutexFiles = (VirtualMachineFileLayoutExFileInfo[])pTables[i].get("layoutEx.file");
-                                    for (int m=0; m < layoutexFiles.length; m++) {
-                                        int[] filekeys = diskUnits[k].getFileKey();
-                                        for (int n=0; n < filekeys.length; n++) {
-                                            if (layoutexFiles[m].getKey() == filekeys[n]) {
-                                                //              Add to vdisk_files
-                                                usage += layoutexFiles[m].size;
-                                                System.out.println("machinedisk.files="+layoutexFiles[m]);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    disk_hash.put("usage",usage);
+                    HashMap<String, Object> disk_hash = get_disk((VirtualDisk) vd, pTables, i); 
                     vm_disks.add(disk_hash);
 
                 } else if ((vd instanceof VirtualPCNet32) || (vd instanceof VirtualE1000) || (vd instanceof VirtualVmxnet)) {
@@ -154,15 +184,54 @@ public class VMwareInventory
             vm.put("nics",vm_nics);
             this.vmMap.put(vms[i].getMOR().get_value().toString(), vm);
         }    
-        System.out.println("============ Data Centers ============");
-            ManagedEntity[] dcs = new InventoryNavigator(rootFolder).searchManagedEntities(
-                      new String[][] { {"Datacenter", "name" }, }, true);
-        for(int i=0; i<dcs.length; i++)
-        {
-                System.out.println("Datacenter["+i+"]=" + dcs[i].getName());
+    }
+
+    /**
+     * printVMs
+     *
+     * Dumps the vmMap to STDOUT 
+     *
+     */
+    public void printVMs()
+    {   int i = 0;
+        for (String moref: this.vmMap.keySet()) {
+            i++;
+            String comma = "";
+            System.out.print(moref+" : { ");
+            for (Map.Entry<String,Object> entry : this.vmMap.get(moref).entrySet()) {
+                System.out.println(comma);
+                System.out.print(entry.getKey()+" : "+entry.getValue());
+                comma=",";
+            }
+            System.out.println("");
+            System.out.println("}");
+        }
+        System.out.println("Total # of VMs "+i);
+    }
+
+    /**
+     * printHosts
+     *
+     * Dumps the hostMap to STDOUT 
+     *
+     */
+    public void printHosts()
+    {
+        for (String moref: this.hostMap.keySet()) {
+            for (Map.Entry<String,Object> entry : this.hostMap.get(moref).entrySet()) {
+                System.out.println(moref+" "+entry.getKey()+" "+entry.getValue());
+            }
         }
     }
 
+    /**
+     * get_host_hz
+     *
+     * Helper function for finding the hz for a Host MORef
+     *
+     * @param  host_mor ManagedObjectReference
+     * @return hz
+     */
     private long get_host_hz(ManagedObjectReference host_mor)
     {
         String host_key = host_mor.get_value().toString();
@@ -171,35 +240,13 @@ public class VMwareInventory
         return hz;
     }
 
-    private HashMap<String, Object> get_nic(VirtualEthernetCard vNic, Hashtable[] pTables, int i)
-    {
-        HashMap<String, Object> nic_hash = new HashMap<String, Object>();
-        nic_hash.put("mac_address",vNic.getMacAddress());
-        nic_hash.put("name",vNic.getDeviceInfo().getLabel());
-        nic_hash.put("key",vNic.getKey());
-        nic_hash.put("uuid","aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaa"+vNic.getKey());
-        if ((pTables[i].get("guest.net") != null) && (pTables[i].get("guest.net") instanceof GuestNicInfo[]) ){
-            GuestNicInfo[] guestNicInfo = ( GuestNicInfo[]) pTables[i].get("guest.net");
-            String ip_address = parse_nic_ip_address(vNic, guestNicInfo);
-            nic_hash.put("ip_address", ip_address);     
-        }
-        return nic_hash;
-    }
-
-    private String parse_nic_ip_address(VirtualEthernetCard vNic, GuestNicInfo[] guestNicInfo)
-    {
-        for(int j=0; j < guestNicInfo.length; j++) {
-            if (guestNicInfo[j].getDeviceConfigId() == vNic.getKey()) {
-                if (guestNicInfo[j] != null) {
-                    if (guestNicInfo[j].getIpAddress() != null)  {
-                        return(guestNicInfo[j].getIpAddress()[0]);
-                    }
-                }
-            }
-        }
-        return "";
-    }
-
+    /**
+     * gatherHosts 
+     *
+     * Populates this.hostMap with the hosts for a vCenter
+     * Key - vCenter MORef
+     * Values include name, hz, memorySize
+     */
     private void gatherHosts() throws Exception
     {
         System.out.println("\n============ Hosts ============");
@@ -225,54 +272,106 @@ public class VMwareInventory
             System.out.println("host key is "+hosts[i].getMOR().get_value().toString());
         }
     }
-
-    public void printVMs()
-    {   int i = 0;
-        System.out.println("[");
-        for (String moref: this.vmMap.keySet()) {
-            i++;
-            String comma = "";
-            System.out.print(comma);
-            System.out.println("{");
-            for (Map.Entry<String,Object> entry : this.vmMap.get(moref).entrySet()) {
-                System.out.print(comma);
-                printJSON(entry);     
-                comma=",";
-            }
-            System.out.println("}");
-        }
-        System.out.println("]");
-        System.out.println("Total # of VMs"+i);
-    }
-
-    public void printJSON(Map.Entry<String, Object> entry){
-        if (entry.getValue() instanceof String) {
-            System.out.println('"'+entry.getKey()+'"'+'='+'"'+entry.getValue()+'"');
-        }
-        else if (entry.getValue() instanceof Map) {
-            System.out.println("[");
-            System.out.println('"'+entry.getKey()+'"'+"="+entry.getValue());
-            System.out.println("]");
-        }
-        else  {
-            System.out.println('"'+entry.getKey()+'"'+"="+entry.getValue());
-        } 
-    }
-    public void printHosts()
+    /**
+     * get_disk
+     *
+     * Build the Disk hash of properties
+     *
+     * @param  vNic VirtualEthernetCard
+     * @param  pTables pTables  Hashtable[]
+     * @param  i int - current position in pTable
+     * @return Hashmap with maximum_size, type, thin, uuid, key and usage
+     */
+    private HashMap<String, Object> get_disk(VirtualDisk vDisk, Hashtable[] pTables, int i)
     {
-        for (String moref: this.hostMap.keySet()) {
-            for (Map.Entry<String,Object> entry : this.hostMap.get(moref).entrySet()) {
-                System.out.println(moref+" "+entry.getKey()+" "+entry.getValue());
+        HashMap<String, Object> disk_hash = new HashMap<String, Object>();
+        disk_hash.put("maximum_size",(vDisk.getCapacityInKB() * VMwareInventory.KB) / VMwareInventory.GB);
+        disk_hash.put("type","Disk");
+        if(vDisk.getBacking() instanceof VirtualDiskFlatVer2BackingInfo){
+            VirtualDiskFlatVer2BackingInfo rdmBaking = (VirtualDiskFlatVer2BackingInfo) vDisk.getBacking();
+            disk_hash.put("thin",rdmBaking.getThinProvisioned());
+            disk_hash.put("uuid",rdmBaking.getUuid());     
+        } 
+        disk_hash.put("key",vDisk.getKey());
+        // Determine disk usage.  Usage is not considered a metric in VMware.
+        long usage = 0;
+        if  (pTables[i].get("layoutEx.disk") != null) {
+            //   find layoutex.disk that matches the VirtualDisk.getKey()
+            VirtualMachineFileLayoutExDiskLayout[] layoutexDisks = (VirtualMachineFileLayoutExDiskLayout[])pTables[i].get("layoutEx.disk");
+            for (int j=0; j < layoutexDisks.length; j++) {
+                VirtualMachineFileLayoutExDiskLayout diskLayout = layoutexDisks[j];
+                if (diskLayout.getKey() == vDisk.getKey()) {
+                    //      Iterate over layoutex.disk.chain of disk units
+                    VirtualMachineFileLayoutExDiskUnit[] diskUnits = diskLayout.getChain();
+                    for(int k=0; k < diskUnits.length; k++) {
+                        //         Find layoutex.file where getKey matches any chainfilekey     
+                        VirtualMachineFileLayoutExFileInfo[] layoutexFiles = (VirtualMachineFileLayoutExFileInfo[])pTables[i].get("layoutEx.file");
+                        for (int m=0; m < layoutexFiles.length; m++) {
+                            int[] filekeys = diskUnits[k].getFileKey();
+                            for (int n=0; n < filekeys.length; n++) {
+                                if (layoutexFiles[m].getKey() == filekeys[n]) {
+                                    //              Add to vdisk_files
+                                    usage += layoutexFiles[m].size;
+                                    System.out.println("machinedisk.files="+layoutexFiles[m]);
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
+        disk_hash.put("usage",usage);
+        return(disk_hash);
     }
 
-    public static void printNic(VirtualEthernetCard vNic) throws Exception {
-        System.out.println("getAddressType="+vNic.getAddressType());
-        System.out.println("getMacAddress="+vNic.getMacAddress());
-        System.out.println("getLabel="+vNic.getDeviceInfo().getLabel());
-        System.out.println("getKey="+vNic.getKey());
+    /**
+     * get_nic
+     *
+     * Build the NIC hash of properties
+     *
+     * @param  vNic VirtualEthernetCard
+     * @param  pTables pTables  Hashtable[]
+     * @param  i int - current position in pTable
+     * @return Hashmap with mac_address, name, key, uuid and ip_address
+     */
+    private HashMap<String, Object> get_nic(VirtualEthernetCard vNic, Hashtable[] pTables, int i)
+    {
+        HashMap<String, Object> nic_hash = new HashMap<String, Object>();
+        nic_hash.put("mac_address",vNic.getMacAddress());
+        nic_hash.put("name",vNic.getDeviceInfo().getLabel());
+        nic_hash.put("key",vNic.getKey());
+        nic_hash.put("uuid","aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaa"+vNic.getKey());
+        if ((pTables[i].get("guest.net") != null) && (pTables[i].get("guest.net") instanceof GuestNicInfo[]) ){
+            GuestNicInfo[] guestNicInfo = ( GuestNicInfo[]) pTables[i].get("guest.net");
+            String ip_address = parse_nic_ip_address(vNic, guestNicInfo);
+            nic_hash.put("ip_address", ip_address);     
+        }
+        return nic_hash;
     }
 
+    /**
+     * parse_nic_ip_address 
+     *
+     * For a given VirtualEthernetCard it will pase the Device Config info to find
+     * the IP Address, if any.
+     * <p>
+     *
+     * @param  vNic VirtualEthernetCard 
+     * @param  guestNicInfo Array of GuestNicInfo to match device.config.id
+     * @return String IP Address.
+     */
+    private String parse_nic_ip_address(VirtualEthernetCard vNic, GuestNicInfo[] guestNicInfo)
+    {
+        for(int j=0; j < guestNicInfo.length; j++) {
+            if (guestNicInfo[j].getDeviceConfigId() == vNic.getKey()) {
+                if (guestNicInfo[j] != null) {
+                    if (guestNicInfo[j].getIpAddress() != null)  {
+                        return(guestNicInfo[j].getIpAddress()[0]);
+                    }
+                }
+            }
+        }
+        return "Unknown";
+    }
 }
 
