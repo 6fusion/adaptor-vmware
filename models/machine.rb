@@ -1,7 +1,11 @@
-Dir['lib/java/**/*.jar'].each {|jar| require jar }
+require 'java'
+Dir['lib/java/**/*.jar'].each do |jar|
+  $CLASSPATH << jar
+  require jar
+end
+$CLASSPATH << "#{PADRINO_ROOT}/lib/java"
+java_import "VMwareInventory"
 
-#java_import 'lib.java.VMwareInventory'
-require 'lib/java/VMwareInventory'
 class Machine < Base::Machine
   include TorqueBox::Messaging::Backgroundable
 
