@@ -3,3 +3,11 @@ rule ".class" => [".java"] do |t|
 end
 
 task :default => "lib/java/VMwareInventory.class"
+
+task :server => "lib/java/VMwareInventory.class" do
+  sh "padrino start"
+end
+
+task :console => "lib/java/VMwareInventory.class" do
+  sh "padrino console"
+end

@@ -26,7 +26,7 @@ AdaptorVMware.controllers :machines, :map => "/inodes/:inode_uuid" do
     begin
       logger.info('GET - machines#index')
       @inode.open_session
-      @machines = Machine.all(@inode)
+      @machines = Machine.vm_inventory(@inode).map {|_, vm| Machine.new(vm)}
       render 'machines/index'
     ensure
       @inode.close_session
