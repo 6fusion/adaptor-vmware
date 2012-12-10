@@ -29,7 +29,7 @@ public class VMwareInventory
     // Hash of host-morefID to host hash of attributes / values
     public HashMap<String, HashMap<String, Object>> hostMap = new HashMap<String, HashMap<String, Object>>();
     // Hash of vm-UUID to vm hash of attributes / values
-    private HashMap<String, HashMap<String, Object>> vmMap = new HashMap<String, HashMap<String, Object>>();
+    public HashMap<String, HashMap<String, Object>> vmMap = new HashMap<String, HashMap<String, Object>>();
     public static long KB = 1024;
     public static double MB = Math.pow(1024,2);
     public static double GB = Math.pow(1024,3);
@@ -47,11 +47,18 @@ public class VMwareInventory
  * @param  variable Description text text text.          (3)
  * @return Description text text text.
  */
-    public VMwareInventory(ServiceInstance si ) throws Exception
+    public VMwareInventory(String url, String username, String password ) throws Exception
     {
+        ServiceInstance si = new ServiceInstance(new URL(url), username, password, true);
         this.si = si;
         gatherVirtualMachines();
     }
+
+    public void close()
+    {
+      this.si.getServerConnection().logout();
+    }
+
     /**
      * main
      *
@@ -65,12 +72,10 @@ public class VMwareInventory
                 System.exit(1);
         }
 
-        ServiceInstance si = new ServiceInstance(new URL(args[0]), args[1], args[2], true);
-
-        VMwareInventory vmware_inventory = new VMwareInventory(si);
+        VMwareInventory vmware_inventory = new VMwareInventory(args[0],args[1],args[2]);
         vmware_inventory.printHosts();
         vmware_inventory.printVMs();
-        si.getServerConnection().logout();
+        vmware_inventory.close();
     }
 
     /**

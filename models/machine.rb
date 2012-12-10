@@ -48,7 +48,9 @@ class Machine < Base::Machine
   end
 
   def self.vm_inventory(inode)
-
+    vm_inventory = VMwareInventory.new(inode.host_ip_address, inode.user, inode.password)
+    vm_inventory.close
+    vm_inventory.to_hash
   end
 
   def self.all(inode)
