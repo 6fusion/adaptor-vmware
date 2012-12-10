@@ -11,6 +11,7 @@ gem 'rake', :require => false
 gem 'padrino-rpm', :git => 'https://github.com/Asquera/padrino-rpm.git'
 gem 'newrelic_rpm'
 gem 'kaminari', :require => 'kaminari/sinatra'
+gem 'rubyzip', :git => 'git://github.com/aussiegeek/rubyzip.git', :require => "zip/zip"
 
 platform :jruby do
   gem 'jruby-openssl'
