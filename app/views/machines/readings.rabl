@@ -4,14 +4,25 @@ collection @machines if @machines.present?
 #node(:total_pages) {|m| @machines.num_pages }
 
 object @machine if @machine.present?
-extends 'machines/base'
+attributes :uuid,
+           :name,
+           :cpu_count,
+           :cpu_speed,
+           :maximum_memory,
+           :system ,
+           :guest_agent,
+           :power_state,
+           :hostname,
+           :data_center_uuid,
+           :description,
+           :host_uuid
 
 _interval = params[:interval].blank? ? 300 : params[:interval]
 _since = params[:since].blank? ? 5.minutes.ago.utc : Time.iso8601(params[:since])
 _until = params[:until].blank? ? Time.now.utc : Time.iso8601(params[:until])
 
 child :disks => :disks do
-  extends 'machines/disks'
+  attributes :uuid, :name, :maximum_size, :type, :thin
 
   node :readings do |r|
     r.readings(@inode, _interval, _since, _until).map do |r|
@@ -26,7 +37,7 @@ child :disks => :disks do
 end
 
 child :nics => :nics do
-  extends 'machines/nics'
+  attributes :uuid, :name, :mac_address, :ip_address
 
   node :readings do |r|
     r.readings(@inode, _interval, _since, _until).map do |r|
