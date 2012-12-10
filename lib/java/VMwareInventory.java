@@ -236,7 +236,7 @@ public class VMwareInventory
     {
         String host_key = host_mor.get_value().toString();
         HashMap<String, Object> host_hash = this.hostMap.get(host_key);
-        Integer hz = (Integer) host_hash.get("hz");
+        Long hz = (Long) host_hash.get("hz");
         return hz;
     }
 
