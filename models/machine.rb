@@ -393,6 +393,15 @@ class Machine < Base::Machine
     end
   end
 
+  def nics=(_nics)
+    @nics = _nics.map {|nic| MachineNic.new(nic)}
+  end
+
+  def disks=(_disks)
+    @disks = _disks.map {|disk| MachineDisk.new(disk)}
+  end
+
+
   private
 
   # def self.get_machines_cache(uuid)
@@ -587,5 +596,7 @@ class Machine < Base::Machine
       raise Exceptions::Unrecoverable
     end
   end
+
+
 
 end
