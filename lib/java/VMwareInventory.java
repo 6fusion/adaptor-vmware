@@ -30,6 +30,9 @@ public class VMwareInventory
     public HashMap<String, HashMap<String, Object>> hostMap = new HashMap<String, HashMap<String, Object>>();
     // Hash of vm-UUID to vm hash of attributes / values
     public HashMap<String, HashMap<String, Object>> vmMap = new HashMap<String, HashMap<String, Object>>();
+    // Hash of PerfCounter name to Counter ID
+    private HashMap<String, Integer> counterMap = new HashMap<String, Integer>();
+    // Utility Constants
     public static long KB = 1024;
     public static double MB = Math.pow(1024,2);
     public static double GB = Math.pow(1024,3);
@@ -51,6 +54,7 @@ public class VMwareInventory
     {
         ServiceInstance si = new ServiceInstance(new URL(url), username, password, true);
         this.si = si;
+        gatherCounters();
         gatherVirtualMachines();
     }
 
@@ -162,14 +166,16 @@ public class VMwareInventory
             }
             vm.put("guest_agent",tool_status);
             String guest_agent = (String) pTables[i].get("guest.guestId");
-            boolean x64_arch = false;
+            String arch = "x32";
             if (guest_agent != null) {
                 if (guest_agent.indexOf("64") > -1) {
-                    x64_arch = true;
+                    arch = "x64";
                 }
             }
-            vm.put("architecture",x64_arch);
-            vm.put("operating_system",guest_agent);
+            HashMap<String, Object> system = new HashMap<String, Object>();
+            system.put("architecture",arch);
+            system.put("operating_system",guest_agent);
+            vm.put("system",system);
             vm.put("power_state",pTables[i].get("runtime.powerState").toString());
             VirtualDevice[] vds =  (VirtualDevice[]) pTables[i].get("config.hardware.device");
             List<Map <String, Object>> vm_disks=new ArrayList<Map<String, Object>>();
@@ -244,7 +250,40 @@ public class VMwareInventory
         Long hz = (Long) host_hash.get("hz");
         return hz;
     }
+    /**
+     * gatherCounters 
+     *
+     * Populates this.counterMap
+     * Key - Counter Name
+     * Value - Counter ID
+     */
+    private void gatherCounters() throws Exception
+    {
 
+        PerformanceManager perfMgr = this.si.getPerformanceManager();
+        PerfCounterInfo[] pcis = perfMgr.getPerfCounter();
+        for(int i=0; pcis!=null && i<pcis.length; i++)
+        {
+            this.counterMap.put(pcis[i].getNameInfo().getKey(), (Integer) pcis[i].getKey());
+            /* Debugging purposes only.
+            System.out.println("\nKey:" + pcis[i].getKey());
+            String perfCounter = pcis[i].getGroupInfo().getKey() + "."
+              + pcis[i].getNameInfo().getKey() + "." 
+              + pcis[i].getRollupType();
+            System.out.println("PerfCounter:" + perfCounter);
+            System.out.println("Level:" + pcis[i].getLevel());
+            System.out.println("StatsType:" + pcis[i].getStatsType());
+            System.out.println("UnitInfo:" 
+              + pcis[i].getUnitInfo().getKey());
+              */
+        }
+    }
+/*
+    private Integer[] getCounterIds(String[] counter_names)
+    {
+        return new Integer[];
+    }
+    */
     /**
      * gatherHosts 
      *
@@ -317,7 +356,6 @@ public class VMwareInventory
                                 if (layoutexFiles[m].getKey() == filekeys[n]) {
                                     //              Add to vdisk_files
                                     usage += layoutexFiles[m].size;
-                                    System.out.println("machinedisk.files="+layoutexFiles[m]);
                                 }
                             }
                         }
