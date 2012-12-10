@@ -1,3 +1,11 @@
+require 'java'
+Dir['lib/java/**/*.jar'].each do |jar|
+  $CLASSPATH << jar
+  require jar
+end
+$CLASSPATH << "#{PADRINO_ROOT}/lib/java"
+java_import "VMwareInventory"
+
 class Machine < Base::Machine
   include TorqueBox::Messaging::Backgroundable
 
@@ -37,6 +45,12 @@ class Machine < Base::Machine
       logger.error(e.message)
       raise Exceptions::Unrecoverable
     end
+  end
+
+  def self.vm_inventory(inode)
+    vm_inventory = VMwareInventory.new(inode.host_ip_address, inode.user, inode.password)
+    vm_inventory.close
+    vm_inventory.to_hash
   end
 
   def self.all(inode)
