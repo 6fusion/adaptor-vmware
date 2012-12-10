@@ -1,3 +1,7 @@
+Dir['lib/java/**/*.jar'].each {|jar| require jar }
+
+#java_import 'lib.java.VMwareInventory'
+require 'lib/java/VMwareInventory'
 class Machine < Base::Machine
   include TorqueBox::Messaging::Backgroundable
 
@@ -37,6 +41,10 @@ class Machine < Base::Machine
       logger.error(e.message)
       raise Exceptions::Unrecoverable
     end
+  end
+
+  def self.vm_inventory(inode)
+
   end
 
   def self.all(inode)
