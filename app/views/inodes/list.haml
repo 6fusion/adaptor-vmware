@@ -1,4 +1,3 @@
-!!! 5
 %html
   %style
     * { font-family: "Helvetica"; }
@@ -12,5 +11,6 @@
       %center
         %img(src="http://cloudresourcemeter.com/images/CloudResMeter_iconTransp-Lg.png" style="width:100px")
         %h1 Cloud Resource Meter
-        %h3 1. Download the diagnostics zip file <a href="#{@inode.uuid}/diagnostics.zip">here</a>.
-        %h3 2. After review, please email the zip to: <a href="mailto:support@6fusion.com">support@6fusion.com</a>
+        - @inodes.each do |i|
+          %h3
+            %a(href="inodes/#{i[:uuid]}" content-type="text/html") #{i[:host_ip_address]}
