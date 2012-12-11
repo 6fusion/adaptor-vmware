@@ -160,7 +160,6 @@ public class VMwareInventory
             if(pembs[i] instanceof PerfEntityMetric)
             {
                 HashMap<Date, HashMap<String, Long>> metrics = parsePerfMetricForVM((PerfEntityMetric)pembs[i]);
-                System.out.println(metrics);
             }
 
         }
@@ -176,27 +175,73 @@ public class VMwareInventory
 
         HashMap<Date, HashMap<String, Long>> metrics = new HashMap<Date, HashMap<String, Long>>();
 
+        for(int i=0; infos!=null && i<infos.length; i++) {
+            Date timestamp = infos[i].getTimestamp().getTime();
+            metrics.put(timestamp, new HashMap<String, Long>()); 
+            for (int j=0; vals!=null && j<vals.length; ++j){
+                String counterName = this.counterIdMap.get(vals[j].getId().getCounterId());
+                String instanceName = vals[j].getId().getInstance();
+                String metricName = counterName;
+                if (instanceName.length() > 0) {
+                    metricName = counterName+"."+instanceName;
+                }
+                if(vals[j] instanceof PerfMetricIntSeries) {
+                    PerfMetricIntSeries val = (PerfMetricIntSeries) vals[j];
+                    long[] longs = val.getValue();
+                    long value = longs[i];
+                    metrics.get(timestamp).put(metricName, value);
+                }
+            }
+        }
+/*
         // Run through the counters
         for(int j=0; vals!=null && j<vals.length; ++j)
         {
           String counterName = this.counterIdMap.get(vals[j].getId().getCounterId());
-          
+          System.out.println(j);
+
           if(vals[j] instanceof PerfMetricIntSeries)
           {
             PerfMetricIntSeries val = (PerfMetricIntSeries) vals[j];
             long[] longs = val.getValue();
             for(int k=0; k<longs.length; k++) 
             {
-              HashMap<String, Long> metric = new HashMap<String, Long>();
+              HashMap<String, Long> metric = null;
+              //GET METRIC HASHMAP FROM METRICS
+              if (metrics.containsKey(infos[k].getTimestamp().getTime())) {
+                System.out.println("found "+infos[k].getTimestamp().getTime());
+                metric = metrics.get(infos[k].getTimestamp().getTime());
+              } else {
+                // IF NOT, THEN CREATE
+                System.out.println("create "+infos[k].getTimestamp().getTime());
+                metric = new HashMap<String, Long>();
+                metrics.put(infos[k].getTimestamp().getTime(), metric);
+              }
+              System.out.println("adding "+counterName+vals[k].getId().getInstance().toString()+"="+longs[k]);
               metric.put(counterName+vals[k].getId().getInstance().toString(), longs[k]);
-              metrics.put(infos[k].getTimestamp().getTime(), metric);
+              addMachineReading(vm_mor,metrics);
             }
+            //System.out.println(metrics);
             System.out.println("Total:"+longs.length);
           }
         }
+        */
+        addMachineReading(vm_mor,metrics);
+        System.out.println("*****************************");
         return(metrics);
     }
 
+    void addMachineReading(String vm_mor,  HashMap<Date, HashMap<String, Long>> metrics)
+    {
+        HashMap<String, Object> machine_reading = new HashMap<String, Object>();
+        System.out.println("-------");
+        for (Date date: metrics.keySet()) {
+            HashMap<String, Long> metric = metrics.get(date);
+            for(String name: metric.keySet()) {
+                System.out.println(date+" "+name+" "+metric.get(name) );
+            }
+        }
+    }
 
     void printPerfMetric(PerfEntityMetricBase val)
     {
