@@ -54,6 +54,7 @@ class Machine < Base::Machine
     vm_inventory.close
   end
 
+
   def self.all(inode)
     logger.info('machine.all')
     # machines = self.get_machines_cache(inode.uuid)
@@ -135,23 +136,30 @@ class Machine < Base::Machine
 
     begin
       # Retrieve all machines and virtual machine references
-      inode.open_session
-      machines            = self.vm_inventory(inode)
-      logger.info(machines.inspect)
-      vms                 = machines.map { |m| m.vm }
 
-      # Connect to vCenter and set the performance manager variable
-      performance_manager = inode.session.serviceContent.perfManager
+      vm_inventory = VMwareInventory.new("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
+      machines = vm_inventory.vmMap.to_hash
+      vm_inventory.gatherCounters
+      vm_inventory.readings(vm_inventory.virtualMachines(),_since.to_java,_until.to_java);
+      vm_inventory.printVMs();
 
-      # Collects Performance information and set the machine.stats object
-      metrics             = { "cpu.usage.average" => "","cpu.usagemhz.average" => "", "mem.consumed.average" => "", "virtualDisk.read.average" => "*", "virtualDisk.write.average" => "*", "net.received.average" => "*", "net.transmitted.average" => "*" }
-      stats               = performance_manager.retrieve_stats(vms, metrics, _interval, _since, _until)
-      stats.each do |stat|
-        machines.each do |machine|
-          machine.stats = stat if machine.vm == stat.entity
-        end
-      end
+      # inode.open_session
+      # machines            = self.vm_inventory(inode)
+      # logger.info(machines.inspect)
+      # vms                 = machines.map { |m| m.vm }
 
+      # # Connect to vCenter and set the performance manager variable
+      # performance_manager = inode.session.serviceContent.perfManager
+
+      # # Collects Performance information and set the machine.stats object
+      # metrics             = { "cpu.usage.average" => "","cpu.usagemhz.average" => "", "mem.consumed.average" => "", "virtualDisk.read.average" => "*", "virtualDisk.write.average" => "*", "net.received.average" => "*", "net.transmitted.average" => "*" }
+      # stats               = performance_manager.retrieve_stats(vms, metrics, _interval, _since, _until)
+      # stats.each do |stat|
+      #   machines.each do |machine|
+      #     machine.stats = stat if machine.vm == stat.entity
+      #   end
+      # end
+      
       # Returns update machine array
       machines
 
@@ -160,7 +168,7 @@ class Machine < Base::Machine
       logger.error(e.backtrace)
       raise Exceptions::Unrecoverable
     ensure
-      inode.close_session
+      vm_inventory.close
     end
   end
 
