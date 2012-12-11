@@ -6,11 +6,7 @@
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.rmi.RemoteException;
-import java.util.Hashtable;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.List;
-import java.util.ArrayList;
+import java.util.*;
 import java.lang.Math;
 // import net.sf.json.JSONObject;
 
@@ -31,7 +27,7 @@ public class VMwareInventory
     // Hash of vm-UUID to vm hash of attributes / values
     public HashMap<String, HashMap<String, Object>> vmMap = new HashMap<String, HashMap<String, Object>>();
     // Hash of PerfCounter name to Counter ID
-    private HashMap<String, Integer> counterMap = new HashMap<String, Integer>();
+    public HashMap<String, Integer> counterMap = new HashMap<String, Integer>();
     // Utility Constants
     public static long KB = 1024;
     public static double MB = Math.pow(1024,2);
@@ -63,6 +59,14 @@ public class VMwareInventory
       this.si.getServerConnection().logout();
     }
 
+    public Calendar currentTime() throws Exception
+    {
+        return this.si.currentTime();
+    }
+    public PerformanceManager getPerformanceManager()
+    {
+        return si.getPerformanceManager();
+    }
     /**
      * main
      *
@@ -79,9 +83,157 @@ public class VMwareInventory
         VMwareInventory vmware_inventory = new VMwareInventory(args[0],args[1],args[2]);
         vmware_inventory.printHosts();
         vmware_inventory.printVMs();
+        vmware_inventory.gatherCounters();
+        String[] counterNames = { "cpu.usage.average",
+                        "cpu.usagemhz.average",
+                        "mem.consumed.average",
+                        "virtualDisk.read.average",
+                        "virtualDisk.write.average",
+                        "net.received.average",
+                        "net.transmitted.average"};
+        System.out.println("pants"+vmware_inventory.counterMap);
+        //List<Integer> counterIds = vmware_inventory.getCounterIds(counterNames);
+
+        Calendar curTime = vmware_inventory.currentTime();
+
+        PerfMetricId cpu_usage = new PerfMetricId();
+        cpu_usage.setCounterId(vmware_inventory.counterMap.get("cpu.usage.average"));
+        cpu_usage.setInstance("");
+        
+        PerfMetricId cpu_usagemhz = new PerfMetricId();
+        cpu_usagemhz.setCounterId(vmware_inventory.counterMap.get("cpu.usagemhz.average"));
+        cpu_usagemhz.setInstance("");
+
+        PerfMetricId mem = new PerfMetricId();
+        mem.setCounterId(vmware_inventory.counterMap.get("mem.consumed.average"));
+        mem.setInstance("");
+
+        PerfMetricId vdisk_read = new PerfMetricId();
+        vdisk_read.setCounterId(vmware_inventory.counterMap.get("virtualDisk.read.average"));
+        vdisk_read.setInstance("*");
+
+        PerfMetricId vdisk_write = new PerfMetricId();
+        vdisk_write.setCounterId(vmware_inventory.counterMap.get("virtualDisk.write.average"));
+        vdisk_write.setInstance("*");
+
+        PerfMetricId net_recv = new PerfMetricId();
+        net_recv.setCounterId(vmware_inventory.counterMap.get("net.received.average"));
+        net_recv.setInstance("*");
+
+        PerfMetricId net_trans = new PerfMetricId();
+        net_trans.setCounterId(vmware_inventory.counterMap.get("net.transmitted.average"));
+        net_trans.setInstance("*");
+
+        //System.out.println("donut"+counterIds);
+        List<VirtualMachine> vms = vmware_inventory.virtualMachines();
+        System.out.println("pizza"+vms);
+
+        List<PerfQuerySpec> qSpecList = new ArrayList<PerfQuerySpec>();
+        Iterator it = vms.iterator();
+        while (it.hasNext()) {
+            PerfQuerySpec qSpec = new PerfQuerySpec();
+            VirtualMachine vm = (VirtualMachine)it.next();
+            qSpec.setEntity(vm.getMOR());
+            qSpec.setFormat("normal");
+            qSpec.setIntervalId(300);
+            qSpec.setMetricId( new PerfMetricId[] {cpu_usage,cpu_usagemhz,mem,vdisk_read,vdisk_write,vdisk_write,net_trans});
+
+            Calendar startTime = (Calendar) curTime.clone();
+            startTime.roll(Calendar.MINUTE, -10);
+            System.out.println("start:" + startTime.getTime());
+            qSpec.setStartTime(startTime);
+
+            Calendar endTime = (Calendar) curTime.clone();
+            endTime.roll(Calendar.MINUTE, -5);
+            System.out.println("end:" + endTime.getTime());
+            qSpec.setEndTime(endTime);
+            qSpecList.add(qSpec);
+        }
+
+        PerformanceManager pm = vmware_inventory.getPerformanceManager();
+        PerfQuerySpec[] pqsArray = qSpecList.toArray(new PerfQuerySpec[qSpecList.size()]);
+        PerfEntityMetricBase[] pembs = pm.queryPerf( pqsArray);
+        System.out.println(pembs);
+        for(int i=0; pembs!=null && i< pembs.length; i++)
+        {
+            vmware_inventory.printPerfMetric(pembs[i]);
+        }
         vmware_inventory.close();
     }
 
+    void printPerfMetric(PerfEntityMetricBase val)
+    {
+        String entityDesc = val.getEntity().getType() 
+            + ":" + val.getEntity().get_value();
+        System.out.println("Entity:" + entityDesc);
+        if(val instanceof PerfEntityMetric)
+        {
+          printPerfMetric((PerfEntityMetric)val);
+        }
+        else if(val instanceof PerfEntityMetricCSV)
+        {
+          printPerfMetricCSV((PerfEntityMetricCSV)val);
+        }
+        else
+        {
+          System.out.println("UnExpected sub-type of " +
+                "PerfEntityMetricBase.");
+        }
+    }
+
+    void printPerfMetric(PerfEntityMetric pem)
+    {
+        PerfMetricSeries[] vals = pem.getValue();
+        PerfSampleInfo[]  infos = pem.getSampleInfo();
+
+        System.out.println("Sampling Times and Intervales:");
+        for(int i=0; infos!=null && i<infos.length; i++)
+        {
+            System.out.println("sample time: " 
+              + infos[i].getTimestamp().getTime());
+            System.out.println("sample interval (sec):" 
+              + infos[i].getInterval());
+        }
+
+        System.out.println("\nSample values:");
+        for(int j=0; vals!=null && j<vals.length; ++j)
+        {
+          System.out.println("Perf counter ID:" 
+              + vals[j].getId().getCounterId());
+          System.out.println("Device instance ID:" 
+              + vals[j].getId().getInstance());
+          
+          if(vals[j] instanceof PerfMetricIntSeries)
+          {
+            PerfMetricIntSeries val = (PerfMetricIntSeries) vals[j];
+            long[] longs = val.getValue();
+            for(int k=0; k<longs.length; k++) 
+            {
+              System.out.print(longs[k] + " ");
+            }
+            System.out.println("Total:"+longs.length);
+          }
+          else if(vals[j] instanceof PerfMetricSeriesCSV)
+          { // it is not likely coming here...
+            PerfMetricSeriesCSV val = (PerfMetricSeriesCSV) vals[j];
+            System.out.println("CSV value:" + val.getValue());
+          }
+        }
+    }
+
+    void printPerfMetricCSV(PerfEntityMetricCSV pems)
+    {
+        System.out.println("SampleInfoCSV:" 
+            + pems.getSampleInfoCSV());
+        PerfMetricSeriesCSV[] csvs = pems.getValue();
+        for(int i=0; i<csvs.length; i++)
+        {
+          System.out.println("PerfCounterId:" 
+              + csvs[i].getId().getCounterId());
+          System.out.println("CSV sample values:" 
+              + csvs[i].getValue());
+        }
+    }
     /**
      * gatherVirtualMachines
      *
@@ -152,6 +304,7 @@ public class VMwareInventory
         for(int i=0; i<pTables.length; i++)
         {
             HashMap<String, Object> vm = new HashMap<String, Object>();
+            vm.put("vm",vms[i]);
             vm.put("uuid",pTables[i].get("config.uuid"));
             vm.put("name",pTables[i].get("name"));
             vm.put("cpu_count",pTables[i].get("config.hardware.numCPU"));
@@ -220,6 +373,16 @@ public class VMwareInventory
         System.out.println("Total # of VMs "+i);
     }
 
+    public List<VirtualMachine>  virtualMachines()
+    { 
+        List<VirtualMachine> vms = new ArrayList<VirtualMachine>();
+        int i = 0;
+        for (String moref: this.vmMap.keySet()) {
+            vms.add((VirtualMachine)this.vmMap.get(moref).get("vm"));
+        }
+        return vms;
+    }
+
     /**
      * printHosts
      *
@@ -264,8 +427,6 @@ public class VMwareInventory
         PerfCounterInfo[] pcis = perfMgr.getPerfCounter();
         for(int i=0; pcis!=null && i<pcis.length; i++)
         {
-            this.counterMap.put(pcis[i].getNameInfo().getKey(), (Integer) pcis[i].getKey());
-            /* Debugging purposes only.
             System.out.println("\nKey:" + pcis[i].getKey());
             String perfCounter = pcis[i].getGroupInfo().getKey() + "."
               + pcis[i].getNameInfo().getKey() + "." 
@@ -275,15 +436,24 @@ public class VMwareInventory
             System.out.println("StatsType:" + pcis[i].getStatsType());
             System.out.println("UnitInfo:" 
               + pcis[i].getUnitInfo().getKey());
-              */
+            this.counterMap.put(perfCounter, (Integer) pcis[i].getKey());
         }
     }
-/*
-    private Integer[] getCounterIds(String[] counter_names)
+
+    private List<Integer> getCounterIds(String[] counter_names)
     {
-        return new Integer[];
+        List<Integer> result = new ArrayList<Integer>();
+        for ( int i=0; i < counter_names.length; i++)
+        {
+            Integer counterId = this.counterMap.get(counter_names[i]);
+            if (counterId != null) {
+                System.out.println("Found "+counter_names[i]);
+                result.add(counterId);
+            }
+        }
+        return result;
     }
-    */
+
     /**
      * gatherHosts 
      *
