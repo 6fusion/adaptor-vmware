@@ -86,6 +86,12 @@ public class VMwareInventory
         vmware_inventory.printHosts();
         vmware_inventory.printVMs();
         vmware_inventory.gatherCounters();
+        vmware_inventory.readings(vmware_inventory.virtualMachines());
+        vmware_inventory.close();
+    }
+
+    public void readings(List<VirtualMachine> vms)
+    {
         String[] counterNames = { "cpu.usage.average",
                         "cpu.usagemhz.average",
                         "mem.consumed.average",
@@ -93,9 +99,6 @@ public class VMwareInventory
                         "virtualDisk.write.average",
                         "net.received.average",
                         "net.transmitted.average"};
-        System.out.println("pants"+vmware_inventory.counterMap);
-        //List<Integer> counterIds = vmware_inventory.getCounterIds(counterNames);
-
         Calendar curTime = vmware_inventory.currentTime();
 
         PerfMetricId cpu_usage = new PerfMetricId();
@@ -125,10 +128,6 @@ public class VMwareInventory
         PerfMetricId net_trans = new PerfMetricId();
         net_trans.setCounterId(vmware_inventory.counterMap.get("net.transmitted.average"));
         net_trans.setInstance("*");
-
-        //System.out.println("donut"+counterIds);
-        List<VirtualMachine> vms = vmware_inventory.virtualMachines();
-        System.out.println("pizza"+vms);
 
         List<PerfQuerySpec> qSpecList = new ArrayList<PerfQuerySpec>();
         Iterator it = vms.iterator();
@@ -160,7 +159,6 @@ public class VMwareInventory
         {
             vmware_inventory.printPerfMetric(pembs[i]);
         }
-        vmware_inventory.close();
     }
 
     void printPerfMetric(PerfEntityMetricBase val)
