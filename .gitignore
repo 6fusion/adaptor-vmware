@@ -9,3 +9,5 @@ log
 .DS_Store
 data/*
 .vagrant
+config/newrelic.yml
+*.class

@@ -48,9 +48,10 @@ class Machine < Base::Machine
   end
 
   def self.vm_inventory(inode)
-    vm_inventory = VMwareInventory.new(inode.host_ip_address, inode.user, inode.password)
+    vm_inventory = VMwareInventory.new("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
+    vm_inventory.vmMap.to_hash
+  ensure
     vm_inventory.close
-    vm_inventory.to_hash
   end
 
   def self.all(inode)
@@ -119,6 +120,7 @@ class Machine < Base::Machine
 
     rescue => e
       logger.error(e.message)
+      logger.error(e.backtrace)
       raise Exceptions::Unrecoverable
     end
   end
@@ -134,7 +136,7 @@ class Machine < Base::Machine
     begin
       # Retrieve all machines and virtual machine references
       inode.open_session
-      machines            = self.all(inode)
+      machines            = self.vm_inventory(inode)
       vms                 = machines.map { |m| m.vm }
 
       # Connect to vCenter and set the performance manager variable
@@ -154,6 +156,7 @@ class Machine < Base::Machine
 
     rescue => e
       logger.error(e.message)
+      logger.error(e.backtrace)
       raise Exceptions::Unrecoverable
     ensure
       inode.close_session
@@ -393,6 +396,15 @@ class Machine < Base::Machine
     end
   end
 
+  def nics=(_nics)
+    @nics = _nics.map {|nic| MachineNic.new(nic)}
+  end
+
+  def disks=(_disks)
+    @disks = _disks.map {|disk| MachineDisk.new(disk)}
+  end
+
+
   private
 
   # def self.get_machines_cache(uuid)
@@ -587,5 +599,7 @@ class Machine < Base::Machine
       raise Exceptions::Unrecoverable
     end
   end
+
+
 
 end
