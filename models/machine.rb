@@ -137,6 +137,7 @@ class Machine < Base::Machine
       # Retrieve all machines and virtual machine references
       inode.open_session
       machines            = self.vm_inventory(inode)
+      logger.info(machines.inspect)
       vms                 = machines.map { |m| m.vm }
 
       # Connect to vCenter and set the performance manager variable
