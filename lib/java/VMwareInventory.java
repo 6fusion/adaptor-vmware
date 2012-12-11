@@ -137,7 +137,7 @@ public class VMwareInventory
             qSpec.setEntity(vm.getMOR());
             qSpec.setFormat("normal");
             qSpec.setIntervalId(300);
-            qSpec.setMetricId( new PerfMetricId[] {cpu_usage,cpu_usagemhz,mem,vdisk_read,vdisk_write,vdisk_write,net_trans});
+            qSpec.setMetricId( new PerfMetricId[] {cpu_usage,cpu_usagemhz,mem,vdisk_read,vdisk_write,vdisk_write,net_trans,net_recv});
 
             Calendar startTime = (Calendar) curTime.clone();
             startTime.roll(Calendar.HOUR, -1);
@@ -193,39 +193,6 @@ public class VMwareInventory
                 }
             }
         }
-/*
-        // Run through the counters
-        for(int j=0; vals!=null && j<vals.length; ++j)
-        {
-          String counterName = this.counterIdMap.get(vals[j].getId().getCounterId());
-          System.out.println(j);
-
-          if(vals[j] instanceof PerfMetricIntSeries)
-          {
-            PerfMetricIntSeries val = (PerfMetricIntSeries) vals[j];
-            long[] longs = val.getValue();
-            for(int k=0; k<longs.length; k++) 
-            {
-              HashMap<String, Long> metric = null;
-              //GET METRIC HASHMAP FROM METRICS
-              if (metrics.containsKey(infos[k].getTimestamp().getTime())) {
-                System.out.println("found "+infos[k].getTimestamp().getTime());
-                metric = metrics.get(infos[k].getTimestamp().getTime());
-              } else {
-                // IF NOT, THEN CREATE
-                System.out.println("create "+infos[k].getTimestamp().getTime());
-                metric = new HashMap<String, Long>();
-                metrics.put(infos[k].getTimestamp().getTime(), metric);
-              }
-              System.out.println("adding "+counterName+vals[k].getId().getInstance().toString()+"="+longs[k]);
-              metric.put(counterName+vals[k].getId().getInstance().toString(), longs[k]);
-              addMachineReading(vm_mor,metrics);
-            }
-            //System.out.println(metrics);
-            System.out.println("Total:"+longs.length);
-          }
-        }
-        */
         addMachineReading(vm_mor,metrics);
         System.out.println("*****************************");
         return(metrics);
@@ -514,14 +481,14 @@ public class VMwareInventory
             String perfCounter = pcis[i].getGroupInfo().getKey() + "."
               + pcis[i].getNameInfo().getKey() + "." 
               + pcis[i].getRollupType();
-        /*
+              /*
             System.out.println("\nKey:" + pcis[i].getKey());
             System.out.println("PerfCounter:" + perfCounter);
             System.out.println("Level:" + pcis[i].getLevel());
             System.out.println("StatsType:" + pcis[i].getStatsType());
             System.out.println("UnitInfo:" 
               + pcis[i].getUnitInfo().getKey());
-        */
+              */
             this.counterMap.put(perfCounter, (Integer) pcis[i].getKey());
             this.counterIdMap.put((Integer) pcis[i].getKey(), perfCounter);
         }
