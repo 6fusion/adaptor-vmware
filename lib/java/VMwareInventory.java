@@ -28,6 +28,8 @@ public class VMwareInventory
     public HashMap<String, HashMap<String, Object>> vmMap = new HashMap<String, HashMap<String, Object>>();
     // Hash of PerfCounter name to Counter ID
     public HashMap<String, Integer> counterMap = new HashMap<String, Integer>();
+    // Hash of PerfCounter name to Counter ID to name
+    public HashMap<Integer, String> counterIdMap = new HashMap<Integer, String>();
     // Utility Constants
     public static long KB = 1024;
     public static double MB = Math.pow(1024,2);
@@ -198,8 +200,10 @@ public class VMwareInventory
         System.out.println("\nSample values:");
         for(int j=0; vals!=null && j<vals.length; ++j)
         {
+          String counterName = this.counterIdMap.get(vals[j].getId().getCounterId());
           System.out.println("Perf counter ID:" 
               + vals[j].getId().getCounterId());
+          System.out.println("Perf counter Name:" + counterName);
           System.out.println("Device instance ID:" 
               + vals[j].getId().getInstance());
           
@@ -439,6 +443,7 @@ public class VMwareInventory
               + pcis[i].getUnitInfo().getKey());
         */
             this.counterMap.put(perfCounter, (Integer) pcis[i].getKey());
+            this.counterIdMap.put((Integer) pcis[i].getKey(), perfCounter);
         }
     }
 
