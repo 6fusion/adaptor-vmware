@@ -8,8 +8,8 @@ import java.net.URL;
 import java.rmi.RemoteException;
 import java.util.*;
 import java.lang.Math;
-// import net.sf.json.JSONObject;
-
+import org.joda.time.format.ISODateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import com.vmware.vim25.*;
 import com.vmware.vim25.mo.*;
 import com.vmware.vim25.mo.util.*;
@@ -167,7 +167,7 @@ public class VMwareInventory
             //DEBUG - printPerfMetric(pembs[i]);
             if(pembs[i] instanceof PerfEntityMetric)
             {
-                HashMap<Date, HashMap<String, Long>> metrics = parsePerfMetricForVM((PerfEntityMetric)pembs[i]);
+                HashMap<String, HashMap<String, Long>> metrics = parsePerfMetricForVM((PerfEntityMetric)pembs[i]);
                 String vm_mor = pembs[i].getEntity().get_value();
                 this.vmMap.get(vm_mor).put("stats",metrics);
                 //DEBUG - printMachineReading(vm_mor,metrics);
@@ -178,15 +178,16 @@ public class VMwareInventory
 
 
     // This does one virtual machine parsing of metrics
-    HashMap<Date, HashMap<String, Long>> parsePerfMetricForVM(PerfEntityMetric pem)
+    HashMap<String, HashMap<String, Long>> parsePerfMetricForVM(PerfEntityMetric pem)
     {
         PerfMetricSeries[] vals = pem.getValue();
         PerfSampleInfo[]  infos = pem.getSampleInfo();
 
-        HashMap<Date, HashMap<String, Long>> metrics = new HashMap<Date, HashMap<String, Long>>();
+        HashMap<String, HashMap<String, Long>> metrics = new HashMap<String, HashMap<String, Long>>();
 
         for(int i=0; infos!=null && i<infos.length; i++) {
-            Date timestamp = infos[i].getTimestamp().getTime();
+            DateTimeFormatter fmt = ISODateTimeFormat.dateTime();
+            String timestamp = fmt.print(infos[i].getTimestamp().getTimeInMillis());
             metrics.put(timestamp, new HashMap<String, Long>()); 
             for (int j=0; vals!=null && j<vals.length; ++j){
                 String counterName = this.counterIdMap.get(vals[j].getId().getCounterId());
@@ -206,11 +207,11 @@ public class VMwareInventory
         return(metrics);
     }
 
-    void printMachineReading(String vm_mor,  HashMap<Date, HashMap<String, Long>> metrics)
+    void printMachineReading(String vm_mor,  HashMap<String, HashMap<String, Long>> metrics)
     {
         HashMap<String, Object> machine_reading = new HashMap<String, Object>();
         System.out.println("-------");
-        for (Date date: metrics.keySet()) {
+        for (String date: metrics.keySet()) {
             HashMap<String, Long> metric = metrics.get(date);
             for(String name: metric.keySet()) {
                 System.out.println(date+" "+name+" "+metric.get(name) );

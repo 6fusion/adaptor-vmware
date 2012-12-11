@@ -228,6 +228,7 @@ class Machine < Base::Machine
       logger.info("machine.readings")
 
       #Create list of timestamps
+      # Time.now.utc.round(5.minutes).utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z  => "2012-12-11T20:20:00.000Z"
       timestamps = { }
       if _since < Time.now.utc
         start  = _since.round(5.minutes).utc
