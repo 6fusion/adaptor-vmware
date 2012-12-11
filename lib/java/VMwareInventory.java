@@ -427,11 +427,11 @@ public class VMwareInventory
         PerfCounterInfo[] pcis = perfMgr.getPerfCounter();
         for(int i=0; pcis!=null && i<pcis.length; i++)
         {
-        /*
-            System.out.println("\nKey:" + pcis[i].getKey());
             String perfCounter = pcis[i].getGroupInfo().getKey() + "."
               + pcis[i].getNameInfo().getKey() + "." 
               + pcis[i].getRollupType();
+        /*
+            System.out.println("\nKey:" + pcis[i].getKey());
             System.out.println("PerfCounter:" + perfCounter);
             System.out.println("Level:" + pcis[i].getLevel());
             System.out.println("StatsType:" + pcis[i].getStatsType());
