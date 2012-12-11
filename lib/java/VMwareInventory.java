@@ -75,7 +75,7 @@ public class VMwareInventory
      * Example connection to vCenter and printing out hosts and virtual machines.
      *
      */
-    public static void main(String[] args) throws Exception
+    public static void main(String[] args) throws Exception 
     {
         if (args.length != 3) {
                 System.err.println("Usage: VMwareInventory https://10.10.10.10/sdk username password ");
@@ -90,7 +90,7 @@ public class VMwareInventory
         vmware_inventory.close();
     }
 
-    public void readings(List<VirtualMachine> vms)
+    public void readings(List<VirtualMachine> vms) throws Exception
     {
         String[] counterNames = { "cpu.usage.average",
                         "cpu.usagemhz.average",
@@ -99,34 +99,34 @@ public class VMwareInventory
                         "virtualDisk.write.average",
                         "net.received.average",
                         "net.transmitted.average"};
-        Calendar curTime = vmware_inventory.currentTime();
+        Calendar curTime = currentTime();
 
         PerfMetricId cpu_usage = new PerfMetricId();
-        cpu_usage.setCounterId(vmware_inventory.counterMap.get("cpu.usage.average"));
+        cpu_usage.setCounterId(this.counterMap.get("cpu.usage.average"));
         cpu_usage.setInstance("");
         
         PerfMetricId cpu_usagemhz = new PerfMetricId();
-        cpu_usagemhz.setCounterId(vmware_inventory.counterMap.get("cpu.usagemhz.average"));
+        cpu_usagemhz.setCounterId(this.counterMap.get("cpu.usagemhz.average"));
         cpu_usagemhz.setInstance("");
 
         PerfMetricId mem = new PerfMetricId();
-        mem.setCounterId(vmware_inventory.counterMap.get("mem.consumed.average"));
+        mem.setCounterId(this.counterMap.get("mem.consumed.average"));
         mem.setInstance("");
 
         PerfMetricId vdisk_read = new PerfMetricId();
-        vdisk_read.setCounterId(vmware_inventory.counterMap.get("virtualDisk.read.average"));
+        vdisk_read.setCounterId(this.counterMap.get("virtualDisk.read.average"));
         vdisk_read.setInstance("*");
 
         PerfMetricId vdisk_write = new PerfMetricId();
-        vdisk_write.setCounterId(vmware_inventory.counterMap.get("virtualDisk.write.average"));
+        vdisk_write.setCounterId(this.counterMap.get("virtualDisk.write.average"));
         vdisk_write.setInstance("*");
 
         PerfMetricId net_recv = new PerfMetricId();
-        net_recv.setCounterId(vmware_inventory.counterMap.get("net.received.average"));
+        net_recv.setCounterId(this.counterMap.get("net.received.average"));
         net_recv.setInstance("*");
 
         PerfMetricId net_trans = new PerfMetricId();
-        net_trans.setCounterId(vmware_inventory.counterMap.get("net.transmitted.average"));
+        net_trans.setCounterId(this.counterMap.get("net.transmitted.average"));
         net_trans.setInstance("*");
 
         List<PerfQuerySpec> qSpecList = new ArrayList<PerfQuerySpec>();
@@ -140,7 +140,7 @@ public class VMwareInventory
             qSpec.setMetricId( new PerfMetricId[] {cpu_usage,cpu_usagemhz,mem,vdisk_read,vdisk_write,vdisk_write,net_trans});
 
             Calendar startTime = (Calendar) curTime.clone();
-            startTime.roll(Calendar.MINUTE, -10);
+            startTime.roll(Calendar.HOUR, -1);
             System.out.println("start:" + startTime.getTime());
             qSpec.setStartTime(startTime);
 
@@ -151,15 +151,52 @@ public class VMwareInventory
             qSpecList.add(qSpec);
         }
 
-        PerformanceManager pm = vmware_inventory.getPerformanceManager();
+        PerformanceManager pm = getPerformanceManager();
         PerfQuerySpec[] pqsArray = qSpecList.toArray(new PerfQuerySpec[qSpecList.size()]);
         PerfEntityMetricBase[] pembs = pm.queryPerf( pqsArray);
-        System.out.println(pembs);
         for(int i=0; pembs!=null && i< pembs.length; i++)
         {
-            vmware_inventory.printPerfMetric(pembs[i]);
+            printPerfMetric(pembs[i]);
+            if(pembs[i] instanceof PerfEntityMetric)
+            {
+                HashMap<Date, HashMap<String, Long>> metrics = parsePerfMetricForVM((PerfEntityMetric)pembs[i]);
+                System.out.println(metrics);
+            }
+
         }
     }
+
+
+    // This does one virtual machine parsing of metrics
+    HashMap<Date, HashMap<String, Long>> parsePerfMetricForVM(PerfEntityMetric pem)
+    {
+        String vm_mor = pem.getEntity().get_value();
+        PerfMetricSeries[] vals = pem.getValue();
+        PerfSampleInfo[]  infos = pem.getSampleInfo();
+
+        HashMap<Date, HashMap<String, Long>> metrics = new HashMap<Date, HashMap<String, Long>>();
+
+        // Run through the counters
+        for(int j=0; vals!=null && j<vals.length; ++j)
+        {
+          String counterName = this.counterIdMap.get(vals[j].getId().getCounterId());
+          
+          if(vals[j] instanceof PerfMetricIntSeries)
+          {
+            PerfMetricIntSeries val = (PerfMetricIntSeries) vals[j];
+            long[] longs = val.getValue();
+            for(int k=0; k<longs.length; k++) 
+            {
+              HashMap<String, Long> metric = new HashMap<String, Long>();
+              metric.put(counterName+vals[k].getId().getInstance().toString(), longs[k]);
+              metrics.put(infos[k].getTimestamp().getTime(), metric);
+            }
+            System.out.println("Total:"+longs.length);
+          }
+        }
+        return(metrics);
+    }
+
 
     void printPerfMetric(PerfEntityMetricBase val)
     {
