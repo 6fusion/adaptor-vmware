@@ -84,13 +84,20 @@ public class VMwareInventory
 
         VMwareInventory vmware_inventory = new VMwareInventory(args[0],args[1],args[2]);
         vmware_inventory.printHosts();
-        vmware_inventory.printVMs();
         vmware_inventory.gatherCounters();
-        vmware_inventory.readings(vmware_inventory.virtualMachines());
+        Calendar curTime = vmware_inventory.currentTime();
+        Calendar startTime = (Calendar) curTime.clone();
+        startTime.roll(Calendar.HOUR, -1);
+        System.out.println("start:" + startTime.getTime());
+        Calendar endTime = (Calendar) curTime.clone();
+        endTime.roll(Calendar.MINUTE, -5);
+        System.out.println("end:" + endTime.getTime());
+        vmware_inventory.readings(vmware_inventory.virtualMachines(),startTime,endTime);
+        vmware_inventory.printVMs();
         vmware_inventory.close();
     }
 
-    public void readings(List<VirtualMachine> vms) throws Exception
+    public void readings(List<VirtualMachine> vms, Calendar startTime, Calendar endTime) throws Exception
     {
         String[] counterNames = { "cpu.usage.average",
                         "cpu.usagemhz.average",
@@ -99,7 +106,6 @@ public class VMwareInventory
                         "virtualDisk.write.average",
                         "net.received.average",
                         "net.transmitted.average"};
-        Calendar curTime = currentTime();
 
         PerfMetricId cpu_usage = new PerfMetricId();
         cpu_usage.setCounterId(this.counterMap.get("cpu.usage.average"));
@@ -138,15 +144,17 @@ public class VMwareInventory
             qSpec.setFormat("normal");
             qSpec.setIntervalId(300);
             qSpec.setMetricId( new PerfMetricId[] {cpu_usage,cpu_usagemhz,mem,vdisk_read,vdisk_write,vdisk_write,net_trans,net_recv});
-
+            /*
             Calendar startTime = (Calendar) curTime.clone();
             startTime.roll(Calendar.HOUR, -1);
             System.out.println("start:" + startTime.getTime());
+            */
             qSpec.setStartTime(startTime);
-
+            /*
             Calendar endTime = (Calendar) curTime.clone();
             endTime.roll(Calendar.MINUTE, -5);
             System.out.println("end:" + endTime.getTime());
+            */
             qSpec.setEndTime(endTime);
             qSpecList.add(qSpec);
         }
@@ -156,10 +164,13 @@ public class VMwareInventory
         PerfEntityMetricBase[] pembs = pm.queryPerf( pqsArray);
         for(int i=0; pembs!=null && i< pembs.length; i++)
         {
-            printPerfMetric(pembs[i]);
+            //DEBUG - printPerfMetric(pembs[i]);
             if(pembs[i] instanceof PerfEntityMetric)
             {
                 HashMap<Date, HashMap<String, Long>> metrics = parsePerfMetricForVM((PerfEntityMetric)pembs[i]);
+                String vm_mor = pembs[i].getEntity().get_value();
+                this.vmMap.get(vm_mor).put("stats",metrics);
+                //DEBUG - printMachineReading(vm_mor,metrics);
             }
 
         }
@@ -169,7 +180,6 @@ public class VMwareInventory
     // This does one virtual machine parsing of metrics
     HashMap<Date, HashMap<String, Long>> parsePerfMetricForVM(PerfEntityMetric pem)
     {
-        String vm_mor = pem.getEntity().get_value();
         PerfMetricSeries[] vals = pem.getValue();
         PerfSampleInfo[]  infos = pem.getSampleInfo();
 
@@ -190,15 +200,13 @@ public class VMwareInventory
                     long[] longs = val.getValue();
                     long value = longs[i];
                     metrics.get(timestamp).put(metricName, value);
-                }
+                } 
             }
         }
-        addMachineReading(vm_mor,metrics);
-        System.out.println("*****************************");
         return(metrics);
     }
 
-    void addMachineReading(String vm_mor,  HashMap<Date, HashMap<String, Long>> metrics)
+    void printMachineReading(String vm_mor,  HashMap<Date, HashMap<String, Long>> metrics)
     {
         HashMap<String, Object> machine_reading = new HashMap<String, Object>();
         System.out.println("-------");
