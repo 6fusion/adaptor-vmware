@@ -101,8 +101,8 @@ public class VMwareInventory
     public void readings(String startIso8601, String endIso8601) throws Exception
     {
         DateTimeFormatter parser2 = ISODateTimeFormat.dateTimeNoMillis();
-        Calendar startTime = (Calendar) Calendar.getInstance().clone();
-        Calendar endTime = (Calendar) Calendar.getInstance().clone();
+        Calendar startTime = (Calendar) Calendar.getInstance(TimeZone.getTimeZone("GMT")).clone();
+        Calendar endTime = (Calendar) Calendar.getInstance(TimeZone.getTimeZone("GMT")).clone();
         startTime.setTime(parser2.parseDateTime(startIso8601).toDate());
         endTime.setTime(parser2.parseDateTime(endIso8601).toDate());
 
