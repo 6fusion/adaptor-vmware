@@ -139,7 +139,9 @@ class Machine < Base::Machine
 
       vm_inventory = VMwareInventory.new("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
       vm_inventory.gatherCounters
-      vm_inventory.readings(_since.utc.strftime('%Y-%m-%dT%H:%M:%S')+"Z" ,_until.utc.strftime('%Y-%m-%dT%H:%M:%S')+"Z");
+      startTime = _since.utc.strftime('%Y-%m-%dT%H:%M:%S')+"Z"
+      endTime = _until.utc.strftime('%Y-%m-%dT%H:%M:%S')+"Z"
+      vm_inventory.readings( startTime.to_java, endTime.to_java)
       # vm_inventory.printVMs();
       machines = vm_inventory.vmMap.to_hash
 
@@ -255,34 +257,18 @@ class Machine < Base::Machine
       #Create machine readings
       logger.info('machine.readings_from_stats')
       result = []
-      performance_manager = inode.session.serviceContent.perfManager
-      if stats.is_a?(RbVmomi::VIM::PerfEntityMetric)
-        stats.sampleInfo.each_with_index.map do |x, i|
-          if stats.value.empty?.eql?(false)
-            cpu_metric_usagemhz = "#{performance_manager.perfcounter_hash["cpu.usagemhz.average"].key}."
-            cpu_metric_usage = "#{performance_manager.perfcounter_hash["cpu.usage.average"].key}."
-            memory_metric = "#{performance_manager.perfcounter_hash["mem.consumed.average"].key}."
-            metric_readings = Hash[stats.value.map { |s| ["#{s.id.counterId}.#{s.id.instance}", s.value] }]
-            logger.info "memory_metric:\n#{metric_readings[memory_metric].inspect}\n"
-            logger.info "cpu_metric_usage:\n#{metric_readings[cpu_metric_usage].inspect}\n"
-            result << MachineReading.new({
-                                           :interval     => x.interval,
-                                           :date_time    => x.timestamp,
-                                           :cpu_usage    => metric_readings[cpu_metric_usage].nil? ? 0 : metric_readings[cpu_metric_usage][i] == -1 ? 0 : (metric_readings[cpu_metric_usage][i].to_f / (100**2)).to_f,
-                                           :memory_bytes => metric_readings[memory_metric].nil? ? 0 : metric_readings[memory_metric][i] == -1 ? 0 : metric_readings[memory_metric][i] * 1024 }
-            )
-            timestamps[x.timestamp] = true
-            logger.debug("Machine="+@name)
-            logger.debug("cpu.usage.average="+metric_readings[cpu_metric_usage][i].to_s)
-            logger.debug("CPU Count="+cpu_count.to_s)
-            logger.debug("CPU Speed="+cpu_speed.to_s)
-            logger.debug("CPU Metric Usage="+(metric_readings[cpu_metric_usage][i].to_f / (100**2)).to_s)
-            logger.debug("cpu.usagemhz.average="+metric_readings[cpu_metric_usagemhz][i].to_s)
-          end
-        end
-      end
       timestamps.keys.each do |timestamp|
-        if timestamps[timestamp].eql?(false)
+        if stats.key?(timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z")
+          metrics = stats[timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z"]
+          cpu_usage = stats["cpu.usage.average"].nil? ? 0 : stats["cpu.usage.average"] == -1 ? 0 : (stats["cpu.usage.average"].to_f / (100**2)).to_f
+          memory_bytes = stats["mem.consumed.average"].nil? ? 0 : stats["mem.consumed.average"][i] == -1 ? 0 : stats["mem.consumed.average"][i] * 1024
+          result << MachineReading.new({
+                                         :interval     => _interval,
+                                         :cpu_usage    => cpu_usage,
+                                         :memory_bytes => memory_bytes,
+                                         :date_time    => timestamp.iso8601.to_s }
+          )
+        else
           result << MachineReading.new({
                                          :interval     => _interval,
                                          :cpu_usage    => 0,
@@ -291,6 +277,42 @@ class Machine < Base::Machine
           )
         end
       end
+      # performance_manager = inode.session.serviceContent.perfManager
+      # if stats.is_a?(RbVmomi::VIM::PerfEntityMetric)
+      #   stats.sampleInfo.each_with_index.map do |x, i|
+      #     if stats.value.empty?.eql?(false)
+      #       cpu_metric_usagemhz = "#{performance_manager.perfcounter_hash["cpu.usagemhz.average"].key}."
+      #       cpu_metric_usage = "#{performance_manager.perfcounter_hash["cpu.usage.average"].key}."
+      #       memory_metric = "#{performance_manager.perfcounter_hash["mem.consumed.average"].key}."
+      #       metric_readings = Hash[stats.value.map { |s| ["#{s.id.counterId}.#{s.id.instance}", s.value] }]
+      #       logger.info "memory_metric:\n#{metric_readings[memory_metric].inspect}\n"
+      #       logger.info "cpu_metric_usage:\n#{metric_readings[cpu_metric_usage].inspect}\n"
+      #       result << MachineReading.new({
+      #                                      :interval     => x.interval,
+      #                                      :date_time    => x.timestamp,
+      #                                      :cpu_usage    => metric_readings[cpu_metric_usage].nil? ? 0 : metric_readings[cpu_metric_usage][i] == -1 ? 0 : (metric_readings[cpu_metric_usage][i].to_f / (100**2)).to_f,
+      #                                      :memory_bytes => metric_readings[memory_metric].nil? ? 0 : metric_readings[memory_metric][i] == -1 ? 0 : metric_readings[memory_metric][i] * 1024 }
+      #       )
+      #       timestamps[x.timestamp] = true
+      #       logger.debug("Machine="+@name)
+      #       logger.debug("cpu.usage.average="+metric_readings[cpu_metric_usage][i].to_s)
+      #       logger.debug("CPU Count="+cpu_count.to_s)
+      #       logger.debug("CPU Speed="+cpu_speed.to_s)
+      #       logger.debug("CPU Metric Usage="+(metric_readings[cpu_metric_usage][i].to_f / (100**2)).to_s)
+      #       logger.debug("cpu.usagemhz.average="+metric_readings[cpu_metric_usagemhz][i].to_s)
+      #     end
+      #   end
+      # end
+      # timestamps.keys.each do |timestamp|
+      #   if timestamps[timestamp].eql?(false)
+      #     result << MachineReading.new({
+      #                                    :interval     => _interval,
+      #                                    :cpu_usage    => 0,
+      #                                    :memory_bytes => 0,
+      #                                    :date_time    => timestamp.iso8601.to_s }
+      #     )
+      #   end
+      # end
       result
 
     rescue => e
