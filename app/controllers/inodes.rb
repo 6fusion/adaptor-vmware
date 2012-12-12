@@ -1,6 +1,7 @@
 AdaptorVMware.controllers :inodes, :priority => :low do
   before do
     logger.info('inodes#before')
+    logger.debug(params.inspect)
     content_type 'application/json'
   end
 
