@@ -52,7 +52,6 @@ public class VMwareInventory
     {
         ServiceInstance si = new ServiceInstance(new URL(url), username, password, true);
         this.si = si;
-        gatherCounters();
         gatherVirtualMachines();
     }
 
@@ -92,11 +91,23 @@ public class VMwareInventory
         Calendar endTime = (Calendar) curTime.clone();
         endTime.roll(Calendar.MINUTE, -5);
         System.out.println("end:" + endTime.getTime());
-        vmware_inventory.readings(vmware_inventory.virtualMachines(),startTime,endTime);
+        //vmware_inventory.readings(vmware_inventory.virtualMachines(),startTime,endTime);
+
+        vmware_inventory.readings("2012-12-12T14:30:00Z","2012-12-12T14:40:00Z");
         vmware_inventory.printVMs();
         vmware_inventory.close();
     }
 
+    public void readings(String startIso8601, String endIso8601) throws Exception
+    {
+        DateTimeFormatter parser2 = ISODateTimeFormat.dateTimeNoMillis();
+        Calendar startTime = (Calendar) Calendar.getInstance().clone();
+        Calendar endTime = (Calendar) Calendar.getInstance().clone();
+        startTime.setTime(parser2.parseDateTime(startIso8601).toDate());
+        endTime.setTime(parser2.parseDateTime(endIso8601).toDate());
+
+        readings(virtualMachines(),startTime, endTime);
+    }
     public void readings(List<VirtualMachine> vms, Calendar startTime, Calendar endTime) throws Exception
     {
         String[] counterNames = { "cpu.usage.average",
@@ -170,6 +181,7 @@ public class VMwareInventory
                 HashMap<String, HashMap<String, Long>> metrics = parsePerfMetricForVM((PerfEntityMetric)pembs[i]);
                 String vm_mor = pembs[i].getEntity().get_value();
                 this.vmMap.get(vm_mor).put("stats",metrics);
+                //DEBUG - System.out.println(metrics);
                 //DEBUG - printMachineReading(vm_mor,metrics);
             }
 
@@ -201,6 +213,7 @@ public class VMwareInventory
                     long[] longs = val.getValue();
                     long value = longs[i];
                     metrics.get(timestamp).put(metricName, value);
+                    //DEBUG - System.out.println(timestamp+" "+metricName+" "+value);
                 } 
             }
         }

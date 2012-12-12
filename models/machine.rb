@@ -138,10 +138,10 @@ class Machine < Base::Machine
       # Retrieve all machines and virtual machine references
 
       vm_inventory = VMwareInventory.new("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
-      machines = vm_inventory.vmMap.to_hash
       vm_inventory.gatherCounters
-      vm_inventory.readings(vm_inventory.virtualMachines(),_since.to_java,_until.to_java);
-      vm_inventory.printVMs();
+      vm_inventory.readings(_since.utc.strftime('%Y-%m-%dT%H:%M:%S')+"Z" ,_until.utc.strftime('%Y-%m-%dT%H:%M:%S')+"Z");
+      # vm_inventory.printVMs();
+      machines = vm_inventory.vmMap.to_hash
 
       # inode.open_session
       # machines            = self.vm_inventory(inode)
