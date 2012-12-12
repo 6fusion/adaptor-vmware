@@ -271,7 +271,7 @@ class Machine < Base::Machine
                                            :date_time    => timestamp.iso8601.to_s }
             )
           else
-            logger.info("missing "+timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z")
+            logger.info("missing "+timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z "+stats.to_s)
             result << MachineReading.new({
                                            :interval     => _interval,
                                            :cpu_usage    => 0,
