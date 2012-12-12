@@ -1,5 +1,6 @@
 rule ".class" => [".java"] do |t|
-  sh "javac -cp ./lib/java:./lib/java/vijava:./lib/java/vijava/dom4j-1.6.1.jar:./lib/java/vijava/vijava5120121125.jar -Xlint #{t.source}"
+  jars = Dir['lib/java/**/*.jar'].join(':')
+  sh "javac -cp ./lib/java:#{jars} -Xlint #{t.source}"
 end
 
 task :default => "lib/java/VMwareInventory.class"
