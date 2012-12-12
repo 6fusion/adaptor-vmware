@@ -87,17 +87,58 @@ AdaptorVMware.controllers :inodes, :priority => :low do
 
       begin
         t = Tempfile.new("diagnostics")
-        diag_file = Tempfile.new("vcenter_diagnostics") #, "#{PADRINO_ROOT}/data/")
+        diag_file = Tempfile.new("vcenter_diagnostics")
         diag_file.print(diag.to_yaml)
         diag_file.flush
 
+        file_list = {
+          :cron => "/var/log/cron",
+          :torquebox => "/var/log/torquebox/torquebox",
+          :messages => "/var/log/messages"
+        }
+
+        cmd_list = {
+          :date => "date -u",
+          :process_list => "ps faux",
+          :free_memory => "free",
+          :file_system => "df -h",
+          :iptables => "iptables -L",
+          :network => "ifconfig -a",
+          :ping_api => "ping -c 4 api.6fusion.com",
+          :ping_control_room => "ping -c 4 control-room.6fusion.com"
+        }
+
         Zip::ZipOutputStream.open(t.path) do |z|
-          Dir["#{PADRINO_ROOT}/log/*.log"].each do |lf|
-            z.put_next_entry(File.basename(lf))
-            z.print(IO.read(lf))
-          end
+          # add temp vcenter diagnostics files
           z.put_next_entry("vcenter_diagnostics.yaml")
           z.print(IO.read(diag_file.path))
+
+          # dump available system logs to temp files and store them in the zip
+          file_list.each do |k, c|
+            if File.exists?(c) || File.zero?(c)
+              begin
+                temp = File.open(c)
+                z.put_next_entry(k.to_s)
+                z.print(IO.read(temp.path))
+              ensure
+                temp.close
+              end
+            end
+          end
+
+          # dump command output to temp files and store them in the zip
+          cmd_list.each do |k, c|
+            begin
+              temp = Tempfile.new(k.to_s) 
+              temp.print(`#{c}`)
+              temp.flush
+              z.put_next_entry(k.to_s)
+              z.print(IO.read(temp.path))
+            ensure
+              temp.close
+              temp.unlink
+            end
+          end
         end
 
         content_type 'application/zip'
