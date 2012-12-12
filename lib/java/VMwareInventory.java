@@ -10,6 +10,7 @@ import java.util.*;
 import java.lang.Math;
 import org.joda.time.format.ISODateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
+import org.joda.time.DateTimeZone;
 import com.vmware.vim25.*;
 import com.vmware.vim25.mo.*;
 import com.vmware.vim25.mo.util.*;
@@ -199,7 +200,7 @@ public class VMwareInventory
 
         for(int i=0; infos!=null && i<infos.length; i++) {
             DateTimeFormatter fmt = ISODateTimeFormat.dateTime();
-            String timestamp = fmt.print(infos[i].getTimestamp().getTimeInMillis());
+            String timestamp = fmt.withZone(DateTimeZone.UTC).print(infos[i].getTimestamp().getTimeInMillis());
             metrics.put(timestamp, new HashMap<String, Long>()); 
             for (int j=0; vals!=null && j<vals.length; ++j){
                 String counterName = this.counterIdMap.get(vals[j].getId().getCounterId());
