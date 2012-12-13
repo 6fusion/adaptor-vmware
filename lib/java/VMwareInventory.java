@@ -528,7 +528,7 @@ public class VMwareInventory
         {
             Integer counterId = this.counterMap.get(counter_names[i]);
             if (counterId != null) {
-                System.out.println("Found "+counter_names[i]);
+                // System.out.println("Found "+counter_names[i]);
                 result.add(counterId);
             }
         }
@@ -544,7 +544,7 @@ public class VMwareInventory
      */
     private void gatherHosts() throws Exception
     {
-        System.out.println("\n============ Hosts ============");
+        // System.out.println("\n============ Hosts ============");
         Folder rootFolder = this.si.getRootFolder();
         ManagedEntity[] hosts = new InventoryNavigator(rootFolder).searchManagedEntities(
                         new String[][] { {"HostSystem", "name"}, }, true);
@@ -552,7 +552,7 @@ public class VMwareInventory
         // {
            //          System.out.println("host["+i+"]=" + hosts[i].getName());
         // }
-        System.out.println("\nretrieve multiple properties from multiple managed objects.");
+        // System.out.println("\nretrieve multiple properties from multiple managed objects.");
         Hashtable[] pTables = PropertyCollectorUtil.retrieveProperties(hosts, "HostSystem",
                 new String[] {"name", 
                 "hardware.cpuInfo.hz",
@@ -564,7 +564,7 @@ public class VMwareInventory
             host.put("hz",pTables[i].get("hardware.cpuInfo.hz"));
             host.put("memorySize",pTables[i].get("hardware.memorySize"));
             this.hostMap.put(hosts[i].getMOR().get_value().toString(), host);
-            System.out.println("host key is "+hosts[i].getMOR().get_value().toString());
+            // System.out.println("host key is "+hosts[i].getMOR().get_value().toString());
         }
     }
     /**
