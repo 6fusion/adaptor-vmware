@@ -10,6 +10,7 @@ import java.util.*;
 import java.lang.Math;
 import org.joda.time.format.ISODateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
+import org.joda.time.DateTimeZone;
 import com.vmware.vim25.*;
 import com.vmware.vim25.mo.*;
 import com.vmware.vim25.mo.util.*;
@@ -30,6 +31,7 @@ public class VMwareInventory
     public HashMap<String, Integer> counterMap = new HashMap<String, Integer>();
     // Hash of PerfCounter name to Counter ID to name
     public HashMap<Integer, String> counterIdMap = new HashMap<Integer, String>();
+    // List of VirtualMachine MORs 
     // Utility Constants
     public static long KB = 1024;
     public static double MB = Math.pow(1024,2);
@@ -52,7 +54,7 @@ public class VMwareInventory
     {
         ServiceInstance si = new ServiceInstance(new URL(url), username, password, true);
         this.si = si;
-        gatherVirtualMachines();
+        
     }
 
     public void close()
@@ -93,7 +95,7 @@ public class VMwareInventory
         System.out.println("end:" + endTime.getTime());
         //vmware_inventory.readings(vmware_inventory.virtualMachines(),startTime,endTime);
 
-        vmware_inventory.readings("2012-12-12T14:30:00Z","2012-12-12T14:40:00Z");
+        vmware_inventory.readings("2012-12-12T23:00:00Z","2012-12-12T23:20:00Z");
         vmware_inventory.printVMs();
         vmware_inventory.close();
     }
@@ -101,13 +103,14 @@ public class VMwareInventory
     public void readings(String startIso8601, String endIso8601) throws Exception
     {
         DateTimeFormatter parser2 = ISODateTimeFormat.dateTimeNoMillis();
-        Calendar startTime = (Calendar) Calendar.getInstance().clone();
-        Calendar endTime = (Calendar) Calendar.getInstance().clone();
+        Calendar startTime = (Calendar) Calendar.getInstance(TimeZone.getTimeZone("GMT")).clone();
+        Calendar endTime = (Calendar) Calendar.getInstance(TimeZone.getTimeZone("GMT")).clone();
         startTime.setTime(parser2.parseDateTime(startIso8601).toDate());
         endTime.setTime(parser2.parseDateTime(endIso8601).toDate());
-
-        readings(virtualMachines(),startTime, endTime);
+        List<VirtualMachine> vms = gatherVirtualMachines();
+        readings(vms,startTime, endTime);
     }
+
     public void readings(List<VirtualMachine> vms, Calendar startTime, Calendar endTime) throws Exception
     {
         String[] counterNames = { "cpu.usage.average",
@@ -180,6 +183,7 @@ public class VMwareInventory
             {
                 HashMap<String, HashMap<String, Long>> metrics = parsePerfMetricForVM((PerfEntityMetric)pembs[i]);
                 String vm_mor = pembs[i].getEntity().get_value();
+                //TODO - WTF?
                 this.vmMap.get(vm_mor).put("stats",metrics);
                 //DEBUG - System.out.println(metrics);
                 //DEBUG - printMachineReading(vm_mor,metrics);
@@ -199,7 +203,7 @@ public class VMwareInventory
 
         for(int i=0; infos!=null && i<infos.length; i++) {
             DateTimeFormatter fmt = ISODateTimeFormat.dateTime();
-            String timestamp = fmt.print(infos[i].getTimestamp().getTimeInMillis());
+            String timestamp = fmt.withZone(DateTimeZone.UTC).print(infos[i].getTimestamp().getTimeInMillis());
             metrics.put(timestamp, new HashMap<String, Long>()); 
             for (int j=0; vals!=null && j<vals.length; ++j){
                 String counterName = this.counterIdMap.get(vals[j].getId().getCounterId());
@@ -350,14 +354,14 @@ public class VMwareInventory
      * vmMap Values: uuid, name, cpu_count, cpu_speed, maximum_memory, guest_agent architecture,
      *               operating_system, power_state, disks and nics
      */
-    public void gatherVirtualMachines() throws Exception
+    public List<VirtualMachine>  gatherVirtualMachines() throws Exception
     {
         Folder rootFolder = this.si.getRootFolder();
         ManagedEntity[] vms = new InventoryNavigator(rootFolder).searchManagedEntities("VirtualMachine");
-        
+        List<VirtualMachine> vmsList = new ArrayList<VirtualMachine>(); 
         if(vms==null || vms.length ==0)
         {
-            return;
+            return new ArrayList<VirtualMachine>();
         }
         gatherHosts();
 
@@ -377,7 +381,7 @@ public class VMwareInventory
         for(int i=0; i<pTables.length; i++)
         {
             HashMap<String, Object> vm = new HashMap<String, Object>();
-            vm.put("vm",vms[i]);
+            vmsList.add((VirtualMachine)vms[i]);
             vm.put("uuid",pTables[i].get("config.uuid"));
             vm.put("name",pTables[i].get("name"));
             vm.put("cpu_count",pTables[i].get("config.hardware.numCPU"));
@@ -421,6 +425,7 @@ public class VMwareInventory
             vm.put("nics",vm_nics);
             this.vmMap.put(vms[i].getMOR().get_value().toString(), vm);
         }    
+        return(vmsList);
     }
 
     /**

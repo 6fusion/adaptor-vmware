@@ -51,7 +51,7 @@ child :nics => :nics do
 end
 
 node :readings do |o|
-  o.readings(@inode, _interval, _since, _until).map do |r|
+  o.readings(_interval, _since, _until).map do |r|
     {
       :interval => r.interval,
       :date_time => r.date_time,

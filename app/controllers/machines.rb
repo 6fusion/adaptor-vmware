@@ -42,7 +42,7 @@ AdaptorVMware.controllers :machines, :map => "/inodes/:inode_uuid" do
 
     params[:per_page] ||= 5
 
-    @machines = Machine.all_with_readings(@inode,_interval,_since,_until)
+    @machines = Machine.all_with_readings(@inode,_interval,_since,_until).map {|_, vm| Machine.new(vm)}
     render 'machines/readings'
 
     #if params[:session_id].nil?

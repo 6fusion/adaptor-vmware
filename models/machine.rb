@@ -49,6 +49,7 @@ class Machine < Base::Machine
 
   def self.vm_inventory(inode)
     vm_inventory = VMwareInventory.new("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
+    vm_inventory.gatherVirtualMachines
     vm_inventory.vmMap.to_hash
   ensure
     vm_inventory.close
@@ -233,7 +234,7 @@ class Machine < Base::Machine
     end
   end
 
-  def readings(inode, _interval = 300, _since = 5.minutes.ago.utc, _until = Time.now.utc)
+  def readings(_interval = 300, _since = 5.minutes.ago.utc, _until = Time.now.utc)
     begin
       logger.info("machine.readings")
 
@@ -258,17 +259,29 @@ class Machine < Base::Machine
       logger.info('machine.readings_from_stats')
       result = []
       timestamps.keys.each do |timestamp|
-        if stats.key?(timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z")
-          metrics = stats[timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z"]
-          cpu_usage = stats["cpu.usage.average"].nil? ? 0 : stats["cpu.usage.average"] == -1 ? 0 : (stats["cpu.usage.average"].to_f / (100**2)).to_f
-          memory_bytes = stats["mem.consumed.average"].nil? ? 0 : stats["mem.consumed.average"][i] == -1 ? 0 : stats["mem.consumed.average"][i] * 1024
-          result << MachineReading.new({
-                                         :interval     => _interval,
-                                         :cpu_usage    => cpu_usage,
-                                         :memory_bytes => memory_bytes,
-                                         :date_time    => timestamp.iso8601.to_s }
-          )
+        if !stats.nil? 
+          if stats.key?(timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z")
+            logger.info("found "+timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z")
+            metrics = stats[timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z"]
+            cpu_usage = metrics["cpu.usage.average"].nil? ? 0 : metrics["cpu.usage.average"] == -1 ? 0 : (metrics["cpu.usage.average"].to_f / (100**2)).to_f
+            memory_bytes = metrics["mem.consumed.average"].nil? ? 0 : metrics["mem.consumed.average"] == -1 ? 0 : metrics["mem.consumed.average"] * 1024
+            result << MachineReading.new({
+                                           :interval     => _interval,
+                                           :cpu_usage    => cpu_usage,
+                                           :memory_bytes => memory_bytes,
+                                           :date_time    => timestamp.iso8601.to_s }
+            )
+          else
+            logger.info("missing "+timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z "+stats.to_s)
+            result << MachineReading.new({
+                                           :interval     => _interval,
+                                           :cpu_usage    => 0,
+                                           :memory_bytes => 0,
+                                           :date_time    => timestamp.iso8601.to_s }
+            )
+          end
         else
+          logger.info("missing "+timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z")
           result << MachineReading.new({
                                          :interval     => _interval,
                                          :cpu_usage    => 0,
@@ -478,6 +491,7 @@ class Machine < Base::Machine
       else
         logger.info('found host hz cache for '+properties_hash["runtime"].host._ref)
       end
+      stats = properties.key?("stats") ? properties["status"] : {}
       Machine.new({
                     :uuid           => properties_hash["config"].uuid,
                     :name           => properties_hash["config"].name,
@@ -490,7 +504,7 @@ class Machine < Base::Machine
                     :guest_agent    => properties_hash["guest"].toolsStatus == "toolsNotInstalled" ? false : true,
                     :power_state    => convert_power_state(properties_hash["guest"].toolsStatus, properties_hash["runtime"].powerState),
                     :vm             => properties.obj,
-                    :stats          => []
+                    :stats          => stats 
                   }
       )
     rescue => e
