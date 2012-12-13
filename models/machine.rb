@@ -49,6 +49,7 @@ class Machine < Base::Machine
 
   def self.vm_inventory(inode)
     vm_inventory = VMwareInventory.new("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
+    vm_inventory.gatherVirtualMachines
     vm_inventory.vmMap.to_hash
   ensure
     vm_inventory.close

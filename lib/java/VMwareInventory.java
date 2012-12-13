@@ -31,6 +31,7 @@ public class VMwareInventory
     public HashMap<String, Integer> counterMap = new HashMap<String, Integer>();
     // Hash of PerfCounter name to Counter ID to name
     public HashMap<Integer, String> counterIdMap = new HashMap<Integer, String>();
+    // List of VirtualMachine MORs 
     // Utility Constants
     public static long KB = 1024;
     public static double MB = Math.pow(1024,2);
@@ -53,7 +54,7 @@ public class VMwareInventory
     {
         ServiceInstance si = new ServiceInstance(new URL(url), username, password, true);
         this.si = si;
-        gatherVirtualMachines();
+        
     }
 
     public void close()
@@ -94,7 +95,7 @@ public class VMwareInventory
         System.out.println("end:" + endTime.getTime());
         //vmware_inventory.readings(vmware_inventory.virtualMachines(),startTime,endTime);
 
-        vmware_inventory.readings("2012-12-12T14:30:00Z","2012-12-12T14:40:00Z");
+        vmware_inventory.readings("2012-12-12T23:00:00Z","2012-12-12T23:20:00Z");
         vmware_inventory.printVMs();
         vmware_inventory.close();
     }
@@ -106,9 +107,10 @@ public class VMwareInventory
         Calendar endTime = (Calendar) Calendar.getInstance(TimeZone.getTimeZone("GMT")).clone();
         startTime.setTime(parser2.parseDateTime(startIso8601).toDate());
         endTime.setTime(parser2.parseDateTime(endIso8601).toDate());
-
-        readings(virtualMachines(),startTime, endTime);
+        List<VirtualMachine> vms = gatherVirtualMachines();
+        readings(vms,startTime, endTime);
     }
+
     public void readings(List<VirtualMachine> vms, Calendar startTime, Calendar endTime) throws Exception
     {
         String[] counterNames = { "cpu.usage.average",
@@ -181,6 +183,7 @@ public class VMwareInventory
             {
                 HashMap<String, HashMap<String, Long>> metrics = parsePerfMetricForVM((PerfEntityMetric)pembs[i]);
                 String vm_mor = pembs[i].getEntity().get_value();
+                //TODO - WTF?
                 this.vmMap.get(vm_mor).put("stats",metrics);
                 //DEBUG - System.out.println(metrics);
                 //DEBUG - printMachineReading(vm_mor,metrics);
@@ -351,14 +354,14 @@ public class VMwareInventory
      * vmMap Values: uuid, name, cpu_count, cpu_speed, maximum_memory, guest_agent architecture,
      *               operating_system, power_state, disks and nics
      */
-    public void gatherVirtualMachines() throws Exception
+    public List<VirtualMachine>  gatherVirtualMachines() throws Exception
     {
         Folder rootFolder = this.si.getRootFolder();
         ManagedEntity[] vms = new InventoryNavigator(rootFolder).searchManagedEntities("VirtualMachine");
-        
+        List<VirtualMachine> vmsList = new ArrayList<VirtualMachine>(); 
         if(vms==null || vms.length ==0)
         {
-            return;
+            return new ArrayList<VirtualMachine>();
         }
         gatherHosts();
 
@@ -378,7 +381,7 @@ public class VMwareInventory
         for(int i=0; i<pTables.length; i++)
         {
             HashMap<String, Object> vm = new HashMap<String, Object>();
-            vm.put("vm",vms[i]);
+            vmsList.add((VirtualMachine)vms[i]);
             vm.put("uuid",pTables[i].get("config.uuid"));
             vm.put("name",pTables[i].get("name"));
             vm.put("cpu_count",pTables[i].get("config.hardware.numCPU"));
@@ -422,6 +425,7 @@ public class VMwareInventory
             vm.put("nics",vm_nics);
             this.vmMap.put(vms[i].getMOR().get_value().toString(), vm);
         }    
+        return(vmsList);
     }
 
     /**
