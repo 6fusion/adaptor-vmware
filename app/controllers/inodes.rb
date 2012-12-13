@@ -114,13 +114,13 @@ AdaptorVMware.controllers :inodes, :priority => :low do
           z.print(IO.read(diag_file.path))
 
           # dump available system logs to temp files and store them in the zip
-          file_list.each do |k, c|
-            if File.exists?(c) || File.zero?(c)
-              temp = File.open(c)
-              z.put_next_entry(k.to_s)
-              z.print(IO.read(temp.path))
-            end
-          end
+          # file_list.each do |k, c|
+          #   if File.exists?(c) || File.zero?(c)
+          #     temp = File.open(c)
+          #     z.put_next_entry(k.to_s)
+          #     z.print(IO.read(temp.path))
+          #   end
+          # end
 
           # dump command output to temp files and store them in the zip
           cmd_list.each do |k, c|
