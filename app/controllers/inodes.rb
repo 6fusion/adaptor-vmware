@@ -91,11 +91,11 @@ AdaptorVMware.controllers :inodes, :priority => :low do
         diag_file.print(diag.to_yaml)
         diag_file.flush
 
-        file_list = {
-          :cron => "/var/log/cron",
-          :torquebox => "/var/log/torquebox/torquebox",
-          :messages => "/var/log/messages"
-        }
+        # file_list = {
+        #   :cron => "/var/log/cron",
+        #   :torquebox => "/var/log/torquebox/torquebox",
+        #   :messages => "/var/log/messages"
+        # }
 
         cmd_list = {
           :date => "date -u",
