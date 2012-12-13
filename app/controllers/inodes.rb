@@ -116,13 +116,9 @@ AdaptorVMware.controllers :inodes, :priority => :low do
           # dump available system logs to temp files and store them in the zip
           file_list.each do |k, c|
             if File.exists?(c) || File.zero?(c)
-              begin
-                temp = File.open(c)
-                z.put_next_entry(k.to_s)
-                z.print(IO.read(temp.path))
-              ensure
-                temp.close
-              end
+              temp = File.open(c)
+              z.put_next_entry(k.to_s)
+              z.print(IO.read(temp.path))
             end
           end
 
