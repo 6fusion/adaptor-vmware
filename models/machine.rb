@@ -9,6 +9,8 @@ java_import "VMwareInventory"
 class Machine < Base::Machine
   include TorqueBox::Messaging::Backgroundable
 
+  include ::NewRelic::Agent::MethodTracer
+
   attr_accessor :vm,
                 :stats
 
@@ -35,6 +37,7 @@ class Machine < Base::Machine
       end
     end
   end
+  add_method_tracer :status=
 
   def create_from_ovf(inode, ovf)
     logger.info("Creating Machine(s) from OVF")
@@ -46,6 +49,7 @@ class Machine < Base::Machine
       raise Exceptions::Unrecoverable
     end
   end
+  add_method_tracer :create_from_ovf
 
   def self.vm_inventory(inode)
     vm_inventory = VMwareInventory.new("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
@@ -56,8 +60,8 @@ class Machine < Base::Machine
   end
 
 
+
   def self.all(inode)
-    logger.info('machine.all')
     # machines = self.get_machines_cache(inode.uuid)
     # if machines.nil?.eql?(false)
     #   return machines 
@@ -132,8 +136,6 @@ class Machine < Base::Machine
   end
 
   def self.all_with_readings(inode, _interval = 300, _since = 5.minutes.ago.utc, _until = Time.now.utc)
-    logger.info("machine.all_with_readings")
-    logger.info("localTime: #{Time.now.utc}")
 
     begin
       # Retrieve all machines and virtual machine references
@@ -176,7 +178,6 @@ class Machine < Base::Machine
   end
 
   def self.find_by_uuid(inode, uuid)
-    logger.info('Machine.find_by_uuid')
 
     begin
       # Connect to vCenter and set the property collector and the searchindex variables
@@ -211,7 +212,6 @@ class Machine < Base::Machine
   end
 
   def self.find_by_uuid_with_readings(inode, uuid, _interval = 300, _since = 5.minutes.ago.utc, _until = Time.now.utc)
-    logger.info('machine.find_by_uuid_with_readings')
 
     begin
       machine             = self.find_by_uuid(inode, uuid)
@@ -236,7 +236,6 @@ class Machine < Base::Machine
 
   def readings(_interval = 300, _since = 5.minutes.ago.utc, _until = Time.now.utc)
     begin
-      logger.info("machine.readings")
 
       #Create list of timestamps
       # Time.now.utc.round(5.minutes).utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z  => "2012-12-11T20:20:00.000Z"
@@ -251,17 +250,17 @@ class Machine < Base::Machine
         i         = 1
         while i <= intervals do
           timestamps[start+(i*300)] = false
-          logger.info("ts - "+(start+(i*300)).iso8601.to_s)
+          #logger.info("ts - "+(start+(i*300)).iso8601.to_s)
           i += 1
         end
       end
       #Create machine readings
-      logger.info('machine.readings_from_stats')
+      #logger.info('machine.readings_from_stats')
       result = []
       timestamps.keys.each do |timestamp|
         if !stats.nil? 
           if stats.key?(timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z")
-            logger.info("found "+timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z")
+            #logger.info("found "+timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z")
             metrics = stats[timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z"]
             cpu_usage = metrics["cpu.usage.average"].nil? ? 0 : metrics["cpu.usage.average"] == -1 ? 0 : (metrics["cpu.usage.average"].to_f / (100**2)).to_f
             memory_bytes = metrics["mem.consumed.average"].nil? ? 0 : metrics["mem.consumed.average"] == -1 ? 0 : metrics["mem.consumed.average"] * 1024
@@ -272,7 +271,7 @@ class Machine < Base::Machine
                                            :date_time    => timestamp.iso8601.to_s }
             )
           else
-            logger.info("missing "+timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z "+stats.to_s)
+            #logger.info("missing "+timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z "+stats.to_s)
             result << MachineReading.new({
                                            :interval     => _interval,
                                            :cpu_usage    => 0,
@@ -281,7 +280,7 @@ class Machine < Base::Machine
             )
           end
         else
-          logger.info("missing "+timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z")
+          #logger.info("missing "+timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z")
           result << MachineReading.new({
                                          :interval     => _interval,
                                          :cpu_usage    => 0,
@@ -333,6 +332,7 @@ class Machine < Base::Machine
       raise Exceptions::Unrecoverable
     end
   end
+  add_method_tracer :readings
 
   def start(inode)
     logger.info("machine.start")
@@ -350,6 +350,7 @@ class Machine < Base::Machine
       raise Exceptionss::Unrecoverable
     end
   end
+  add_method_tracer :start
 
   def stop(inode)
     logger.info("machine.stop")
@@ -367,6 +368,7 @@ class Machine < Base::Machine
       raise Exceptionss::Unrecoverable
     end
   end
+  add_method_tracer :stop
 
   def restart(inode)
     logger.info("machine.restart")
@@ -384,6 +386,7 @@ class Machine < Base::Machine
       raise Exceptionss::Unrecoverable
     end
   end
+  add_method_tracer :restart
 
   def force_stop(inode)
     logger.info("machine.force_stop")
@@ -401,6 +404,7 @@ class Machine < Base::Machine
       raise Exceptionss::Unrecoverable
     end
   end
+  add_method_tracer :force_stop
 
   def force_restart(inode)
     logger.info("machine.force_restart")
@@ -418,11 +422,13 @@ class Machine < Base::Machine
       raise Exceptionss::Unrecoverable
     end
   end
+  add_method_tracer :force_restart
 
   def save(inode)
     logger.info("machine.save")
     raise Exceptionss::NotImplemented
   end
+  add_method_tracer :save
 
   def delete(inode)
     logger.info("machine.delete")
@@ -440,14 +446,17 @@ class Machine < Base::Machine
       raise Exceptionss::Unrecoverable
     end
   end
+  add_method_tracer :delete
 
   def nics=(_nics)
     @nics = _nics.map {|nic| MachineNic.new(nic)}
   end
+  add_method_tracer :nics=
 
   def disks=(_disks)
     @disks = _disks.map {|disk| MachineDisk.new(disk)}
   end
+  add_method_tracer :disks=
 
 
   private
@@ -646,6 +655,14 @@ class Machine < Base::Machine
     end
   end
 
+  class << self
+    include ::NewRelic::Agent::MethodTracer
+    add_method_tracer :vm_inventory
+    add_method_tracer :all
+    add_method_tracer :all_with_readings
+    add_method_tracer :find_by_uuid
+    add_method_tracer :find_by_uuid_with_readings
+  end
 
 
 end

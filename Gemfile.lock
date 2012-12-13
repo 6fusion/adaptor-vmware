@@ -1,9 +1,9 @@
 GIT
-  remote: https://github.com/Asquera/padrino-rpm.git
-  revision: d698f4a3e3a0762866ed8ee3d636fb555e24426e
+  remote: https://github.com/6fusion/padrino-rpm.git
+  revision: 493501e45c7b41c2192546fd012d1d0b734b1992
   specs:
     padrino-rpm (0.6.1)
-      newrelic_rpm (~> 3.3.3)
+      newrelic_rpm (~> 3.5.3)
 
 GEM
   remote: http://rubygems.org/
@@ -80,7 +80,7 @@ GEM
     net-ssh (2.6.2)
     net-ssh-gateway (1.1.0)
       net-ssh (>= 1.99.1)
-    newrelic_rpm (3.3.5)
+    newrelic_rpm (3.5.3.25)
     nokogiri (1.5.5)
     nokogiri (1.5.5-java)
     padrino (0.10.7)
@@ -121,7 +121,7 @@ GEM
       rack
     rack-test (0.6.2)
       rack (>= 1.0)
-    rake (0.9.5)
+    rake (0.9.6)
     rbvmomi (1.6.0)
       builder
       nokogiri (>= 1.4.1)

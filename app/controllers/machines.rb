@@ -1,7 +1,9 @@
 AdaptorVMware.controllers :machines, :map => "/inodes/:inode_uuid" do
+  include ::NewRelic::Agent::MethodTracer
+  add_method_tracer :render
   before do
     logger.info('machines#before')
-
+    logger.debug(route.as_options[:__name__])
     content_type 'application/json'
     @inode = INode.find_by_uuid(params[:inode_uuid])
   end
@@ -10,7 +12,6 @@ AdaptorVMware.controllers :machines, :map => "/inodes/:inode_uuid" do
   post :index do
     begin
       logger.info('POST - machines#index')
-      logger.debug "ACCEPT: #{request.accept}"
 
       @inode.open_session
       @machines = Machine.create_from_ovf(@inode, params[:ovf])

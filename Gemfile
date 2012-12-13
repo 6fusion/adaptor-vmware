@@ -11,7 +11,7 @@ gem 'rake', :require => false
 gem 'kaminari', :require => 'kaminari/sinatra'
 gem 'uuid'
 # -- newrelic should be last
-gem 'padrino-rpm', :git => 'https://github.com/Asquera/padrino-rpm.git'
+gem 'padrino-rpm', :git => 'https://github.com/6fusion/padrino-rpm.git'
 gem 'newrelic_rpm'
 
 platform :jruby do

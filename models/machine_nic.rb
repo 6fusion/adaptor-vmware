@@ -5,7 +5,7 @@ class MachineNic < Base::MachineNic
                 :vnic
 
   def readings(inode, _interval = 300, _since = 5.minutes.ago.utc, _until = Time.now.utc)
-    logger.info('machine_nic.readings')
+    #logger.info('machine_nic.readings')
 
     #Create list of timestamps
     timestamps = {}

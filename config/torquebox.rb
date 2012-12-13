@@ -6,5 +6,6 @@ TorqueBox.configure do
   pool :web do
     min 2
     max 4
+    type :bounded
   end
 end

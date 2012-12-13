@@ -13,7 +13,7 @@ class MachineDisk < Base::MachineDisk
   TB = 1024**4
 
   def readings(inode, _interval = 300, _since = 5.minutes.ago.utc, _until = Time.now.utc)
-    logger.info('machine_disk.readings')
+    #logger.info('machine_disk.readings')
 
     #Create list of timestamps
     timestamps = { }
