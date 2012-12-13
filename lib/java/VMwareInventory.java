@@ -93,15 +93,14 @@ public class VMwareInventory
         vmware_inventory.gatherCounters();
         Calendar curTime = vmware_inventory.currentTime();
         Calendar startTime = (Calendar) curTime.clone();
-        startTime.roll(Calendar.HOUR, -1);
+        startTime.roll(Calendar.HOUR, -5);
         System.out.println("start:" + startTime.getTime());
         Calendar endTime = (Calendar) curTime.clone();
         endTime.roll(Calendar.MINUTE, -5);
         System.out.println("end:" + endTime.getTime());
-        //vmware_inventory.readings(vmware_inventory.virtualMachines(),startTime,endTime);
-
-        vmware_inventory.readings("2012-12-12T23:00:00Z","2012-12-12T23:20:00Z");
-        // vmware_inventory.printVMs();
+        vmware_inventory.readings(startTime,endTime);
+        //vmware_inventory.readings("2012-12-12T23:00:00Z","2012-12-12T23:20:00Z");
+        vmware_inventory.printVMs();
         vmware_inventory.close();
     }
 
@@ -112,6 +111,11 @@ public class VMwareInventory
         Calendar endTime = (Calendar) Calendar.getInstance(TimeZone.getTimeZone("GMT")).clone();
         startTime.setTime(parser2.parseDateTime(startIso8601).toDate());
         endTime.setTime(parser2.parseDateTime(endIso8601).toDate());
+        readings(startTime,endTime);
+    }
+
+    public void readings(Calendar startTime, Calendar endTime) throws Exception
+    {
         List<VirtualMachine> vms = gatherVirtualMachines();
         readings(vms,startTime, endTime);
     }
