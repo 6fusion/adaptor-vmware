@@ -150,7 +150,7 @@ AdaptorVMware.controllers :inodes, :priority => :low do
         diag_file.unlink
       end
     ensure
-      @inode.close_session
+      @inode.close_session if !@inode.nil?
     end
   end
 end
