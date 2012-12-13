@@ -7,6 +7,7 @@ AdaptorVMware.controllers :inodes, :priority => :low do
   # Creates
   post :index do
     logger.info('POST - inodes#index')
+    logger.debug(params.inspect)
 
     uuid = params['uuid']
     @inode = INode.new(params)
