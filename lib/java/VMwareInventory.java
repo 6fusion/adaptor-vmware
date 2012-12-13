@@ -14,6 +14,9 @@ import org.joda.time.DateTimeZone;
 import com.vmware.vim25.*;
 import com.vmware.vim25.mo.*;
 import com.vmware.vim25.mo.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
  * Sample code to show how to use the Managed Object APIs.
  * @author Steve JIN (sjin@vmware.com)
@@ -21,6 +24,7 @@ import com.vmware.vim25.mo.util.*;
 
 public class VMwareInventory 
 {
+    private final static Logger logger = Logger.getLogger("VMwareInventory");
     private ServiceInstance si = null;
     private Folder rootFolder = null;
     // Hash of host-morefID to host hash of attributes / values
@@ -52,6 +56,7 @@ public class VMwareInventory
  */
     public VMwareInventory(String url, String username, String password ) throws Exception
     {
+        logger.setLevel(Level.INFO);
         ServiceInstance si = new ServiceInstance(new URL(url), username, password, true);
         this.si = si;
         
@@ -84,7 +89,7 @@ public class VMwareInventory
         }
 
         VMwareInventory vmware_inventory = new VMwareInventory(args[0],args[1],args[2]);
-        vmware_inventory.printHosts();
+        // vmware_inventory.printHosts();
         vmware_inventory.gatherCounters();
         Calendar curTime = vmware_inventory.currentTime();
         Calendar startTime = (Calendar) curTime.clone();
@@ -96,7 +101,7 @@ public class VMwareInventory
         //vmware_inventory.readings(vmware_inventory.virtualMachines(),startTime,endTime);
 
         vmware_inventory.readings("2012-12-12T23:00:00Z","2012-12-12T23:20:00Z");
-        vmware_inventory.printVMs();
+        // vmware_inventory.printVMs();
         vmware_inventory.close();
     }
 
@@ -175,7 +180,9 @@ public class VMwareInventory
 
         PerformanceManager pm = getPerformanceManager();
         PerfQuerySpec[] pqsArray = qSpecList.toArray(new PerfQuerySpec[qSpecList.size()]);
+        logger.info("Start PerformanceManager.queryPerf");
         PerfEntityMetricBase[] pembs = pm.queryPerf( pqsArray);
+        logger.info("Finished PerformanceManager.queryPerf");
         for(int i=0; pembs!=null && i< pembs.length; i++)
         {
             //DEBUG - printPerfMetric(pembs[i]);
@@ -364,7 +371,7 @@ public class VMwareInventory
             return new ArrayList<VirtualMachine>();
         }
         gatherHosts();
-
+        logger.info("Starting PropertyCollectorUtil.retrieveProperties");
         Hashtable[] pTables = PropertyCollectorUtil.retrieveProperties(vms, "VirtualMachine",
                 new String[] {"name",
                 "config.hardware.device",
@@ -378,6 +385,7 @@ public class VMwareInventory
                 "runtime.host",
                 "config.hardware.memoryMB",
                 "config.hardware.numCPU"});
+        logger.info("Finished PropertyCollectorUtil.retrieveProperties");
         for(int i=0; i<pTables.length; i++)
         {
             HashMap<String, Object> vm = new HashMap<String, Object>();
