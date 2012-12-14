@@ -1,16 +1,20 @@
 require 'time'
 # @api public
 class MachineDisk < Base::MachineDisk
-  attr_accessor :vm,
-                :stats,
+  attr_accessor :stats,
+                :usage,
                 :key,
-                :vdisk,
-                :vdisk_files
+                :unit_number,
+                :controller_key
 
   KB = 1024
   MB = 1024**2
   GB = 1024**3
   TB = 1024**4
+  def stats=(stats)
+    logger.debug("Adding disk stats")
+    @stats = stats
+  end
 
   def readings(inode, _interval = 300, _since = 5.minutes.ago.utc, _until = Time.now.utc)
     #logger.info('machine_disk.readings')
@@ -34,6 +38,50 @@ class MachineDisk < Base::MachineDisk
 
     #Create machine disk readings from stats variable
     result = []
+    timestamps.keys.each do |timestamp|
+      if !@stats.nil? 
+        if @stats.key?(timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z")
+          #logger.info("found "+timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z")
+          metrics = @stats[timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z"]
+          if @controller_key.eql?(1000) 
+            # SCSI controller
+            # virtualDisk.write.average.scsi0:0
+            read_metric = "virtualDisk.read.average.scsi#{@key-2000}:#{@unit_number}"
+            write_metric = "virtualDisk.write.average.scsi#{@key-2000}:#{@unit_number}"
+          elsif @controller_key.eql?(2000)  
+            # IDE controller
+            read_metric = "virtualDisk.read.average.ide#{@key-3000}:#{@unit_number}"
+            write_metric = "virtualDisk.write.average.ide#{@key-3000}:#{@unit_number}"
+          end
+          logger.debug(write_metric)
+          logger.debug(metrics.keys)
+          result << MachineDiskReading.new({ :usage     => @usage / GB,
+                                             :read      => metrics.nil? ? 0 : metrics[read_metric] == -1 ? 0 : metrics[read_metric],
+                                             :write     => metrics.nil? ? 0 : metrics[write_metric] == -1 ? 0 : metrics[write_metric],
+                                             :date_time => timestamp.iso8601.to_s })
+        else
+          logger.info("missing "+timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z "+@stats.to_s)
+          result << MachineDiskReading.new(
+            {
+              :usage     => @usage / GB,
+              :read      => 0,
+              :write     => 0,
+              :date_time => timestamp.iso8601.to_s
+            }
+          )
+        end
+      else
+        logger.debug("stats is nil")
+        result << MachineDiskReading.new(
+          {
+            :usage     => @usage / GB,
+            :read      => 0,
+            :write     => 0,
+            :date_time => timestamp.iso8601.to_s
+          }
+        )
+      end
+    end
     # performance_manager = inode.session.serviceContent.perfManager
     # if stats.is_a?(RbVmomi::VIM::PerfEntityMetric)
     #   stats.sampleInfo.each_with_index.map do |x, i|

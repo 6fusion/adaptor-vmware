@@ -24,18 +24,20 @@ class Machine < Base::Machine
   @@hz_cache = {}
   
   def stats=(stats)
+    logger.debug("Adding stats")
     @stats = stats
-    if @disks.nil?.eql?(false)
-      @disks.each do |disk|
-        disk.stats = stats
-      end
-    end
+    # if @disks.nil?.eql?(false)
+    #   @disks.each do |disk|
+    #     logger.debug("Adding stats to disk")
+    #     disk.stats = stats
+    #   end
+    # end
 
-    if @nics.nil?.eql?(false)
-      @nics.each do |nic|
-        nic.stats = stats
-      end
-    end
+    # if @nics.nil?.eql?(false)
+    #   @nics.each do |nic|
+    #     nic.stats = stats
+    #   end
+    # end
   end
   add_method_tracer :status=
 
@@ -62,73 +64,7 @@ class Machine < Base::Machine
 
 
   def self.all(inode)
-    # machines = self.get_machines_cache(inode.uuid)
-    # if machines.nil?.eql?(false)
-    #   return machines 
-    # end
-
-    begin
-      # Set the property collector variable and root folder variables
-      property_collector = inode.session.serviceContent.propertyCollector
-      root_folder        = inode.session.serviceContent.rootFolder
-
-   
-      find_vapp_to_vm = RbVmomi::VIM.TraversalSpec(
-        :name      => "vapp_to_vm",
-        :type      => "VirtualApp",
-        :path      => "vm"
-        )
-
-      find_vapp_to_vapp = RbVmomi::VIM.TraversalSpec(
-        :name      => "vapp_to_vapp",
-        :type      => "VirtualApp",
-        :path      => "resourcePool",
-        :selectSet => [
-          RbVmomi::VIM.SelectionSpec(:name => "vapp_to_vapp"),
-          RbVmomi::VIM.SelectionSpec(:name => "vapp_to_vm")
-        ]
-      )
-
-      selection_spec = RbVmomi::VIM.SelectionSpec(:name => "visit_folders")
-
-      datacenter_to_vm_folder = RbVmomi::VIM.TraversalSpec(
-        :name      => "Datacenters",
-        :type      => "Datacenter",
-        :path      => "vmFolder",
-        :skip      => false,
-        :selectSet => [selection_spec]
-      )
-
-      find_folders = RbVmomi::VIM.TraversalSpec(
-        :name      => "visit_folders",
-        :type      => "Folder",
-        :path      => "childEntity",
-        :skip      => false,
-        :selectSet => [ selection_spec,datacenter_to_vm_folder,find_vapp_to_vm,find_vapp_to_vapp]
-      )
-
-      filter_spec   = RbVmomi::VIM.PropertyFilterSpec(
-        :objectSet => [{
-                         :obj       => root_folder,
-                         :selectSet => [find_folders]
-                       }],
-        :propSet   => [{ :pathSet => %w(config guest layoutEx recentTask runtime),
-                         :type    => "VirtualMachine"
-                       }]
-      )
-
-      # Retrieve properties for all machines and create machine objects
-      vm_properties = property_collector.RetrieveProperties(:specSet => [filter_spec])
-
-      machines = vm_properties.map { |m| new_machine_from_vm(inode,m) }
-      # self.set_machines_cache(inode.uuid,machines)
-      return machines
-
-    rescue => e
-      logger.error(e.message)
-      logger.error(e.backtrace)
-      raise Exceptions::Unrecoverable
-    end
+    self.vm_inventory(inode)
   end
 
   def all_with_readings(inode, _interval = 300, _since = 5.minutes.ago.utc, _until = Time.now.utc)
@@ -289,42 +225,8 @@ class Machine < Base::Machine
           )
         end
       end
-      # performance_manager = inode.session.serviceContent.perfManager
-      # if stats.is_a?(RbVmomi::VIM::PerfEntityMetric)
-      #   stats.sampleInfo.each_with_index.map do |x, i|
-      #     if stats.value.empty?.eql?(false)
-      #       cpu_metric_usagemhz = "#{performance_manager.perfcounter_hash["cpu.usagemhz.average"].key}."
-      #       cpu_metric_usage = "#{performance_manager.perfcounter_hash["cpu.usage.average"].key}."
-      #       memory_metric = "#{performance_manager.perfcounter_hash["mem.consumed.average"].key}."
-      #       metric_readings = Hash[stats.value.map { |s| ["#{s.id.counterId}.#{s.id.instance}", s.value] }]
-      #       logger.info "memory_metric:\n#{metric_readings[memory_metric].inspect}\n"
-      #       logger.info "cpu_metric_usage:\n#{metric_readings[cpu_metric_usage].inspect}\n"
-      #       result << MachineReading.new({
-      #                                      :interval     => x.interval,
-      #                                      :date_time    => x.timestamp,
-      #                                      :cpu_usage    => metric_readings[cpu_metric_usage].nil? ? 0 : metric_readings[cpu_metric_usage][i] == -1 ? 0 : (metric_readings[cpu_metric_usage][i].to_f / (100**2)).to_f,
-      #                                      :memory_bytes => metric_readings[memory_metric].nil? ? 0 : metric_readings[memory_metric][i] == -1 ? 0 : metric_readings[memory_metric][i] * 1024 }
-      #       )
-      #       timestamps[x.timestamp] = true
-      #       logger.debug("Machine="+@name)
-      #       logger.debug("cpu.usage.average="+metric_readings[cpu_metric_usage][i].to_s)
-      #       logger.debug("CPU Count="+cpu_count.to_s)
-      #       logger.debug("CPU Speed="+cpu_speed.to_s)
       #       logger.debug("CPU Metric Usage="+(metric_readings[cpu_metric_usage][i].to_f / (100**2)).to_s)
       #       logger.debug("cpu.usagemhz.average="+metric_readings[cpu_metric_usagemhz][i].to_s)
-      #     end
-      #   end
-      # end
-      # timestamps.keys.each do |timestamp|
-      #   if timestamps[timestamp].eql?(false)
-      #     result << MachineReading.new({
-      #                                    :interval     => _interval,
-      #                                    :cpu_usage    => 0,
-      #                                    :memory_bytes => 0,
-      #                                    :date_time    => timestamp.iso8601.to_s }
-      #     )
-      #   end
-      # end
       result
 
     rescue => e
@@ -455,19 +357,17 @@ class Machine < Base::Machine
 
   def disks=(_disks)
     @disks = _disks.map {|disk| MachineDisk.new(disk)}
+    if @disks.nil?.eql?(false)
+       @disks.each do |disk|
+         logger.debug("Adding stats to disk")
+         disk.stats = stats
+       end
+     end      
   end
   add_method_tracer :disks=
 
 
   private
-
-  # def self.get_machines_cache(uuid)
-  #   @@cache[uuid]
-  # end
-
-  # def self.set_machines_cache(uuid,machines)
-  #   @@cache[uuid] = machines
-  # end
 
   def self.get_host_hz(inode,moref)
     host_cache = @@hz_cache[inode.uuid]
@@ -500,7 +400,8 @@ class Machine < Base::Machine
       else
         logger.info('found host hz cache for '+properties_hash["runtime"].host._ref)
       end
-      stats = properties.key?("stats") ? properties["status"] : {}
+      stats = properties.key?("stats") ? properties["stats"] : {}
+      logger.debug("WTF?"+build_disks(properties))
       Machine.new({
                     :uuid           => properties_hash["config"].uuid,
                     :name           => properties_hash["config"].name,
@@ -570,17 +471,20 @@ class Machine < Base::Machine
       vm_disks        = properties_hash["config"].hardware.device.grep(RbVmomi::VIM::VirtualDisk)
       vm_disks.map do |vdisk|
         logger.debug(debug_name+" Disk "+vdisk.deviceInfo.label.to_s+" size "+(vdisk.capacityInKB * KB / GB).to_s)
+        stats = properties.key?("stats") ? properties["stats"] : {}
+        logger.debug("my fing stats are "+stats)
         MachineDisk.new({
                           :uuid         => vdisk.backing.uuid,
                           :name         => vdisk.deviceInfo.label,
                           :maximum_size => vdisk.capacityInKB * KB / GB,
+                          :controller_key => vdisk.controllerKey,
                           :vdisk        => vdisk,
                           :vdisk_files  => build_disk_files(vdisk.key, properties_hash["layoutEx"]),
                           :type         => 'Disk',
                           :thin         => vdisk.backing.thinProvisioned,
                           :key          => vdisk.key,
                           :vm           => properties.obj,
-                          :stats        => []
+                          :stats        => stats 
         })
       end
     rescue => e

@@ -25,6 +25,37 @@ class MachineNic < Base::MachineNic
 
     #Create machine nic readings
     result = []
+    # timestamps.keys.each do |timestamp|
+    #     if !stats.nil? 
+    #       if stats.key?(timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z")
+    #         #logger.info("found "+timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z")
+    #         metrics = stats[timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z"]
+    #         cpu_usage = metrics["cpu.usage.average"].nil? ? 0 : metrics["cpu.usage.average"] == -1 ? 0 : (metrics["cpu.usage.average"].to_f / (100**2)).to_f
+    #         memory_bytes = metrics["mem.consumed.average"].nil? ? 0 : metrics["mem.consumed.average"] == -1 ? 0 : metrics["mem.consumed.average"] * 1024
+    #         result << MachineReading.new({
+    #                                        :interval     => _interval,
+    #                                        :cpu_usage    => cpu_usage,
+    #                                        :memory_bytes => memory_bytes,
+    #                                        :date_time    => timestamp.iso8601.to_s }
+    #         )
+    #       else
+    #         #logger.info("missing "+timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z "+stats.to_s)
+    #         result << MachineReading.new({
+    #                                        :interval     => _interval,
+    #                                        :cpu_usage    => 0,
+    #                                        :memory_bytes => 0,
+    #                                        :date_time    => timestamp.iso8601.to_s }
+    #         )
+    #       end
+    #     else
+    #       #logger.info("missing "+timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z")
+    #       result << MachineReading.new({
+    #                                      :interval     => _interval,
+    #                                      :cpu_usage    => 0,
+    #                                      :memory_bytes => 0,
+    #                                      :date_time    => timestamp.iso8601.to_s }
+    #       )
+    #     end
     # performance_manager = inode.session.serviceContent.perfManager
     # if stats.is_a?(RbVmomi::VIM::PerfEntityMetric)
     #   stats.sampleInfo.each_with_index.map do |x,i|

@@ -593,6 +593,8 @@ public class VMwareInventory
     {
         HashMap<String, Object> disk_hash = new HashMap<String, Object>();
         disk_hash.put("maximum_size",(vDisk.getCapacityInKB() * VMwareInventory.KB) / VMwareInventory.GB);
+        disk_hash.put("controller_key",vDisk.getControllerKey());
+        disk_hash.put("unit_number",vDisk.getUnitNumber());
         disk_hash.put("type","Disk");
         if(vDisk.getBacking() instanceof VirtualDiskFlatVer2BackingInfo){
             VirtualDiskFlatVer2BackingInfo rdmBaking = (VirtualDiskFlatVer2BackingInfo) vDisk.getBacking();
