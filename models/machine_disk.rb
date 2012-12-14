@@ -48,7 +48,7 @@ class MachineDisk < Base::MachineDisk
             # virtualDisk.write.average.scsi0:0
             read_metric = "virtualDisk.read.average.scsi#{@key-2000}:#{@unit_number}"
             write_metric = "virtualDisk.write.average.scsi#{@key-2000}:#{@unit_number}"
-          elsif @controller_key.eql?(2000)  
+          elsif @controller_key.eql?(200)  
             # IDE controller
             read_metric = "virtualDisk.read.average.ide#{@key-3000}:#{@unit_number}"
             write_metric = "virtualDisk.write.average.ide#{@key-3000}:#{@unit_number}"
