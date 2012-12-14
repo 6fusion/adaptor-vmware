@@ -25,62 +25,35 @@ class MachineNic < Base::MachineNic
 
     #Create machine nic readings
     result = []
-    # timestamps.keys.each do |timestamp|
-    #     if !stats.nil? 
-    #       if stats.key?(timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z")
-    #         #logger.info("found "+timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z")
-    #         metrics = stats[timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z"]
-    #         cpu_usage = metrics["cpu.usage.average"].nil? ? 0 : metrics["cpu.usage.average"] == -1 ? 0 : (metrics["cpu.usage.average"].to_f / (100**2)).to_f
-    #         memory_bytes = metrics["mem.consumed.average"].nil? ? 0 : metrics["mem.consumed.average"] == -1 ? 0 : metrics["mem.consumed.average"] * 1024
-    #         result << MachineReading.new({
-    #                                        :interval     => _interval,
-    #                                        :cpu_usage    => cpu_usage,
-    #                                        :memory_bytes => memory_bytes,
-    #                                        :date_time    => timestamp.iso8601.to_s }
-    #         )
-    #       else
-    #         #logger.info("missing "+timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z "+stats.to_s)
-    #         result << MachineReading.new({
-    #                                        :interval     => _interval,
-    #                                        :cpu_usage    => 0,
-    #                                        :memory_bytes => 0,
-    #                                        :date_time    => timestamp.iso8601.to_s }
-    #         )
-    #       end
-    #     else
-    #       #logger.info("missing "+timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z")
-    #       result << MachineReading.new({
-    #                                      :interval     => _interval,
-    #                                      :cpu_usage    => 0,
-    #                                      :memory_bytes => 0,
-    #                                      :date_time    => timestamp.iso8601.to_s }
-    #       )
-    #     end
-    # performance_manager = inode.session.serviceContent.perfManager
-    # if stats.is_a?(RbVmomi::VIM::PerfEntityMetric)
-    #   stats.sampleInfo.each_with_index.map do |x,i|
-    #     if stats.value.empty?.eql?(false)
-    #       receive_metric =  "#{performance_manager.perfcounter_hash["net.received.average"].key}.#{key}"
-    #       transmit_metric = "#{performance_manager.perfcounter_hash["net.transmitted.average"].key}.#{key}"
-    #       metric_readings = Hash[stats.value.map{|s| ["#{s.id.counterId}.#{s.id.instance}",s.value]}]
-    #       result << MachineNicReading.new(
-    #           :date_time => x.timestamp,
-    #           :receive => metric_readings[receive_metric].nil? ? 0 : metric_readings[receive_metric][i] == -1 ? 0 : metric_readings[receive_metric][i],
-    #           :transmit => metric_readings[transmit_metric].nil? ? 0 : metric_readings[transmit_metric][i] == -1 ? 0 : metric_readings[transmit_metric][i]
-    #       )
-    #       timestamps[x.timestamp] = true
-    #     end
-    #   end
-    # end
-    # timestamps.keys.each do | timestamp |
-    #   if timestamps[timestamp].eql?(false)
-    #     result <<  MachineNicReading.new(
-    #         :receive => 0,
-    #         :transmit => 0,
-    #         :date_time => timestamp.iso8601.to_s
-    #     )
-    #   end
-    # end
+        timestamps.keys.each do |timestamp|
+      if !@stats.nil? 
+        if @stats.key?(timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z")
+          #logger.info("found "+timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z")
+          metrics = @stats[timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z"]
+          receive_metric =  "net.received.average.#{key}"
+          transmit_metric = "net.transmitted.average.#{key}"
+          # logger.debug(receive_metric)
+          # logger.debug(metrics.keys)
+          # logger.debug(metrics[receive_metric])
+          result << MachineNicReading.new({ 
+                                             :receive      => metrics.nil? ? 0 : metrics[receive_metric] == -1 ? 0 : metrics[receive_metric],
+                                             :transmit     => metrics.nil? ? 0 : metrics[transmit_metric] == -1 ? 0 : metrics[transmit_metric],
+                                             :date_time => timestamp.iso8601.to_s })
+        else
+          # logger.debug("missing "+timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z "+@stats.to_s)
+          result << MachineNicReading.new({ 
+                                   :receive      => 0,
+                                   :transmit     => 0,
+                                   :date_time => timestamp.iso8601.to_s })
+        end
+      else
+        # logger.debug("stats is nil")
+        result << MachineNicReading.new({ 
+                                   :receive      => 0,
+                                   :transmit     => 0,
+                                   :date_time => timestamp.iso8601.to_s })
+      end
+    end
     result
   end
 

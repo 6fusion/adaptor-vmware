@@ -23,23 +23,23 @@ class Machine < Base::Machine
   # @@cache = {}
   @@hz_cache = {}
   
-  def stats=(stats)
-    logger.debug("Adding stats")
-    @stats = stats
-    # if @disks.nil?.eql?(false)
-    #   @disks.each do |disk|
-    #     logger.debug("Adding stats to disk")
-    #     disk.stats = stats
-    #   end
-    # end
+  # def stats=(stats)
+  #   logger.debug("Adding stats")
+  #   @stats = stats
+  #   # if @disks.nil?.eql?(false)
+  #   #   @disks.each do |disk|
+  #   #     logger.debug("Adding stats to disk")
+  #   #     disk.stats = stats
+  #   #   end
+  #   # end
 
-    # if @nics.nil?.eql?(false)
-    #   @nics.each do |nic|
-    #     nic.stats = stats
-    #   end
-    # end
-  end
-  add_method_tracer :status=
+  #   # if @nics.nil?.eql?(false)
+  #   #   @nics.each do |nic|
+  #   #     nic.stats = stats
+  #   #   end
+  #   # end
+  # end
+  # add_method_tracer :status=
 
   def create_from_ovf(inode, ovf)
     logger.info("Creating Machine(s) from OVF")
@@ -352,6 +352,11 @@ class Machine < Base::Machine
 
   def nics=(_nics)
     @nics = _nics.map {|nic| MachineNic.new(nic)}
+    if @nics.nil?.eql?(false)
+      @nics.each do |nic|
+        nic.stats = stats
+      end
+    end
   end
   add_method_tracer :nics=
 
@@ -359,7 +364,7 @@ class Machine < Base::Machine
     @disks = _disks.map {|disk| MachineDisk.new(disk)}
     if @disks.nil?.eql?(false)
        @disks.each do |disk|
-         logger.debug("Adding stats to disk")
+         # logger.debug("Adding stats to disk")
          disk.stats = stats
        end
      end      

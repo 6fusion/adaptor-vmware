@@ -11,10 +11,10 @@ class MachineDisk < Base::MachineDisk
   MB = 1024**2
   GB = 1024**3
   TB = 1024**4
-  def stats=(stats)
-    logger.debug("Adding disk stats")
-    @stats = stats
-  end
+  # def stats=(stats)
+  #   logger.debug("Adding disk stats")
+  #   @stats = stats
+  # end
 
   def readings(inode, _interval = 300, _since = 5.minutes.ago.utc, _until = Time.now.utc)
     #logger.info('machine_disk.readings')
@@ -53,14 +53,14 @@ class MachineDisk < Base::MachineDisk
             read_metric = "virtualDisk.read.average.ide#{@key-3000}:#{@unit_number}"
             write_metric = "virtualDisk.write.average.ide#{@key-3000}:#{@unit_number}"
           end
-          logger.debug(write_metric)
-          logger.debug(metrics.keys)
+          # logger.debug(write_metric)
+          # logger.debug(metrics.keys)
           result << MachineDiskReading.new({ :usage     => @usage / GB,
                                              :read      => metrics.nil? ? 0 : metrics[read_metric] == -1 ? 0 : metrics[read_metric],
                                              :write     => metrics.nil? ? 0 : metrics[write_metric] == -1 ? 0 : metrics[write_metric],
                                              :date_time => timestamp.iso8601.to_s })
         else
-          logger.info("missing "+timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z "+@stats.to_s)
+          # logger.debug("missing "+timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z "+@stats.to_s)
           result << MachineDiskReading.new(
             {
               :usage     => @usage / GB,
@@ -71,7 +71,7 @@ class MachineDisk < Base::MachineDisk
           )
         end
       else
-        logger.debug("stats is nil")
+        # logger.debug("stats is nil")
         result << MachineDiskReading.new(
           {
             :usage     => @usage / GB,
