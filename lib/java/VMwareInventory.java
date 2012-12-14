@@ -83,22 +83,22 @@ public class VMwareInventory
      */
     public static void main(String[] args) throws Exception 
     {
-        if (args.length != 3) {
-                System.err.println("Usage: VMwareInventory https://10.10.10.10/sdk username password ");
+        if (args.length != 5) {
+                System.err.println("Usage: VMwareInventory https://10.10.10.10/sdk username password startIso8601 endIso8601");
                 System.exit(1);
         }
 
         VMwareInventory vmware_inventory = new VMwareInventory(args[0],args[1],args[2]);
         // vmware_inventory.printHosts();
         vmware_inventory.gatherCounters();
-        Calendar curTime = vmware_inventory.currentTime();
-        Calendar startTime = (Calendar) curTime.clone();
-        startTime.roll(Calendar.HOUR, -5);
-        System.out.println("start:" + startTime.getTime());
-        Calendar endTime = (Calendar) curTime.clone();
-        endTime.roll(Calendar.MINUTE, -5);
-        System.out.println("end:" + endTime.getTime());
-        vmware_inventory.readings(startTime,endTime);
+        // Calendar curTime = vmware_inventory.currentTime();
+        // Calendar startTime = (Calendar) curTime.clone();
+        // startTime.roll(Calendar.HOUR, -5);
+        // System.out.println("start:" + startTime.getTime());
+        // Calendar endTime = (Calendar) curTime.clone();
+        // endTime.roll(Calendar.MINUTE, -5);
+        // System.out.println("end:" + endTime.getTime());
+        vmware_inventory.readings(args[3],args[4]);
         //vmware_inventory.readings("2012-12-12T23:00:00Z","2012-12-12T23:20:00Z");
         vmware_inventory.printVMs();
         vmware_inventory.close();
