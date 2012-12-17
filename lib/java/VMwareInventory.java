@@ -98,10 +98,37 @@ public class VMwareInventory
         // Calendar endTime = (Calendar) curTime.clone();
         // endTime.roll(Calendar.MINUTE, -5);
         // System.out.println("end:" + endTime.getTime());
-        vmware_inventory.readings(args[3],args[4]);
+        //vmware_inventory.readings(args[3],args[4]);
+        // vmware_inventory.findByUuid("42031956-ae87-8eec-8da2-5a01e55d07e3");
+        // vmware_inventory.findByUuid("xxxxxxxx-ae87-8eec-8da2-5a01e55d07e3");
+        vmware_inventory.findByUuidWithReadings("4203e384-7067-d2bf-1808-aa414e0eb810",args[3],args[4]);
         //vmware_inventory.readings("2012-12-12T23:00:00Z","2012-12-12T23:20:00Z");
         vmware_inventory.printVMs();
         vmware_inventory.close();
+    }
+
+    public HashMap<String, Object> findByUuid(String uuid) throws Exception
+    {
+      VirtualMachine[] vms = new VirtualMachine[1];
+      VirtualMachine vm = (VirtualMachine) this.si.getSearchIndex().findByUuid(null,uuid,true,false);
+      vms[0] = vm;
+      gatherProperties(vms);
+      return vmMap.get(vm.getMOR().get_value().toString());
+    }
+
+    public void findByUuidWithReadings(String uuid, String startIso8601, String endIso8601) throws Exception
+    {
+      VirtualMachine[] vms = new VirtualMachine[1];
+      VirtualMachine vm = (VirtualMachine) this.si.getSearchIndex().findByUuid(null,uuid,true,false);
+      DateTimeFormatter parser2 = ISODateTimeFormat.dateTimeNoMillis();
+      Calendar startTime = (Calendar) Calendar.getInstance(TimeZone.getTimeZone("GMT")).clone();
+      Calendar endTime = (Calendar) Calendar.getInstance(TimeZone.getTimeZone("GMT")).clone();
+      startTime.setTime(parser2.parseDateTime(startIso8601).toDate());
+      endTime.setTime(parser2.parseDateTime(endIso8601).toDate());
+      vms[0] = vm;
+      gatherProperties(vms);
+      List<VirtualMachine> vms_list = new ArrayList<VirtualMachine>(Arrays.asList(vms));
+      readings(vms_list,startTime,endTime);
     }
 
     public void readings(String startIso8601, String endIso8601) throws Exception
@@ -167,17 +194,7 @@ public class VMwareInventory
             qSpec.setFormat("normal");
             qSpec.setIntervalId(300);
             qSpec.setMetricId( new PerfMetricId[] {cpu_usage,cpu_usagemhz,mem,vdisk_read,vdisk_write,vdisk_write,net_trans,net_recv});
-            /*
-            Calendar startTime = (Calendar) curTime.clone();
-            startTime.roll(Calendar.HOUR, -1);
-            System.out.println("start:" + startTime.getTime());
-            */
             qSpec.setStartTime(startTime);
-            /*
-            Calendar endTime = (Calendar) curTime.clone();
-            endTime.roll(Calendar.MINUTE, -5);
-            System.out.println("end:" + endTime.getTime());
-            */
             qSpec.setEndTime(endTime);
             qSpecList.add(qSpec);
         }
@@ -194,7 +211,6 @@ public class VMwareInventory
             {
                 HashMap<String, HashMap<String, Long>> metrics = parsePerfMetricForVM((PerfEntityMetric)pembs[i]);
                 String vm_mor = pembs[i].getEntity().get_value();
-                //TODO - WTF?
                 this.vmMap.get(vm_mor).put("stats",metrics);
                 //DEBUG - System.out.println(metrics);
                 //DEBUG - printMachineReading(vm_mor,metrics);
@@ -367,80 +383,85 @@ public class VMwareInventory
      */
     public List<VirtualMachine>  gatherVirtualMachines() throws Exception
     {
-        Folder rootFolder = this.si.getRootFolder();
-        ManagedEntity[] vms = new InventoryNavigator(rootFolder).searchManagedEntities("VirtualMachine");
-        List<VirtualMachine> vmsList = new ArrayList<VirtualMachine>(); 
-        if(vms==null || vms.length ==0)
-        {
-            return new ArrayList<VirtualMachine>();
-        }
-        gatherHosts();
-        logger.info("Starting PropertyCollectorUtil.retrieveProperties");
-        Hashtable[] pTables = PropertyCollectorUtil.retrieveProperties(vms, "VirtualMachine",
-                new String[] {"name",
-                "config.hardware.device",
-                "guest.toolsStatus",
-                "guest.guestId",
-                "guest.net",
-                "config.uuid",
-                "layoutEx.disk",
-                "layoutEx.file",
-                "runtime.powerState",
-                "runtime.host",
-                "config.hardware.memoryMB",
-                "config.hardware.numCPU"});
-        logger.info("Finished PropertyCollectorUtil.retrieveProperties");
-        for(int i=0; i<pTables.length; i++)
-        {
-            HashMap<String, Object> vm = new HashMap<String, Object>();
-            vmsList.add((VirtualMachine)vms[i]);
-            vm.put("external_vm_id",vms[i].getMOR().get_value().toString());
-            ManagedObjectReference host_ref = (ManagedObjectReference) pTables[i].get("runtime.host");
-            vm.put("external_host_id", host_ref.get_value().toString());
-            vm.put("uuid",pTables[i].get("config.uuid"));
-            vm.put("name",pTables[i].get("name"));
-            vm.put("cpu_count",pTables[i].get("config.hardware.numCPU"));
-            
-            long hz = get_host_hz((ManagedObjectReference) pTables[i].get("runtime.host"));
-            vm.put("cpu_speed",hz / 1000000);
+      Folder rootFolder = this.si.getRootFolder();
+      ManagedEntity[] vms = new InventoryNavigator(rootFolder).searchManagedEntities("VirtualMachine");
+      return(gatherProperties(vms));
+    }
 
-            vm.put("maximum_memory",pTables[i].get("config.hardware.memoryMB"));
-            boolean tool_status = true;
-            if (pTables[i].get("guest.toolsStatus") == "toolsNotInstalled") {
-                tool_status = false;
-            }
-            vm.put("guest_agent",tool_status);
-            String guest_agent = (String) pTables[i].get("guest.guestId");
-            String arch = "x32";
-            if (guest_agent != null) {
-                if (guest_agent.indexOf("64") > -1) {
-                    arch = "x64";
-                }
-            }
-            HashMap<String, Object> system = new HashMap<String, Object>();
-            system.put("architecture",arch);
-            system.put("operating_system",guest_agent);
-            vm.put("system",system);
-            vm.put("power_state",pTables[i].get("runtime.powerState").toString());
-            VirtualDevice[] vds =  (VirtualDevice[]) pTables[i].get("config.hardware.device");
-            List<Map <String, Object>> vm_disks=new ArrayList<Map<String, Object>>();
-            List<Map <String, Object>> vm_nics=new ArrayList<Map<String, Object>>();
-            for(VirtualDevice vd:vds) {
-                // if virtual disk then
-                if(vd instanceof VirtualDisk) {
-                    HashMap<String, Object> disk_hash = get_disk((VirtualDisk) vd, pTables, i); 
-                    vm_disks.add(disk_hash);
+    private List<VirtualMachine> gatherProperties(ManagedEntity[] vms) throws Exception
+    {
+      List<VirtualMachine> vmsList = new ArrayList<VirtualMachine>(); 
+      if(vms==null || vms.length ==0)
+      {
+          return new ArrayList<VirtualMachine>();
+      }
+      gatherHosts();
+      logger.info("Starting PropertyCollectorUtil.retrieveProperties");
+      Hashtable[] pTables = PropertyCollectorUtil.retrieveProperties(vms, "VirtualMachine",
+              new String[] {"name",
+              "config.hardware.device",
+              "guest.toolsStatus",
+              "guest.guestId",
+              "guest.net",
+              "config.uuid",
+              "layoutEx.disk",
+              "layoutEx.file",
+              "runtime.powerState",
+              "runtime.host",
+              "config.hardware.memoryMB",
+              "config.hardware.numCPU"});
+      logger.info("Finished PropertyCollectorUtil.retrieveProperties");
+      for(int i=0; i<pTables.length; i++)
+      {
+          HashMap<String, Object> vm = new HashMap<String, Object>();
+          vmsList.add((VirtualMachine)vms[i]);
+          vm.put("external_vm_id",vms[i].getMOR().get_value().toString());
+          ManagedObjectReference host_ref = (ManagedObjectReference) pTables[i].get("runtime.host");
+          vm.put("external_host_id", host_ref.get_value().toString());
+          vm.put("uuid",pTables[i].get("config.uuid"));
+          vm.put("name",pTables[i].get("name"));
+          vm.put("cpu_count",pTables[i].get("config.hardware.numCPU"));
+          
+          long hz = get_host_hz((ManagedObjectReference) pTables[i].get("runtime.host"));
+          vm.put("cpu_speed",hz / 1000000);
 
-                } else if ((vd instanceof VirtualPCNet32) || (vd instanceof VirtualE1000) || (vd instanceof VirtualVmxnet)) {
-                    HashMap<String, Object> nic_hash = get_nic((VirtualEthernetCard) vd, pTables, i);
-                    vm_nics.add(nic_hash);
-                } 
-            }
-            vm.put("disks",vm_disks);
-            vm.put("nics",vm_nics);
-            this.vmMap.put(vms[i].getMOR().get_value().toString(), vm);
-        }    
-        return(vmsList);
+          vm.put("maximum_memory",pTables[i].get("config.hardware.memoryMB"));
+          boolean tool_status = true;
+          if (pTables[i].get("guest.toolsStatus") == "toolsNotInstalled") {
+              tool_status = false;
+          }
+          vm.put("guest_agent",tool_status);
+          String guest_agent = (String) pTables[i].get("guest.guestId");
+          String arch = "x32";
+          if (guest_agent != null) {
+              if (guest_agent.indexOf("64") > -1) {
+                  arch = "x64";
+              }
+          }
+          HashMap<String, Object> system = new HashMap<String, Object>();
+          system.put("architecture",arch);
+          system.put("operating_system",guest_agent);
+          vm.put("system",system);
+          vm.put("power_state",pTables[i].get("runtime.powerState").toString());
+          VirtualDevice[] vds =  (VirtualDevice[]) pTables[i].get("config.hardware.device");
+          List<Map <String, Object>> vm_disks=new ArrayList<Map<String, Object>>();
+          List<Map <String, Object>> vm_nics=new ArrayList<Map<String, Object>>();
+          for(VirtualDevice vd:vds) {
+              // if virtual disk then
+              if(vd instanceof VirtualDisk) {
+                  HashMap<String, Object> disk_hash = get_disk((VirtualDisk) vd, pTables, i); 
+                  vm_disks.add(disk_hash);
+
+              } else if ((vd instanceof VirtualPCNet32) || (vd instanceof VirtualE1000) || (vd instanceof VirtualVmxnet)) {
+                  HashMap<String, Object> nic_hash = get_nic((VirtualEthernetCard) vd, pTables, i);
+                  vm_nics.add(nic_hash);
+              } 
+          }
+          vm.put("disks",vm_disks);
+          vm.put("nics",vm_nics);
+          this.vmMap.put(vms[i].getMOR().get_value().toString(), vm);
+      }    
+      return(vmsList);
     }
 
     /**
@@ -450,30 +471,31 @@ public class VMwareInventory
      *
      */
     public void printVMs()
-    {   int i = 0;
-        for (String moref: this.vmMap.keySet()) {
-            i++;
-            String comma = "";
-            System.out.print(moref+" : { ");
-            for (Map.Entry<String,Object> entry : this.vmMap.get(moref).entrySet()) {
-                System.out.println(comma);
-                System.out.print(entry.getKey()+" : "+entry.getValue());
-                comma=",";
-            }
-            System.out.println("");
-            System.out.println("}");
-        }
-        System.out.println("Total # of VMs "+i);
+    {   
+      int i = 0;
+      for (String moref: this.vmMap.keySet()) {
+          i++;
+          String comma = "";
+          System.out.print(moref+" : { ");
+          for (Map.Entry<String,Object> entry : this.vmMap.get(moref).entrySet()) {
+              System.out.println(comma);
+              System.out.print(entry.getKey()+" : "+entry.getValue());
+              comma=",";
+          }
+          System.out.println("");
+          System.out.println("}");
+      }
+      System.out.println("Total # of VMs "+i);
     }
 
     public List<VirtualMachine>  virtualMachines()
     { 
-        List<VirtualMachine> vms = new ArrayList<VirtualMachine>();
-        int i = 0;
-        for (String moref: this.vmMap.keySet()) {
-            vms.add((VirtualMachine)this.vmMap.get(moref).get("vm"));
-        }
-        return vms;
+      List<VirtualMachine> vms = new ArrayList<VirtualMachine>();
+      int i = 0;
+      for (String moref: this.vmMap.keySet()) {
+          vms.add((VirtualMachine)this.vmMap.get(moref).get("vm"));
+      }
+      return vms;
     }
 
     /**
@@ -484,11 +506,11 @@ public class VMwareInventory
      */
     public void printHosts()
     {
-        for (String moref: this.hostMap.keySet()) {
-            for (Map.Entry<String,Object> entry : this.hostMap.get(moref).entrySet()) {
-                System.out.println(moref+" "+entry.getKey()+" "+entry.getValue());
-            }
-        }
+      for (String moref: this.hostMap.keySet()) {
+          for (Map.Entry<String,Object> entry : this.hostMap.get(moref).entrySet()) {
+              System.out.println(moref+" "+entry.getKey()+" "+entry.getValue());
+          }
+      }
     }
 
     /**
@@ -501,10 +523,10 @@ public class VMwareInventory
      */
     private long get_host_hz(ManagedObjectReference host_mor)
     {
-        String host_key = host_mor.get_value().toString();
-        HashMap<String, Object> host_hash = this.hostMap.get(host_key);
-        Long hz = (Long) host_hash.get("hz");
-        return hz;
+      String host_key = host_mor.get_value().toString();
+      HashMap<String, Object> host_hash = this.hostMap.get(host_key);
+      Long hz = (Long) host_hash.get("hz");
+      return hz;
     }
     /**
      * gatherCounters 
@@ -515,25 +537,24 @@ public class VMwareInventory
      */
     private void gatherCounters() throws Exception
     {
-
-        PerformanceManager perfMgr = this.si.getPerformanceManager();
-        PerfCounterInfo[] pcis = perfMgr.getPerfCounter();
-        for(int i=0; pcis!=null && i<pcis.length; i++)
-        {
-            String perfCounter = pcis[i].getGroupInfo().getKey() + "."
-              + pcis[i].getNameInfo().getKey() + "." 
-              + pcis[i].getRollupType();
-              /*
-            System.out.println("\nKey:" + pcis[i].getKey());
-            System.out.println("PerfCounter:" + perfCounter);
-            System.out.println("Level:" + pcis[i].getLevel());
-            System.out.println("StatsType:" + pcis[i].getStatsType());
-            System.out.println("UnitInfo:" 
-              + pcis[i].getUnitInfo().getKey());
-              */
-            this.counterMap.put(perfCounter, (Integer) pcis[i].getKey());
-            this.counterIdMap.put((Integer) pcis[i].getKey(), perfCounter);
-        }
+      PerformanceManager perfMgr = this.si.getPerformanceManager();
+      PerfCounterInfo[] pcis = perfMgr.getPerfCounter();
+      for(int i=0; pcis!=null && i<pcis.length; i++)
+      {
+          String perfCounter = pcis[i].getGroupInfo().getKey() + "."
+            + pcis[i].getNameInfo().getKey() + "." 
+            + pcis[i].getRollupType();
+            /*
+          System.out.println("\nKey:" + pcis[i].getKey());
+          System.out.println("PerfCounter:" + perfCounter);
+          System.out.println("Level:" + pcis[i].getLevel());
+          System.out.println("StatsType:" + pcis[i].getStatsType());
+          System.out.println("UnitInfo:" 
+            + pcis[i].getUnitInfo().getKey());
+            */
+          this.counterMap.put(perfCounter, (Integer) pcis[i].getKey());
+          this.counterIdMap.put((Integer) pcis[i].getKey(), perfCounter);
+      }
     }
 
     private List<Integer> getCounterIds(String[] counter_names)

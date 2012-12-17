@@ -82,8 +82,14 @@ class Machine < Base::Machine
     end
   end
 
-  # def self.find_by_uuid(inode, uuid)
-
+  def self.find_by_uuid(inode, uuid)
+    begin
+      vm_inventory = VMwareInventory.new("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
+      self.new(vm_inventory.findByUuid(uuid).to_hash)
+    ensure
+      vm_inventory.close
+    end
+  end
   #   begin
   #     # Connect to vCenter and set the property collector and the searchindex variables
   #     property_collector = inode.session.serviceContent.propertyCollector
