@@ -90,7 +90,6 @@ public class VMwareInventory
 
         VMwareInventory vmware_inventory = new VMwareInventory(args[0],args[1],args[2]);
         // vmware_inventory.printHosts();
-        vmware_inventory.gatherCounters();
         // Calendar curTime = vmware_inventory.currentTime();
         // Calendar startTime = (Calendar) curTime.clone();
         // startTime.roll(Calendar.HOUR, -5);
@@ -157,7 +156,7 @@ public class VMwareInventory
                         "virtualDisk.write.average",
                         "net.received.average",
                         "net.transmitted.average"};
-
+        gatherCounters();
         PerfMetricId cpu_usage = new PerfMetricId();
         cpu_usage.setCounterId(this.counterMap.get("cpu.usage.average"));
         cpu_usage.setInstance("");
