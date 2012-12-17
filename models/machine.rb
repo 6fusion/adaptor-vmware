@@ -51,11 +51,11 @@ class Machine < Base::Machine
     self.vm_inventory(inode)
   end
 
-  def all_with_readings(inode, _interval = 300, _since = 5.minutes.ago.utc, _until = Time.now.utc)
+  def all_with_readings(inode, _interval = 300,  _since = 10.minutes.ago.utc, _until = 5.minutes.ago.utc)
     Machine.all_with_readings(inode, _interval, _since, _until)
   end
 
-  def self.all_with_readings(inode, _interval = 300, _since = 5.minutes.ago.utc, _until = Time.now.utc)
+  def self.all_with_readings(inode, _interval = 300,  _since = 10.minutes.ago.utc, _until = 5.minutes.ago.utc)
 
     begin
       # Retrieve all machines and virtual machine references
@@ -91,7 +91,7 @@ class Machine < Base::Machine
   end
  
 
-  def self.find_by_uuid_with_readings(inode, uuid, _interval = 300, _since = 5.minutes.ago.utc, _until = Time.now.utc)
+  def self.find_by_uuid_with_readings(inode, uuid, _interval = 300, _since = 10.minutes.ago.utc, _until =  5.minutes.ago.utc)
     begin
       vm_inventory = VMwareInventory.new("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
 
@@ -109,7 +109,7 @@ class Machine < Base::Machine
     end
   end
 
-  def readings(_interval = 300, _since = 5.minutes.ago.utc, _until = Time.now.utc)
+  def readings(_interval = 300, _since = 10.minutes.ago.utc, _until = 5.minutes.ago.utc)
     begin
 
       #Create list of timestamps
