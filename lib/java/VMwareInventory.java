@@ -116,7 +116,7 @@ public class VMwareInventory
       return vmMap.get(vm.getMOR().get_value().toString());
     }
 
-    public void findByUuidWithReadings(String uuid, String startIso8601, String endIso8601) throws Exception
+    public HashMap<String, Object>  findByUuidWithReadings(String uuid, String startIso8601, String endIso8601) throws Exception
     {
       VirtualMachine[] vms = new VirtualMachine[1];
       VirtualMachine vm = (VirtualMachine) this.si.getSearchIndex().findByUuid(null,uuid,true,false);
@@ -129,6 +129,7 @@ public class VMwareInventory
       gatherProperties(vms);
       List<VirtualMachine> vms_list = new ArrayList<VirtualMachine>(Arrays.asList(vms));
       readings(vms_list,startTime,endTime);
+      return vmMap.get(vm.getMOR().get_value().toString());
     }
 
     public void readings(String startIso8601, String endIso8601) throws Exception

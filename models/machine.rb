@@ -68,7 +68,7 @@ class Machine < Base::Machine
       # DEBUG
       # vm_inventory.printVMs()
 
-      machines = vm_inventory.vmMap.to_hash
+      machines = vm_inventory.vmMap.to_hash.map {|_, vm| Machine.new(vm)}
 
       # Returns update machine array
       machines
@@ -90,60 +90,26 @@ class Machine < Base::Machine
       vm_inventory.close
     end
   end
-  #   begin
-  #     # Connect to vCenter and set the property collector and the searchindex variables
-  #     property_collector = inode.session.serviceContent.propertyCollector
-  #     search_index       = inode.session.searchIndex
+ 
 
-  #     # Search for the virtual machine by UUID and set the property filter variable
-  #     vm                 = search_index.FindByUuid :uuid => uuid, :vmSearch => true
+  def self.find_by_uuid_with_readings(inode, uuid, _interval = 300, _since = 5.minutes.ago.utc, _until = Time.now.utc)
+    begin
+      vm_inventory = VMwareInventory.new("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
 
-  #     if vm.nil?
-  #       raise Exceptionss::NotFound.new("Machine with UUID of #{uuid} was not found")
-  #     else
-  #       filter_spec   = RbVmomi::VIM.PropertyFilterSpec(
-  #         :objectSet => [{ :obj => vm }],
-  #         :propSet   => [{ :pathSet => %w(config guest layoutEx recentTask runtime),
-  #                          :type    => "VirtualMachine"
-  #                        }]
-  #       )
-
-  #       # Retrieve properties create the machine object
-  #       vm_properties = property_collector.RetrieveProperties(:specSet => [filter_spec])
-  #       machine       = new_machine_from_vm(inode, vm_properties.first)
-  #     end
-
-  #     # Return the updated machine object
-  #     machine
-
-  #   rescue => e
-  #     logger.error(e.message)
-  #     raise Exceptions::Unrecoverable
-  #   end
-  # end
-
-  # def self.find_by_uuid_with_readings(inode, uuid, _interval = 300, _since = 5.minutes.ago.utc, _until = Time.now.utc)
-
-  #   begin
-  #     machine             = self.find_by_uuid(inode, uuid)
-  #     vms                 = [machine.vm]
-
-  #     # Connect to vCenter and set the performance manager variable
-  #     performance_manager = inode.session.serviceContent.perfManager
-
-  #     # Collects Performance information and set the machine.stats property
-  #     metrics             = { "cpu.usage.average" => "","cpu.usagemhz.average" => "", "mem.consumed.average" => "", "virtualDisk.read.average" => "*", "virtualDisk.write.average" => "*", "net.received.average" => "*", "net.transmitted.average" => "*" }
-  #     stats               = performance_manager.retrieve_stats(vms, metrics, _interval, _since, _until)
-
-  #     machine.stats = stats.first
-
-  #     # Return updated machine object
-  #     machine
-  #   rescue => e
-  #     logger.error(e.message)
-  #     raise Exceptions::Unrecoverable
-  #   end
-  # end
+      vm_inventory.gatherCounters
+      startTime = _since.utc.strftime('%Y-%m-%dT%H:%M:%S')+"Z"
+      endTime = _until.utc.strftime('%Y-%m-%dT%H:%M:%S')+"Z"
+      props = vm_inventory.findByUuidWithReadings(uuid.to_java, startTime.to_java, endTime.to_java)
+      vm = nil
+      logger.info(props.to_hash)
+      if !props.nil?
+        vm = self.new(props.to_hash)
+      end
+      vm        
+    ensure
+      vm_inventory.close
+    end
+  end
 
   def readings(_interval = 300, _since = 5.minutes.ago.utc, _until = Time.now.utc)
     begin
