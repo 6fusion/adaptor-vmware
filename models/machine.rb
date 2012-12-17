@@ -101,7 +101,6 @@ class Machine < Base::Machine
       endTime = _until.utc.strftime('%Y-%m-%dT%H:%M:%S')+"Z"
       props = vm_inventory.findByUuidWithReadings(uuid.to_java, startTime.to_java, endTime.to_java)
       vm = nil
-      logger.info(props.to_hash)
       if !props.nil?
         vm = self.new(props.to_hash)
       end
