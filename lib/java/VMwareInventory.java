@@ -394,9 +394,9 @@ public class VMwareInventory
         {
             HashMap<String, Object> vm = new HashMap<String, Object>();
             vmsList.add((VirtualMachine)vms[i]);
-            vm.put("moref",vms[i].getMOR().get_value().toString());
+            vm.put("external_vm_id",vms[i].getMOR().get_value().toString());
             ManagedObjectReference host_ref = (ManagedObjectReference) pTables[i].get("runtime.host");
-            vm.put("host_moref", host_ref.get_value().toString());
+            vm.put("external_host_id", host_ref.get_value().toString());
             vm.put("uuid",pTables[i].get("config.uuid"));
             vm.put("name",pTables[i].get("name"));
             vm.put("cpu_count",pTables[i].get("config.hardware.numCPU"));

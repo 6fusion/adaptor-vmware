@@ -5,6 +5,8 @@ collection @machines if @machines.present?
 
 object @machine if @machine.present?
 attributes :uuid,
+           :external_vm_id,
+           :external_host_id,
            :name,
            :cpu_count,
            :cpu_speed,
