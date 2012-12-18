@@ -24,7 +24,7 @@ set :group, "deploy"
 set :branch, ENV['TAG'] || ENV['BRANCH'] || `git branch --no-color 2> /dev/null`.chomp.split("\n").grep(/^[*]/).first[/(\S+)$/, 1]
 
 set :copy_exclude do
-  %w{Capfile Vagrantfile Rakefile README.* spec config/deploy.rb
+  %w{Capfile Vagrantfile README.* spec config/deploy.rb
      config/deploy .rvmrc .rspec data .git .gitignore **/test.* .yardopts} +
     (stages - [deploy_env]).map { |e| "**/#{e}.*" }
 end
@@ -45,6 +45,7 @@ after("deploy") do
   run "#{sudo} chown -R torquebox:torquebox #{shared_path}"
   run "#{sudo} chmod 0666 #{shared_path}/log/#{deploy_env}.log"
   run "if [ -f #{shared_path}/newrelic.yml ]; then #{sudo} ln -sfn #{shared_path}/newrelic.yml #{current_path}/config; fi"
+  run "cd #{current_path} && rake"
   torquebox.deploy
   deploy.cleanup
 end

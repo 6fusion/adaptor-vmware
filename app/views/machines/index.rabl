@@ -1,9 +1,23 @@
 # Do not modify this file
 collection @machines
-extends 'machines/base'
+
+attributes :uuid,
+           :name,
+           :cpu_count,
+           :cpu_speed,
+           :maximum_memory,
+           :system ,
+           :guest_agent,
+           :power_state,
+           :hostname,
+           :data_center_uuid,
+           :description,
+           :host_uuid
+
 child :disks => :disks do
-  extends 'machines/disks'
+  attributes :uuid, :name, :maximum_size, :type, :thin
+
 end
 child :nics => :nics do
-  extends 'machines/nics'
+  attributes :uuid, :name, :mac_address, :ip_address
 end
