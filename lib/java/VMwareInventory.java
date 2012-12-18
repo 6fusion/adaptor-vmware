@@ -71,6 +71,52 @@ public class VMwareInventory
     {
         return this.si.currentTime();
     }
+
+    public HashMap<String, String>  getAboutInfo() throws Exception
+    {
+      AboutInfo about = this.si.getAboutInfo();
+      HashMap<String, String> props = new HashMap<String, String>();
+      props.put("name",about.getName());
+      props.put("fullName",about.getFullName());
+      props.put("vendor",about.getVendor());
+      props.put("version",about.getVersion());
+      props.put("build",about.getBuild());
+      props.put("localeVersion",about.getLocaleVersion());
+      props.put("localeBuild",about.getLocaleBuild());
+      props.put("osType",about.getOsType());
+      props.put("productLineId",about.getProductLineId());
+      props.put("apiType",about.getApiType());
+      props.put("apiVersion",about.getApiVersion());
+      props.put("instanceUuid",about.getInstanceUuid());
+      props.put("licenseProductVersion",about.getLicenseProductName());
+      props.put("name",about.getName());
+
+      for(int i=0; about.getDynamicProperty() !=null && i<about.getDynamicProperty().length; i++) {
+        DynamicProperty dynamicProperty = about.getDynamicProperty()[i];
+        props.put(dynamicProperty.getName(),dynamicProperty.getVal().toString());
+      }
+      return props;
+    }
+
+    public List<HashMap<String, String>>  getStatisticLevels() throws Exception
+    {
+      PerformanceManager perfMgr = this.si.getPerformanceManager();
+      PerfInterval[] perfIntervals = perfMgr.getHistoricalInterval();
+      ArrayList<HashMap<String, String>> stats = new ArrayList<HashMap<String, String>>();
+      for(int i=0; perfIntervals !=null && i<perfIntervals.length; i++) {
+        PerfInterval interval = perfIntervals[i];
+        HashMap<String, String> props = new HashMap<String, String>();
+        props.put("key",Integer.toString(interval.getKey()));
+        props.put("samplingPeriod",Integer.toString(interval.getSamplingPeriod()));
+        props.put("name",interval.getName());
+        props.put("length",Integer.toString(interval.getLength()));
+        props.put("level",interval.getLevel().toString());
+        props.put("enabled",Boolean.toString(interval.isEnabled()));
+        stats.add(props);
+      }
+      return stats;
+    }
+
     public PerformanceManager getPerformanceManager()
     {
         return si.getPerformanceManager();
@@ -103,6 +149,8 @@ public class VMwareInventory
         vmware_inventory.findByUuidWithReadings("4203e384-7067-d2bf-1808-aa414e0eb810",args[3],args[4]);
         //vmware_inventory.readings("2012-12-12T23:00:00Z","2012-12-12T23:20:00Z");
         vmware_inventory.printVMs();
+        System.out.println(vmware_inventory.getAboutInfo().toString());
+        System.out.println(vmware_inventory.getStatisticLevels().toString());
         vmware_inventory.close();
     }
 

@@ -9,6 +9,7 @@ gem 'activesupport', :require => 'active_support/time'
 gem 'rbvmomi'
 gem 'rake', :require => false
 gem 'kaminari', :require => 'kaminari/sinatra'
+gem 'rubyzip', :git => 'git://github.com/aussiegeek/rubyzip.git', :require => "zip/zip"
 gem 'uuid'
 # -- newrelic should be last
 gem 'padrino-rpm', :git => 'https://github.com/6fusion/padrino-rpm.git'

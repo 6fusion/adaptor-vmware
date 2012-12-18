@@ -17,7 +17,8 @@ class Capability < Base::Capability
     machines 
     machines_readings 
     machine 
-    machine_readings 
+    machine_readings
+    diagnostics 
     )
   def self.all(inode)
     logger.info('Capability.all')
