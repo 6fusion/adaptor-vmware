@@ -1,170 +1,113 @@
 AdaptorVMware.controllers :machines, :map => "/inodes/:inode_uuid" do
+  include ::NewRelic::Agent::MethodTracer
+  add_method_tracer :render
   before do
     logger.info('machines#before')
-
+    logger.debug(route.as_options[:__name__])
     content_type 'application/json'
     @inode = INode.find_by_uuid(params[:inode_uuid])
   end
 
   # Creates
   post :index do
-    begin
-      logger.info('POST - machines#index')
-      logger.debug "ACCEPT: #{request.accept}"
-
-      @inode.open_session
-      @machines = Machine.create_from_ovf(@inode, params[:ovf])
-
-      render 'machines/show'
-    ensure
-      @inode.close_session
-    end
+    logger.info('POST - machines#index')
+    @machines = Machine.create_from_ovf(@inode, params[:ovf])
+    render 'machines/show'
   end
 
   # Reads
   get :index do
-    begin
-      logger.info('GET - machines#index')
-
-      @inode.open_session
-      @machines = Machine.all (@inode)
-
-      render 'machines/index'
-    ensure
-      @inode.close_session
-    end
+    logger.info('GET - machines#index')
+    @machines = Machine.vm_inventory(@inode).map {|_, vm| Machine.new(vm)}
+    render 'machines/index'
   end
 
   get :index, :map => 'machines/readings' do
-    begin
-      logger.info('GET - machines#readings')
+    logger.info('GET - machines#readings')
 
-      _interval = params[:interval].blank? ? 300 : params[:interval]
-      _since = params[:since].blank? ? 5.minutes.ago.utc : Time.iso8601(params[:since])
-      _until = params[:until].blank? ? Time.now.utc : Time.iso8601(params[:until])
+    _interval = params[:interval].blank? ? 300 : params[:interval]
+    _since    = params[:since].blank? ? 10.minutes.ago.utc : Time.iso8601(params[:since])
+    _until    = params[:until].blank? ? 5.minutes.ago.utc : Time.iso8601(params[:until])
 
-      params[:per_page] ||= 5
-      
-      @inode.open_session
-      @machines = Kaminari::paginate_array(Machine.all_with_readings(@inode, _interval, _since, _until)).page(params[:page]).per(params[:per_page])
-      render 'machines/readings'
-    ensure
-      @inode.close_session
-    end
+    params[:per_page] ||= 5
+
+    @machines = Machine.all_with_readings(@inode,_interval,_since,_until)
+    render 'machines/readings'
+
   end
 
   get :show, :map => "machines/:uuid" do
-    begin
-      logger.info('GET - machines.uuid#show')
-
-      @inode.open_session
-      @machine = Machine.find_by_uuid(@inode, params[:uuid])
-
-      render 'machines/show'
-    ensure
-      @inode.close_session
-    end
+    logger.info('GET - machines.uuid#show')
+    @machine = Machine.find_by_uuid(@inode, params[:uuid])
+    render 'machines/show'
   end
+
   get :index, :map => 'machines/:uuid/readings' do
-    begin
-      logger.info('GET - machines.uuid#readings')
+    logger.info('GET - machines.uuid#readings')
 
-      _interval = params[:interval].blank? ? 300 : params[:interval]
-      _since = params[:since].blank? ? 5.minutes.ago.utc : Time.iso8601(params[:since])
-      _until = params[:until].blank? ? Time.now.utc : Time.iso8601(params[:until])
+    _interval = params[:interval].blank? ? 300 : params[:interval]
+    _since    = params[:since].blank? ? 10.minutes.ago.utc : Time.iso8601(params[:since])
+    _until    = params[:until].blank? ? 5.minutes.ago.utc : Time.iso8601(params[:until])
 
-      @inode.open_session
-      @machine = Machine.find_by_uuid_with_readings(@inode, params[:uuid], _interval, _since, _until)
+    @machine = Machine.find_by_uuid_with_readings(@inode, params[:uuid], _interval, _since, _until)
 
-      render 'machines/readings'
-    ensure
-      @inode.close_session
-    end
+    render 'machines/readings'
   end
 
   # Updates
   put :show, :map => 'machines/:uuid/start' do
-    begin
-      logger.info('PUT - machines.uuid#start')
+    logger.info('PUT - machines.uuid#start')
 
-      @inode.open_session
-      @machine = Machine.find_by_uuid(@inode, params[:uuid])
-      @machine.start(@inode) if @machine.present?
+    @inode.open_session
+    @machine = Machine.find_by_uuid(@inode, params[:uuid])
+    @machine.start(@inode) if @machine.present?
 
-      render 'machines/show'
-    ensure
-      @inode.close_session
-    end
+    render 'machines/show'
   end
 
   put :show, :map => 'machines/:uuid/stop' do
-    begin
-      logger.info('PUT - machines.uuid#stop')
+    logger.info('PUT - machines.uuid#stop')
 
-      @inode.open_session
-      @machine = Machine.find_by_uuid(@inode, params[:uuid])
-      @machine.stop(@inode) if @machine.present?
+    @machine = Machine.find_by_uuid(@inode, params[:uuid])
+    @machine.stop(@inode) if @machine.present?
 
-      render 'machines/show'
-    ensure
-      @inode.close_session
-    end
+    render 'machines/show'
   end
 
   put :show, :map => 'machines/:uuid/restart' do
-    begin
-      logger.info('PUT - machines.uuid#restart')
+    logger.info('PUT - machines.uuid#restart')
 
-      @inode.open_session
-      @machine = Machine.find_by_uuid(@inode, params[:uuid])
-      @machine.restart(@inode) if @machine.present?
+    @machine = Machine.find_by_uuid(@inode, params[:uuid])
+    @machine.restart(@inode) if @machine.present?
 
-      render 'machines/show'
-    ensure
-      @inode.close_session
-    end
+    render 'machines/show'
   end
 
   put :show, :map => 'machines/:uuid/force_stop' do
-    begin
-      logger.info('PUT - machines.uuid#force_stop')
+    logger.info('PUT - machines.uuid#force_stop')
 
-      @inode.open_session
-      @machine = Machine.find_by_uuid(@inode, params[:uuid])
-      @machine.force_stop(@inode) if @machine.present?
+    @machine = Machine.find_by_uuid(@inode, params[:uuid])
+    @machine.force_stop(@inode) if @machine.present?
 
-      render 'machines/show'
-    ensure
-      @inode.close_session
-  end
+    render 'machines/show'
   end
 
   put :show, :map => 'machines/:uuid/force_restart' do
-    begin
-      logger.info('PUT - machines.uuid#force_restart')
+    logger.info('PUT - machines.uuid#force_restart')
 
-      @inode.open_session
-      @machine = Machine.find_by_uuid(@inode, params[:uuid])
-      @machine.force_restart(@inode) if @machine.present?
+    @machine = Machine.find_by_uuid(@inode, params[:uuid])
+    @machine.force_restart(@inode) if @machine.present?
 
-      render 'machines/show'
-    ensure
-      @inode.close_session
-  end
+    render 'machines/show'
   end
 
   # Deletes
   delete :delete, :map => "machines/:uuid" do
-    begin
-      logger.info('DELETE - machines.uuid#delete')
+    logger.info('DELETE - machines.uuid#delete')
 
-      @inode.open_session
-      @machine = Machine.find_by_uuid(@inode, params[:uuid])
-      @machine.delete(@inode)
+    @machine = Machine.find_by_uuid(@inode, params[:uuid])
+    @machine.delete(@inode)
 
-      render 'machines/show'
-    ensure
-      @inode.close_session
-    end
+    render 'machines/show'
   end
 end

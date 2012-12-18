@@ -24,6 +24,7 @@ AdaptorVMware.controllers :inodes, :priority => :low do
   # Creates
   post :index do
     logger.info('POST - inodes#index')
+    logger.debug(params.inspect)
 
     uuid = params['uuid']
     @inode = INode.new(params)
@@ -73,80 +74,73 @@ AdaptorVMware.controllers :inodes, :priority => :low do
   end
 
   get :diagnostics, "/inodes/:uuid/diagnostics.zip" do
+    logger.info('DIAGNOSTICS.ZIP - inodes#index')
+    @inode = INode.find_by_uuid(params[:uuid])
+    diag = {
+      :about => @inode.about,
+      :statistics_levels => @inode.statistics_levels.to_a,
+      :virtual_machine_count => Machine::all(@inode).count
+    }
+
     begin
-      logger.info('DIAGNOSTICS.ZIP - inodes#index')
-      @inode = INode.find_by_uuid(params[:uuid])
-      @inode.open_session
-      service_instance = @inode.session.serviceInstance.content
-      about = service_instance.about.props
-      diag = {
-        :about => service_instance.about.props.to_a,
-        :statistics_levels => service_instance.perfManager.historicalInterval.to_a,
-        :virtual_machine_count => Machine::all(@inode).count
+      t = Tempfile.new("diagnostics")
+      diag_file = Tempfile.new("vcenter_diagnostics")
+      diag_file.print(diag.to_yaml)
+      diag_file.flush
+
+      # file_list = {
+      #   :cron => "/var/log/cron",
+      #   :torquebox => "/var/log/torquebox/torquebox",
+      #   :messages => "/var/log/messages"
+      # }
+
+      cmd_list = {
+        :date => "date -u",
+        :process_list => "ps faux",
+        :free_memory => "free",
+        :file_system => "df -h",
+        :iptables => "iptables -L",
+        :network => "ifconfig -a",
+        :ping_api => "ping -c 4 api.6fusion.com",
+        :ping_control_room => "ping -c 4 control-room.6fusion.com"
       }
 
-      begin
-        t = Tempfile.new("diagnostics")
-        diag_file = Tempfile.new("vcenter_diagnostics")
-        diag_file.print(diag.to_yaml)
-        diag_file.flush
+      Zip::ZipOutputStream.open(t.path) do |z|
+        # add temp vcenter diagnostics files
+        z.put_next_entry("vcenter_diagnostics.yaml")
+        z.print(IO.read(diag_file.path))
 
-        # file_list = {
-        #   :cron => "/var/log/cron",
-        #   :torquebox => "/var/log/torquebox/torquebox",
-        #   :messages => "/var/log/messages"
-        # }
+        # dump available system logs to temp files and store them in the zip
+        # file_list.each do |k, c|
+        #   if File.exists?(c) || File.zero?(c)
+        #     temp = File.open(c)
+        #     z.put_next_entry(k.to_s)
+        #     z.print(IO.read(temp.path))
+        #   end
+        # end
 
-        cmd_list = {
-          :date => "date -u",
-          :process_list => "ps faux",
-          :free_memory => "free",
-          :file_system => "df -h",
-          :iptables => "iptables -L",
-          :network => "ifconfig -a",
-          :ping_api => "ping -c 4 api.6fusion.com",
-          :ping_control_room => "ping -c 4 control-room.6fusion.com"
-        }
-
-        Zip::ZipOutputStream.open(t.path) do |z|
-          # add temp vcenter diagnostics files
-          z.put_next_entry("vcenter_diagnostics.yaml")
-          z.print(IO.read(diag_file.path))
-
-          # dump available system logs to temp files and store them in the zip
-          # file_list.each do |k, c|
-          #   if File.exists?(c) || File.zero?(c)
-          #     temp = File.open(c)
-          #     z.put_next_entry(k.to_s)
-          #     z.print(IO.read(temp.path))
-          #   end
-          # end
-
-          # dump command output to temp files and store them in the zip
-          cmd_list.each do |k, c|
-            begin
-              temp = Tempfile.new(k.to_s) 
-              temp.print(`#{c}`)
-              temp.flush
-              z.put_next_entry(k.to_s)
-              z.print(IO.read(temp.path))
-            ensure
-              temp.close
-              temp.unlink
-            end
+        # dump command output to temp files and store them in the zip
+        cmd_list.each do |k, c|
+          begin
+            temp = Tempfile.new(k.to_s) 
+            temp.print(`#{c}`)
+            temp.flush
+            z.put_next_entry(k.to_s)
+            z.print(IO.read(temp.path))
+          ensure
+            temp.close
+            temp.unlink
           end
         end
-
-        content_type 'application/zip'
-        send_file t.path, :type => 'application/zip',
-                          :disposition => "attachment",
-                          :filename => "diagnostics.zip"
-      ensure
-        diag_file.close
-        diag_file.unlink
       end
+
+      content_type 'application/zip'
+      send_file t.path, :type => 'application/zip',
+                        :disposition => "attachment",
+                        :filename => "diagnostics.zip"
     ensure
-      @inode.close_session if !@inode.nil?
+      diag_file.close
+      diag_file.unlink
     end
   end
 end
