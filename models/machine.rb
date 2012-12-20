@@ -62,18 +62,14 @@ class Machine < Base::Machine
     self.vm_inventory(inode)
   end
 
-  def all_with_readings(inode, _interval = 300,  _since = 10.minutes.ago.utc, _until = 5.minutes.ago.utc)
-    Machine.all_with_readings(inode, _interval, _since, _until)
-  end
-
   def self.all_with_readings(inode, _interval = 300,  _since = 10.minutes.ago.utc, _until = 5.minutes.ago.utc)
 
     begin
       # Retrieve all machines and virtual machine references
 
       vm_inventory = VMwareInventory.new("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
-      startTime = _since.utc.strftime('%Y-%m-%dT%H:%M:%S')+"Z"
-      endTime = _until.utc.strftime('%Y-%m-%dT%H:%M:%S')+"Z"
+      startTime = _since.floor(5.minutes).utc.strftime('%Y-%m-%dT%H:%M:%S')+"Z"
+      endTime = _until.round(5.minutes).utc.strftime('%Y-%m-%dT%H:%M:%S')+"Z"
       vm_inventory.readings( startTime.to_java, endTime.to_java)
       # DEBUG
       # vm_inventory.printVMs()
@@ -123,32 +119,11 @@ class Machine < Base::Machine
   def readings(_interval = 300, _since = 10.minutes.ago.utc, _until = 5.minutes.ago.utc)
     begin
 
-      #Create list of timestamps
-      # Time.now.utc.round(5.minutes).utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z  => "2012-12-11T20:20:00.000Z"
-      # timestamps = { }
-      # if _since < Time.now.utc
-      #   start  = _since.round(5.minutes).utc
-      #   finish = _until.floor(5.minutes).utc
-      #   if finish <= start
-      #     finish = start+300
-      #   end
-      #   intervals = ((finish - start) / _interval).round
-      #   i         = 0
-      #   while i < intervals do
-      #     timestamps[start+(i*300)] = false
-      #     # logger.info("ts - "+(start+(i*300)).iso8601.to_s)
-      #     i += 1
-      #   end
-      # end
-      #Create machine readings
-      #logger.info('machine.readings_from_stats')
+    
       result = []
       # timestamps.keys.each do |timestamp|
       if !stats.nil? 
         stats.keys.each do | timestamp |  
-          logger.info(timestamp)
-          # if stats.key?(timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z")
-            # logger.info("found "+timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z")
             metrics = stats[timestamp]
             cpu_usage = metrics["cpu.usage.average"].nil? ? 0 : metrics["cpu.usage.average"] == -1 ? 0 : (metrics["cpu.usage.average"].to_f / (100**2)).to_f
             memory_bytes = metrics["mem.consumed.average"].nil? ? 0 : metrics["mem.consumed.average"] == -1 ? 0 : metrics["mem.consumed.average"] * 1024
@@ -158,24 +133,7 @@ class Machine < Base::Machine
                                            :memory_bytes => memory_bytes,
                                            :date_time    => timestamp }
             )
-                                           # :date_time    => timestamp.iso8601.to_s }
-          # else
-          #   logger.info("missing stat"+timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z "+stats.to_s)
-          #   result << MachineReading.new({
-          #                                  :interval     => _interval,
-          #                                  :cpu_usage    => 0,
-          #                                  :memory_bytes => 0,
-          #                                  :date_time    => timestamp.iso8601.to_s }
-          #   )
-          # end
-        # else
-        #   logger.info("missing "+timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z")
-        #   result << MachineReading.new({
-        #                                  :interval     => _interval,
-        #                                  :cpu_usage    => 0,
-        #                                  :memory_bytes => 0,
-        #                                  :date_time    => timestamp.iso8601.to_s }
-        #   )
+         
         end
       end
       #       logger.debug("CPU Metric Usage="+(metric_readings[cpu_metric_usage][i].to_f / (100**2)).to_s)
@@ -326,165 +284,7 @@ class Machine < Base::Machine
 
   private
 
-  # def self.get_host_hz(inode,moref)
-  #   host_cache = @@hz_cache[inode.uuid]
-  #   if host_cache.nil?
-  #     @@hz_cache[inode.uuid] = {}
-  #   end
-  #   @@hz_cache[inode.uuid][moref]
-  # end
-
-  # def self.set_host_hz(inode,moref,hz)    
-  #   host_cache = @@hz_cache[inode.uuid]
-  #   if host_cache.nil?
-  #     @@hz_cache[inode.uuid] = {}
-  #   end
-  #   @@hz_cache[inode.uuid][moref] = hz
-  #   hz
-  # end
-
-  # Helper method for creating machine objects..
-#   def self.new_machine_from_vm(inode, properties)
-#     logger.info('machine.new_machine_from_vm')
-
-#     begin
-#       properties_hash = properties.to_hash
-#       logger.debug('Machine Name='+properties_hash["config"].name.to_s)
-#       hz = self.get_host_hz(inode, properties_hash["runtime"].host._ref)
-#       if hz.nil?    
-#         logger.info('adding host hz cache for '+properties_hash["runtime"].host._ref)
-#         hz = self.set_host_hz(inode, properties_hash["runtime"].host._ref,properties_hash["runtime"].host.hardware.cpuInfo.hz)
-#       else
-#         logger.info('found host hz cache for '+properties_hash["runtime"].host._ref)
-#       end
-#       stats = properties.key?("stats") ? properties["stats"] : {}
-#       Machine.new({
-#                     :uuid           => properties_hash["config"].uuid,
-#                     :external_host_id => properties_hash["host_moref"],
-#                     :external_vm_id => properties_hash["moref"],
-#                     :name           => properties_hash["config"].name,
-#                     :cpu_count      => properties_hash["config"].hardware.numCPU,
-#                     :cpu_speed      => hz / 1000000,
-#                     :maximum_memory => properties_hash["config"].hardware.memoryMB,
-#                     :system         => build_system(properties),
-#                     :disks          => build_disks(properties),
-#                     :nics           => build_nics(properties),
-#                     :guest_agent    => properties_hash["guest"].toolsStatus == "toolsNotInstalled" ? false : true,
-#                     :power_state    => convert_power_state(properties_hash["guest"].toolsStatus, properties_hash["runtime"].powerState),
-#                     :vm             => properties.obj,
-#                     :stats          => stats 
-#                   }
-#       )
-#     rescue => e
-#       logger.error(e.message)
-#       raise Exceptions::Unrecoverable
-#     end
-#   end
-
-# # Helper Method for creating system objects.
-#   def self.build_system(properties)
-#     logger.info('machine.build_system')
-
-#     begin
-#       properties_hash = properties.to_hash
-#       x64_arch        = properties_hash["config"].guestId.include? "64"
-
-#       MachineSystem.new({
-#                           :architecture     => x64_arch ? "x64" : "x32",
-#                           :operating_system => properties_hash["config"].guestId }
-#       )
-#     rescue => e
-#       logger.error(e.message)
-#       raise Exceptions::Unrecoverable
-#     end
-#   end
-
-# # Helper Method to calculate disk used space
-#   def self.build_disk_files(disk_key, file_layout)
-#     logger.info('machine.build_disk_files')
-#     begin
-#       disk_files = []
-#       if !file_layout.disk.empty?
-#         logger.info('file_layout.disk='+file_layout.disk.inspect)
-#         file_layout.disk.find { |n| n.key.eql?(disk_key) }.chain.map do |f|
-#           f.fileKey.map do |k|
-#             disk_files << file_layout.file.find { |m| m.key.eql?(k) }
-#           end
-#         end
-#       end
-#       disk_files
-#     rescue => e
-#       logger.error(e.message)
-#       raise Exceptions::Unrecoverable
-#     end
-#   end
-
-#   # Helper Method for creating disk objects.
-#   def self.build_disks(properties)
-#     logger.info('machine.build_disks')
-
-#     begin
-#       properties_hash = properties.to_hash
-#       debug_name = properties_hash["config"].name
-#       vm_disks        = properties_hash["config"].hardware.device.grep(RbVmomi::VIM::VirtualDisk)
-#       vm_disks.map do |vdisk|
-#         logger.debug(debug_name+" Disk "+vdisk.deviceInfo.label.to_s+" size "+(vdisk.capacityInKB * KB / GB).to_s)
-#         stats = properties.key?("stats") ? properties["stats"] : {}
-#         logger.debug("my fing stats are "+stats)
-#         MachineDisk.new({
-#                           :uuid         => vdisk.backing.uuid,
-#                           :name         => vdisk.deviceInfo.label,
-#                           :maximum_size => vdisk.capacityInKB * KB / GB,
-#                           :controller_key => vdisk.controllerKey,
-#                           :vdisk        => vdisk,
-#                           :vdisk_files  => build_disk_files(vdisk.key, properties_hash["layoutEx"]),
-#                           :type         => 'Disk',
-#                           :thin         => vdisk.backing.thinProvisioned,
-#                           :key          => vdisk.key,
-#                           :vm           => properties.obj,
-#                           :stats        => stats 
-#         })
-#       end
-#     rescue => e
-#       logger.error(e.message)
-#       raise Exceptions::Unrecoverable
-#     end
-#   end
-
-#   # Helper Method for creating nic objects.
-#   def self.build_nics(properties)
-#     logger.info('machine.build_nics')
-
-#     begin
-#       properties_hash = properties.to_hash
-#       vm_nics         = properties_hash["config"].hardware.device.grep(RbVmomi::VIM::VirtualE1000) + properties_hash["config"].hardware.device.grep(RbVmomi::VIM::VirtualPCNet32) + properties_hash["config"].hardware.device.grep(RbVmomi::VIM::VirtualVmxnet)
-
-#       vm_nics.map do |vnic|
-
-#         if properties_hash["guest"].net.empty?
-#           nic_ip_address = "Unknown"
-#         elsif properties_hash["guest"].net.find { |x| x.deviceConfigId == vnic.key }.nil?
-#           nic_ip_address = "Unknown"
-#         else
-#           nic_ip_address = properties_hash["guest"].net.find { |x| x.deviceConfigId == vnic.key }.ipAddress.join(",")
-#         end
-
-#         MachineNic.new({
-#                          :uuid        => "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaa#{vnic.key}",
-#                          :name        => vnic.deviceInfo.label,
-#                          :mac_address => vnic.macAddress,
-#                          :ip_address  => nic_ip_address,
-#                          :vnic        => vnic,
-#                          :vm          => properties.obj,
-#                          :stats       => [],
-#                          :key         => vnic.key
-#         })
-#       end
-#     rescue => e
-#       logger.error(e.message)
-#       raise Exceptions::Unrecoverable
-#     end
-#   end
+ 
 
   # Helper Method for converting machine power states.
   def self.convert_power_state(tools_status, power_status)

@@ -184,6 +184,7 @@ public class VMwareInventory
     public void readings(String startIso8601, String endIso8601) throws Exception
     {
         DateTimeFormatter parser2 = ISODateTimeFormat.dateTimeNoMillis();
+        logger.info(startIso8601+" "+endIso8601);
         Calendar startTime = (Calendar) Calendar.getInstance(TimeZone.getTimeZone("GMT")).clone();
         Calendar endTime = (Calendar) Calendar.getInstance(TimeZone.getTimeZone("GMT")).clone();
         startTime.setTime(parser2.parseDateTime(startIso8601).toDate());
@@ -255,6 +256,9 @@ public class VMwareInventory
         PerfEntityMetricBase[] pembs = pm.queryPerf( pqsArray);
         logger.info("Finished PerformanceManager.queryPerf");
         logger.info("Start gathering of valid timestamps");
+        DateTimeFormatter fmt = ISODateTimeFormat.dateTimeNoMillis();
+        String timestamp = fmt.withZone(DateTimeZone.UTC).print(endTime.getTimeInMillis());
+        this.tsSet.add(timestamp);
         for(int i=0; pembs!=null && i< pembs.length; i++)
         {
             if(pembs[i] instanceof PerfEntityMetric)
@@ -283,7 +287,7 @@ public class VMwareInventory
                 HashMap<String, HashMap<String, Long>> metrics = parsePerfMetricForVM(vm_mor, (PerfEntityMetric)pembs[i]);
                 this.vmMap.get(vm_mor).put("stats",metrics);
                 //DEBUG - System.out.println(metrics);
-                System.out.println(metrics);
+                // System.out.println(metrics);
                 //DEBUG - printMachineReading(vm_mor,metrics);
             }
         }
@@ -298,7 +302,7 @@ public class VMwareInventory
         DateTimeFormatter fmt = ISODateTimeFormat.dateTimeNoMillis();
         String timestamp = fmt.withZone(DateTimeZone.UTC).print(infos[i].getTimestamp().getTimeInMillis());
         this.tsSet.add(timestamp);
-        logger.info("+"+timestamp);
+        // logger.info("+"+timestamp);
       }
     
     }
@@ -331,7 +335,7 @@ public class VMwareInventory
             long[] longs = val.getValue();
             long value = longs[i];
             metrics.get(timestamp).put(metricName, value);
-            System.out.println(timestamp+" "+metricName+" "+value);
+            // System.out.println(timestamp+" "+metricName+" "+value);
           } 
         }
       }
@@ -461,7 +465,9 @@ public class VMwareInventory
      *       "power_state": "started",
      *       "guest_agent": false,
      *       "name": "base-dsl-1012",
-     *        "cpu_speed": 2666
+     *       "cpu_speed": 2666,
+     *       "external_vm_id": "vm-88",
+     *       "external_host_id": "host-48",
      *    }
      * }
      * vmMap Key:    VirtualMachien MORef
