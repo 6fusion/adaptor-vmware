@@ -6,6 +6,17 @@ end
 $CLASSPATH << "#{PADRINO_ROOT}/lib/java"
 java_import "VMwareInventory"
 
+
+class Time
+  def round(seconds = 60)
+    Time.at((self.to_f / seconds).round * seconds)
+  end
+
+  def floor(seconds = 60)
+    Time.at((self.to_f / seconds).floor * seconds)
+  end
+end
+
 class Machine < Base::Machine
   include TorqueBox::Messaging::Backgroundable
 
@@ -114,54 +125,57 @@ class Machine < Base::Machine
 
       #Create list of timestamps
       # Time.now.utc.round(5.minutes).utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z  => "2012-12-11T20:20:00.000Z"
-      timestamps = { }
-      if _since < Time.now.utc
-        start  = _since.round(10.minutes).utc
-        finish = _until.floor(5.minutes).utc
-        if finish <= start
-          finish = start+300
-        end
-        intervals = ((finish - start) / _interval).round
-        i         = 1
-        while i <= intervals do
-          timestamps[start+(i*300)] = false
-          #logger.info("ts - "+(start+(i*300)).iso8601.to_s)
-          i += 1
-        end
-      end
+      # timestamps = { }
+      # if _since < Time.now.utc
+      #   start  = _since.round(5.minutes).utc
+      #   finish = _until.floor(5.minutes).utc
+      #   if finish <= start
+      #     finish = start+300
+      #   end
+      #   intervals = ((finish - start) / _interval).round
+      #   i         = 0
+      #   while i < intervals do
+      #     timestamps[start+(i*300)] = false
+      #     # logger.info("ts - "+(start+(i*300)).iso8601.to_s)
+      #     i += 1
+      #   end
+      # end
       #Create machine readings
       #logger.info('machine.readings_from_stats')
       result = []
-      timestamps.keys.each do |timestamp|
-        if !stats.nil? 
-          if stats.key?(timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z")
-            #logger.info("found "+timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z")
-            metrics = stats[timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z"]
+      # timestamps.keys.each do |timestamp|
+      if !stats.nil? 
+        stats.keys.each do | timestamp |  
+          logger.info(timestamp)
+          # if stats.key?(timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z")
+            # logger.info("found "+timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z")
+            metrics = stats[timestamp]
             cpu_usage = metrics["cpu.usage.average"].nil? ? 0 : metrics["cpu.usage.average"] == -1 ? 0 : (metrics["cpu.usage.average"].to_f / (100**2)).to_f
             memory_bytes = metrics["mem.consumed.average"].nil? ? 0 : metrics["mem.consumed.average"] == -1 ? 0 : metrics["mem.consumed.average"] * 1024
             result << MachineReading.new({
                                            :interval     => _interval,
                                            :cpu_usage    => cpu_usage,
                                            :memory_bytes => memory_bytes,
-                                           :date_time    => timestamp.iso8601.to_s }
+                                           :date_time    => timestamp }
             )
-          else
-            #logger.info("missing "+timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z "+stats.to_s)
-            result << MachineReading.new({
-                                           :interval     => _interval,
-                                           :cpu_usage    => 0,
-                                           :memory_bytes => 0,
-                                           :date_time    => timestamp.iso8601.to_s }
-            )
-          end
-        else
-          #logger.info("missing "+timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z")
-          result << MachineReading.new({
-                                         :interval     => _interval,
-                                         :cpu_usage    => 0,
-                                         :memory_bytes => 0,
-                                         :date_time    => timestamp.iso8601.to_s }
-          )
+                                           # :date_time    => timestamp.iso8601.to_s }
+          # else
+          #   logger.info("missing stat"+timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z "+stats.to_s)
+          #   result << MachineReading.new({
+          #                                  :interval     => _interval,
+          #                                  :cpu_usage    => 0,
+          #                                  :memory_bytes => 0,
+          #                                  :date_time    => timestamp.iso8601.to_s }
+          #   )
+          # end
+        # else
+        #   logger.info("missing "+timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z")
+        #   result << MachineReading.new({
+        #                                  :interval     => _interval,
+        #                                  :cpu_usage    => 0,
+        #                                  :memory_bytes => 0,
+        #                                  :date_time    => timestamp.iso8601.to_s }
+        #   )
         end
       end
       #       logger.debug("CPU Metric Usage="+(metric_readings[cpu_metric_usage][i].to_f / (100**2)).to_s)

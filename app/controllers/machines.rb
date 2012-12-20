@@ -30,7 +30,7 @@ AdaptorVMware.controllers :machines, :map => "/inodes/:inode_uuid" do
     _until    = params[:until].blank? ? 5.minutes.ago.utc : Time.iso8601(params[:until])
 
     params[:per_page] ||= 5
-
+    logger.info("params "+_since.to_s+" "+_until.to_s)
     @machines = Machine.all_with_readings(@inode,_interval,_since,_until)
     render 'machines/readings'
 

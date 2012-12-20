@@ -35,6 +35,8 @@ public class VMwareInventory
     public HashMap<String, Integer> counterMap = new HashMap<String, Integer>();
     // Hash of PerfCounter name to Counter ID to name
     public HashMap<Integer, String> counterIdMap = new HashMap<Integer, String>();
+    // Set of Metric Timestamps
+    public TreeSet<String> tsSet = new TreeSet<String>();
     // List of VirtualMachine MORs 
     // Utility Constants
     public static long KB = 1024;
@@ -143,10 +145,10 @@ public class VMwareInventory
         // Calendar endTime = (Calendar) curTime.clone();
         // endTime.roll(Calendar.MINUTE, -5);
         // System.out.println("end:" + endTime.getTime());
-        //vmware_inventory.readings(args[3],args[4]);
+        vmware_inventory.readings(args[3],args[4]);
         // vmware_inventory.findByUuid("42031956-ae87-8eec-8da2-5a01e55d07e3");
         // vmware_inventory.findByUuid("xxxxxxxx-ae87-8eec-8da2-5a01e55d07e3");
-        vmware_inventory.findByUuidWithReadings("4203e384-7067-d2bf-1808-aa414e0eb810",args[3],args[4]);
+        //vmware_inventory.findByUuidWithReadings("4203e384-7067-d2bf-1808-aa414e0eb810",args[3],args[4]);
         //vmware_inventory.readings("2012-12-12T23:00:00Z","2012-12-12T23:20:00Z");
         vmware_inventory.printVMs();
         System.out.println(vmware_inventory.getAboutInfo().toString());
@@ -252,51 +254,88 @@ public class VMwareInventory
         logger.info("Start PerformanceManager.queryPerf");
         PerfEntityMetricBase[] pembs = pm.queryPerf( pqsArray);
         logger.info("Finished PerformanceManager.queryPerf");
+        logger.info("Start gathering of valid timestamps");
+        for(int i=0; pembs!=null && i< pembs.length; i++)
+        {
+            if(pembs[i] instanceof PerfEntityMetric)
+            {
+                parseValidTimestamps((PerfEntityMetric)pembs[i]);
+            }
+
+        }
+        // Prepopulate with all timestamps
+        String[] ts = this.tsSet.toArray(new String[0]);
+        for (String moref: this.vmMap.keySet()) {
+          HashMap<String, HashMap<String, Long>> metrics = new HashMap<String, HashMap<String, Long>>();
+          for(int i=0; ts!=null && i<ts.length; i++) {
+            metrics.put(ts[i], new HashMap<String, Long>()); 
+          }
+          this.vmMap.get(moref).put("stats",metrics);
+        }
+        logger.info("Finished gathering of valid timestamps");
+        logger.info("Start parsing metrics");
         for(int i=0; pembs!=null && i< pembs.length; i++)
         {
             //DEBUG - printPerfMetric(pembs[i]);
             if(pembs[i] instanceof PerfEntityMetric)
             {
-                HashMap<String, HashMap<String, Long>> metrics = parsePerfMetricForVM((PerfEntityMetric)pembs[i]);
                 String vm_mor = pembs[i].getEntity().get_value();
+                HashMap<String, HashMap<String, Long>> metrics = parsePerfMetricForVM(vm_mor, (PerfEntityMetric)pembs[i]);
                 this.vmMap.get(vm_mor).put("stats",metrics);
                 //DEBUG - System.out.println(metrics);
+                System.out.println(metrics);
                 //DEBUG - printMachineReading(vm_mor,metrics);
             }
-
         }
+        logger.info("Finished parsing metrics");
     }
 
+    // Gather all timestamps pulled for the metrics
+    void parseValidTimestamps(PerfEntityMetric pem)
+    {
+      PerfSampleInfo[]  infos = pem.getSampleInfo();
+      for(int i=0; infos!=null && i<infos.length; i++) {
+        DateTimeFormatter fmt = ISODateTimeFormat.dateTimeNoMillis();
+        String timestamp = fmt.withZone(DateTimeZone.UTC).print(infos[i].getTimestamp().getTimeInMillis());
+        this.tsSet.add(timestamp);
+        logger.info("+"+timestamp);
+      }
+    
+    }
 
     // This does one virtual machine parsing of metrics
-    HashMap<String, HashMap<String, Long>> parsePerfMetricForVM(PerfEntityMetric pem)
+    HashMap<String, HashMap<String, Long>> parsePerfMetricForVM(String vm_mor, PerfEntityMetric pem)
     {
-        PerfMetricSeries[] vals = pem.getValue();
-        PerfSampleInfo[]  infos = pem.getSampleInfo();
-
-        HashMap<String, HashMap<String, Long>> metrics = new HashMap<String, HashMap<String, Long>>();
-
-        for(int i=0; infos!=null && i<infos.length; i++) {
-            DateTimeFormatter fmt = ISODateTimeFormat.dateTime();
-            String timestamp = fmt.withZone(DateTimeZone.UTC).print(infos[i].getTimestamp().getTimeInMillis());
-            metrics.put(timestamp, new HashMap<String, Long>()); 
-            for (int j=0; vals!=null && j<vals.length; ++j){
-                String counterName = this.counterIdMap.get(vals[j].getId().getCounterId());
-                String instanceName = vals[j].getId().getInstance();
-                String metricName = counterName;
-                if (instanceName.length() > 0) {
-                    metricName = counterName+"."+instanceName;
-                }
-                if(vals[j] instanceof PerfMetricIntSeries) {
-                    PerfMetricIntSeries val = (PerfMetricIntSeries) vals[j];
-                    long[] longs = val.getValue();
-                    long value = longs[i];
-                    metrics.get(timestamp).put(metricName, value);
-                    //DEBUG - System.out.println(timestamp+" "+metricName+" "+value);
-                } 
-            }
+      PerfMetricSeries[] vals = pem.getValue();
+      PerfSampleInfo[]  infos = pem.getSampleInfo();
+      HashMap<String, Object> vm_hash = this.vmMap.get(vm_mor);
+      HashMap<String, HashMap<String, Long>> metrics = (HashMap<String, HashMap<String, Long>>)vm_hash.get("stats");
+      // Prepopulate with all timestamps
+      String[] ts = this.tsSet.toArray(new String[0]);
+      for(int i=0; ts!=null && i<ts.length; i++) {
+        metrics.put(ts[i], new HashMap<String, Long>()); 
+      }
+      // Fill in metrics gathered
+      for(int i=0; infos!=null && i<infos.length; i++) {
+        DateTimeFormatter fmt = ISODateTimeFormat.dateTimeNoMillis();
+        String timestamp = fmt.withZone(DateTimeZone.UTC).print(infos[i].getTimestamp().getTimeInMillis());
+        for (int j=0; vals!=null && j<vals.length; ++j){
+          String counterName = this.counterIdMap.get(vals[j].getId().getCounterId());
+          String instanceName = vals[j].getId().getInstance();
+          String metricName = counterName;
+          if (instanceName.length() > 0) {
+              metricName = counterName+"."+instanceName;
+          }
+          if(vals[j] instanceof PerfMetricIntSeries) {
+            PerfMetricIntSeries val = (PerfMetricIntSeries) vals[j];
+            long[] longs = val.getValue();
+            long value = longs[i];
+            metrics.get(timestamp).put(metricName, value);
+            System.out.println(timestamp+" "+metricName+" "+value);
+          } 
         }
-        return(metrics);
+      }
+      return(metrics);
     }
 
     void printMachineReading(String vm_mor,  HashMap<String, HashMap<String, Long>> metrics)

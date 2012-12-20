@@ -16,33 +16,32 @@ class MachineDisk < Base::MachineDisk
   #   @stats = stats
   # end
 
-  def readings(inode, _interval = 300, _since = 5.minutes.ago.utc, _until = Time.now.utc)
+  def readings(inode, _interval = 300, _since = 10.minutes.ago.utc, _until = 5.minutes.utc)
     #logger.info('machine_disk.readings')
 
     #Create list of timestamps
-    timestamps = { }
-    if _since < Time.now.utc
-      start  = _since.round(5.minutes).utc
-      finish = _until.floor(5.minutes).utc
-      if finish <= start
-        finish = start+300
-      end
-      intervals  = ((finish - start) / _interval).round
-      timestamps = { }
-      i          = 1
-      while i <= intervals do
-        timestamps[start+(i*300)] = false
-        i                         += 1
-      end
-    end
+    # timestamps = { }
+    # if _since < Time.now.utc
+    #   start  = _since.round(5.minutes).utc
+    #   finish = _until.floor(5.minutes).utc
+    #   if finish <= start
+    #     finish = start+300
+    #   end
+    #   intervals = ((finish - start) / _interval).round
+    #   i         = 0
+    #   while i < intervals do
+    #     timestamps[start+(i*300)] = false
+    #     logger.info("ts - "+(start+(i*300)).iso8601.to_s)
+    #     i += 1
+    #   end
+    # end
 
     #Create machine disk readings from stats variable
     result = []
-    timestamps.keys.each do |timestamp|
-      if !@stats.nil? 
-        if @stats.key?(timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z")
-          #logger.info("found "+timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z")
-          metrics = @stats[timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z"]
+    if !@stats.nil? 
+      stats.keys.each do |timestamp|
+          # logger.info("found "+timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z")
+          metrics = @stats[timestamp]
           if @controller_key.eql?(1000) 
             # SCSI controller
             # virtualDisk.write.average.scsi0:0
@@ -56,30 +55,30 @@ class MachineDisk < Base::MachineDisk
           # logger.debug(write_metric)
           # logger.debug(metrics.keys)
           result << MachineDiskReading.new({ :usage     => @usage / GB,
-                                             :read      => metrics.nil? ? 0 : metrics[read_metric] == -1 ? 0 : metrics[read_metric],
-                                             :write     => metrics.nil? ? 0 : metrics[write_metric] == -1 ? 0 : metrics[write_metric],
-                                             :date_time => timestamp.iso8601.to_s })
-        else
-          # logger.debug("missing "+timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z "+@stats.to_s)
-          result << MachineDiskReading.new(
-            {
-              :usage     => @usage / GB,
-              :read      => 0,
-              :write     => 0,
-              :date_time => timestamp.iso8601.to_s
-            }
-          )
-        end
-      else
-        # logger.debug("stats is nil")
-        result << MachineDiskReading.new(
-          {
-            :usage     => @usage / GB,
-            :read      => 0,
-            :write     => 0,
-            :date_time => timestamp.iso8601.to_s
-          }
-        )
+                                             :read      => metrics[read_metric].nil? ? 0 : metrics[read_metric] == -1 ? 0 : metrics[read_metric],
+                                             :write     => metrics[write_metric].nil? ? 0 : metrics[write_metric] == -1 ? 0 : metrics[write_metric],
+                                             :date_time => timestamp})
+        # else
+        #   # logger.debug("missing "+timestamp.utc.strftime('%Y-%m-%dT%H:%M:%S')+".000Z "+@stats.to_s)
+        #   result << MachineDiskReading.new(
+        #     {
+        #       :usage     => @usage / GB,
+        #       :read      => 0,
+        #       :write     => 0,
+        #       :date_time => timestamp.iso8601.to_s
+        #     }
+        #   )
+        # end
+      # else
+      #   # logger.debug("stats is nil")
+      #   result << MachineDiskReading.new(
+      #     {
+      #       :usage     => @usage / GB,
+      #       :read      => 0,
+      #       :write     => 0,
+      #       :date_time => timestamp.iso8601.to_s
+      #     }
+      #   )
       end
     end
     # performance_manager = inode.session.serviceContent.perfManager
