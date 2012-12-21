@@ -43,18 +43,27 @@ public class VMwareInventory
   public static double MB = Math.pow(1024,2);
   public static double GB = Math.pow(1024,3);
   public static double TB = Math.pow(1024,4);
+  // used for registering VMware Plugin
+  public static String EXT_KEY = "com.6fusion.cloudresourcemeter";
+  public static String EXT_COMPANY = "6fusion USA";
+  public static String EXT_TYPE = "com.vmware.vim.viClientScripts";
+  public static String EXT_VERSION = "3.0";
+  public static String EXT_LABEL = "6fusionCloudResourceMeter";
+  public static String[] EXT_ADMIN_EMAIL = {"support@6fusion.com"};
 
-    /**
- * Short one line description.                           (1)
+ /**
+ * VMwareInventory - API adaptor between VI Java VMWARE API and JRUBY
  *
- * Longer description. If there were any, it would be    [2]
- * here.
+ * This class is a helper class to gather virtual machine info and
+ * metric readings from VMware 4.1/5.0/5.1 vSphere
  * <p>
- * And even more explanations to follow in consecutive
- * paragraphs separated by HTML paragraph breaks.
+ * This class can be run standalone but the primary use is to provide
+ * a bridge between JRUBY and the VI java VMWARE API to minimize the
+ * passing of Java classes being utilized in Ruby.
  *
- * @param  variable Description text text text.          (3)
- * @return Description text text text.
+ * @param  url String vCenter API URL (Ex. https://192.168.100.110/sdk)
+ * @param  username String vCenter username
+ * @param  password String vCenter password
  */
   public VMwareInventory(String url, String username, String password ) throws Exception
   {
@@ -70,6 +79,41 @@ public class VMwareInventory
   public Calendar currentTime() throws Exception
   {
     return this.si.currentTime();
+  }
+
+  private ExtensionManager getExtensionManager()
+  {
+    return si.getExtensionManager();
+  }
+
+  private PerformanceManager getPerformanceManager()
+  {
+    return si.getPerformanceManager();
+  }
+
+  public void register(String url) throws Exception
+  {
+    Extension extension = new Extension();
+    Description description = new Description();
+    ExtensionServerInfo serverInfo = new ExtensionServerInfo();
+    DateTimeFormatter parser2 = ISODateTimeFormat.dateTimeNoMillis();
+    Calendar lastHeartbeatTime = (Calendar) Calendar.getInstance(TimeZone.getTimeZone("GMT")).clone();
+    lastHeartbeatTime.setTime(parser2.parseDateTime("2012-12-21T00:00:00Z").toDate());
+    extension.setKey(this.EXT_KEY);
+    extension.setCompany(this.EXT_COMPANY);
+    extension.setType(this.EXT_TYPE);
+    extension.setVersion(this.EXT_VERSION);
+    extension.setLastHeartbeatTime(lastHeartbeatTime);
+    description.setLabel(this.EXT_LABEL);
+    description.setSummary(this.EXT_LABEL);
+    extension.setDescription(description);
+    serverInfo.setUrl(url);
+    serverInfo.setDescription(description);
+    serverInfo.setCompany(this.EXT_COMPANY);
+    serverInfo.setType(this.EXT_TYPE);
+    serverInfo.setAdminEmail(this.EXT_ADMIN_EMAIL);
+    this.getExtensionManager().unregisterExtension(this.EXT_KEY);
+    this.getExtensionManager().registerExtension(extension);
   }
 
   public HashMap<String, String>  getAboutInfo() throws Exception
@@ -119,11 +163,6 @@ public class VMwareInventory
     }
     logger.fine("Exiting VMwareInventory.getStatisticLevels()");
     return stats;
-  }
-
-  private PerformanceManager getPerformanceManager()
-  {
-    return si.getPerformanceManager();
   }
 
   public HashMap<String, Object> findByUuid(String uuid) throws Exception
@@ -236,53 +275,53 @@ public class VMwareInventory
     logger.info("Finished PropertyCollectorUtil.retrieveProperties");
     for(int i=0; i<pTables.length; i++)
     {
-        HashMap<String, Object> vm = new HashMap<String, Object>();
-        vmsList.add((VirtualMachine)vms[i]);
-        vm.put("external_vm_id",vms[i].getMOR().get_value().toString());
-        ManagedObjectReference host_ref = (ManagedObjectReference) pTables[i].get("runtime.host");
-        vm.put("external_host_id", host_ref.get_value().toString());
-        vm.put("uuid",pTables[i].get("config.uuid"));
-        vm.put("name",pTables[i].get("name"));
-        vm.put("cpu_count",pTables[i].get("config.hardware.numCPU"));
-        
-        long hz = get_host_hz((ManagedObjectReference) pTables[i].get("runtime.host"));
-        vm.put("cpu_speed",hz / 1000000);
+      HashMap<String, Object> vm = new HashMap<String, Object>();
+      vmsList.add((VirtualMachine)vms[i]);
+      vm.put("external_vm_id",vms[i].getMOR().get_value().toString());
+      ManagedObjectReference host_ref = (ManagedObjectReference) pTables[i].get("runtime.host");
+      vm.put("external_host_id", host_ref.get_value().toString());
+      vm.put("uuid",pTables[i].get("config.uuid"));
+      vm.put("name",pTables[i].get("name"));
+      vm.put("cpu_count",pTables[i].get("config.hardware.numCPU"));
+      
+      long hz = get_host_hz((ManagedObjectReference) pTables[i].get("runtime.host"));
+      vm.put("cpu_speed",hz / 1000000);
 
-        vm.put("maximum_memory",pTables[i].get("config.hardware.memoryMB"));
-        boolean tool_status = true;
-        if (pTables[i].get("guest.toolsStatus") == "toolsNotInstalled") {
-            tool_status = false;
+      vm.put("maximum_memory",pTables[i].get("config.hardware.memoryMB"));
+      boolean tool_status = true;
+      if (pTables[i].get("guest.toolsStatus") == "toolsNotInstalled") {
+        tool_status = false;
+      }
+      vm.put("guest_agent",tool_status);
+      String guest_agent = (String) pTables[i].get("guest.guestId");
+      String arch = "x32";
+      if (guest_agent != null) {
+        if (guest_agent.indexOf("64") > -1) {
+            arch = "x64";
         }
-        vm.put("guest_agent",tool_status);
-        String guest_agent = (String) pTables[i].get("guest.guestId");
-        String arch = "x32";
-        if (guest_agent != null) {
-            if (guest_agent.indexOf("64") > -1) {
-                arch = "x64";
-            }
-        }
-        HashMap<String, Object> system = new HashMap<String, Object>();
-        system.put("architecture",arch);
-        system.put("operating_system",guest_agent);
-        vm.put("system",system);
-        vm.put("power_state",pTables[i].get("runtime.powerState").toString());
-        VirtualDevice[] vds =  (VirtualDevice[]) pTables[i].get("config.hardware.device");
-        List<Map <String, Object>> vm_disks=new ArrayList<Map<String, Object>>();
-        List<Map <String, Object>> vm_nics=new ArrayList<Map<String, Object>>();
-        for(VirtualDevice vd:vds) {
-            // if virtual disk then
-            if(vd instanceof VirtualDisk) {
-                HashMap<String, Object> disk_hash = get_disk((VirtualDisk) vd, pTables, i); 
-                vm_disks.add(disk_hash);
+      }
+      HashMap<String, Object> system = new HashMap<String, Object>();
+      system.put("architecture",arch);
+      system.put("operating_system",guest_agent);
+      vm.put("system",system);
+      vm.put("power_state",pTables[i].get("runtime.powerState").toString());
+      VirtualDevice[] vds =  (VirtualDevice[]) pTables[i].get("config.hardware.device");
+      List<Map <String, Object>> vm_disks=new ArrayList<Map<String, Object>>();
+      List<Map <String, Object>> vm_nics=new ArrayList<Map<String, Object>>();
+      for(VirtualDevice vd:vds) {
+        // if virtual disk then
+        if(vd instanceof VirtualDisk) {
+          HashMap<String, Object> disk_hash = get_disk((VirtualDisk) vd, pTables, i); 
+          vm_disks.add(disk_hash);
 
-            } else if ((vd instanceof VirtualPCNet32) || (vd instanceof VirtualE1000) || (vd instanceof VirtualVmxnet)) {
-                HashMap<String, Object> nic_hash = get_nic((VirtualEthernetCard) vd, pTables, i);
-                vm_nics.add(nic_hash);
-            } 
-        }
-        vm.put("disks",vm_disks);
-        vm.put("nics",vm_nics);
-        this.vmMap.put(vms[i].getMOR().get_value().toString(), vm);
+        } else if ((vd instanceof VirtualPCNet32) || (vd instanceof VirtualE1000) || (vd instanceof VirtualVmxnet)) {
+          HashMap<String, Object> nic_hash = get_nic((VirtualEthernetCard) vd, pTables, i);
+          vm_nics.add(nic_hash);
+        } 
+      }
+      vm.put("disks",vm_disks);
+      vm.put("nics",vm_nics);
+      this.vmMap.put(vms[i].getMOR().get_value().toString(), vm);
     }    
     logger.fine("Exiting VMwareInventory.gatherProperties(ManagedEntity[] vms)");
     return(vmsList);
@@ -299,16 +338,16 @@ public class VMwareInventory
     logger.fine("Entering VMwareInventory.printVMs()");
     int i = 0;
     for (String moref: this.vmMap.keySet()) {
-        i++;
-        String comma = "";
-        System.out.print(moref+" : { ");
-        for (Map.Entry<String,Object> entry : this.vmMap.get(moref).entrySet()) {
-            System.out.println(comma);
-            System.out.print(entry.getKey()+" : "+entry.getValue());
-            comma=",";
-        }
-        System.out.println("");
-        System.out.println("}");
+      i++;
+      String comma = "";
+      System.out.print(moref+" : { ");
+      for (Map.Entry<String,Object> entry : this.vmMap.get(moref).entrySet()) {
+        System.out.println(comma);
+        System.out.print(entry.getKey()+" : "+entry.getValue());
+        comma=",";
+      }
+      System.out.println("");
+      System.out.println("}");
     }
     System.out.println("Total # of VMs "+i);
     logger.fine("Exiting VMwareInventory.printVMs()");
@@ -336,9 +375,9 @@ public class VMwareInventory
   {
     logger.fine("Entering VMwareInventory.printHosts()");
     for (String moref: this.hostMap.keySet()) {
-        for (Map.Entry<String,Object> entry : this.hostMap.get(moref).entrySet()) {
-            System.out.println(moref+" "+entry.getKey()+" "+entry.getValue());
-        }
+      for (Map.Entry<String,Object> entry : this.hostMap.get(moref).entrySet()) {
+        System.out.println(moref+" "+entry.getKey()+" "+entry.getValue());
+      }
     }
     logger.fine("Exiting VMwareInventory.printHosts()");
   }
@@ -374,16 +413,16 @@ public class VMwareInventory
     PerfCounterInfo[] pcis = perfMgr.getPerfCounter();
     for(int i=0; pcis!=null && i<pcis.length; i++)
     {
-        String perfCounter = pcis[i].getGroupInfo().getKey() + "."
-          + pcis[i].getNameInfo().getKey() + "." 
-          + pcis[i].getRollupType();
-        logger.fine("\nKey:" + pcis[i].getKey());
-        logger.fine("PerfCounter:" + perfCounter);
-        logger.fine("Level:" + pcis[i].getLevel());
-        logger.fine("StatsType:" + pcis[i].getStatsType());
-        logger.fine("UnitInfo:"+ pcis[i].getUnitInfo().getKey());
-        this.counterMap.put(perfCounter, (Integer) pcis[i].getKey());
-        this.counterIdMap.put((Integer) pcis[i].getKey(), perfCounter);
+      String perfCounter = pcis[i].getGroupInfo().getKey() + "."
+        + pcis[i].getNameInfo().getKey() + "." 
+        + pcis[i].getRollupType();
+      logger.fine("\nKey:" + pcis[i].getKey());
+      logger.fine("PerfCounter:" + perfCounter);
+      logger.fine("Level:" + pcis[i].getLevel());
+      logger.fine("StatsType:" + pcis[i].getStatsType());
+      logger.fine("UnitInfo:"+ pcis[i].getUnitInfo().getKey());
+      this.counterMap.put(perfCounter, (Integer) pcis[i].getKey());
+      this.counterIdMap.put((Integer) pcis[i].getKey(), perfCounter);
     }
     logger.fine("Exiting VMwareInventory.gatherCounters()");
   }
@@ -396,8 +435,8 @@ public class VMwareInventory
     {
       Integer counterId = this.counterMap.get(counter_names[i]);
       if (counterId != null) {
-          logger.finer("Found "+counter_names[i]);
-          result.add(counterId);
+        logger.finer("Found "+counter_names[i]);
+        result.add(counterId);
       }
     }
     logger.fine("Exiting VMwareInventory.getCounterIds(String[] counter_names)");
@@ -453,36 +492,36 @@ public class VMwareInventory
     disk_hash.put("unit_number",vDisk.getUnitNumber());
     disk_hash.put("name",vDisk.getDeviceInfo().getLabel());
     if(vDisk.getBacking() instanceof VirtualDiskFlatVer2BackingInfo){
-        VirtualDiskFlatVer2BackingInfo rdmBaking = (VirtualDiskFlatVer2BackingInfo) vDisk.getBacking();
-        disk_hash.put("thin",rdmBaking.getThinProvisioned());
-        disk_hash.put("uuid",rdmBaking.getUuid());     
+      VirtualDiskFlatVer2BackingInfo rdmBaking = (VirtualDiskFlatVer2BackingInfo) vDisk.getBacking();
+      disk_hash.put("thin",rdmBaking.getThinProvisioned());
+      disk_hash.put("uuid",rdmBaking.getUuid());     
     } 
     disk_hash.put("key",vDisk.getKey());
     // Determine disk usage.  Usage is not considered a metric in VMware.
     long usage = 0;
     if  (pTables[i].get("layoutEx.disk") != null) {
-        //   find layoutex.disk that matches the VirtualDisk.getKey()
-        VirtualMachineFileLayoutExDiskLayout[] layoutexDisks = (VirtualMachineFileLayoutExDiskLayout[])pTables[i].get("layoutEx.disk");
-        for (int j=0; j < layoutexDisks.length; j++) {
-            VirtualMachineFileLayoutExDiskLayout diskLayout = layoutexDisks[j];
-            if (diskLayout.getKey() == vDisk.getKey()) {
-                //      Iterate over layoutex.disk.chain of disk units
-                VirtualMachineFileLayoutExDiskUnit[] diskUnits = diskLayout.getChain();
-                for(int k=0; k < diskUnits.length; k++) {
-                    //         Find layoutex.file where getKey matches any chainfilekey     
-                    VirtualMachineFileLayoutExFileInfo[] layoutexFiles = (VirtualMachineFileLayoutExFileInfo[])pTables[i].get("layoutEx.file");
-                    for (int m=0; m < layoutexFiles.length; m++) {
-                        int[] filekeys = diskUnits[k].getFileKey();
-                        for (int n=0; n < filekeys.length; n++) {
-                            if (layoutexFiles[m].getKey() == filekeys[n]) {
-                                //              Add to vdisk_files
-                                usage += layoutexFiles[m].size;
-                            }
-                        }
-                    }
+      //   find layoutex.disk that matches the VirtualDisk.getKey()
+      VirtualMachineFileLayoutExDiskLayout[] layoutexDisks = (VirtualMachineFileLayoutExDiskLayout[])pTables[i].get("layoutEx.disk");
+      for (int j=0; j < layoutexDisks.length; j++) {
+        VirtualMachineFileLayoutExDiskLayout diskLayout = layoutexDisks[j];
+        if (diskLayout.getKey() == vDisk.getKey()) {
+          //      Iterate over layoutex.disk.chain of disk units
+          VirtualMachineFileLayoutExDiskUnit[] diskUnits = diskLayout.getChain();
+          for(int k=0; k < diskUnits.length; k++) {
+            //         Find layoutex.file where getKey matches any chainfilekey     
+            VirtualMachineFileLayoutExFileInfo[] layoutexFiles = (VirtualMachineFileLayoutExFileInfo[])pTables[i].get("layoutEx.file");
+            for (int m=0; m < layoutexFiles.length; m++) {
+              int[] filekeys = diskUnits[k].getFileKey();
+              for (int n=0; n < filekeys.length; n++) {
+                if (layoutexFiles[m].getKey() == filekeys[n]) {
+                  //              Add to vdisk_files
+                  usage += layoutexFiles[m].size;
                 }
+              }
             }
+          }
         }
+      }
     }
     disk_hash.put("usage",usage);
     logger.fine("Exiting get_disk(VirtualDisk vDisk, Hashtable[] pTables, int i)");
@@ -508,9 +547,9 @@ public class VMwareInventory
     nic_hash.put("key",vNic.getKey());
     nic_hash.put("uuid","aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaa"+vNic.getKey());
     if ((pTables[i].get("guest.net") != null) && (pTables[i].get("guest.net") instanceof GuestNicInfo[]) ){
-        GuestNicInfo[] guestNicInfo = ( GuestNicInfo[]) pTables[i].get("guest.net");
-        String ip_address = parse_nic_ip_address(vNic, guestNicInfo);
-        nic_hash.put("ip_address", ip_address);     
+      GuestNicInfo[] guestNicInfo = ( GuestNicInfo[]) pTables[i].get("guest.net");
+      String ip_address = parse_nic_ip_address(vNic, guestNicInfo);
+      nic_hash.put("ip_address", ip_address);     
     }
     logger.fine("Exiting VMwareInventory.get_nic(VirtualEthernetCard vNic, Hashtable[] pTables, int i)");
     return nic_hash;
@@ -534,8 +573,8 @@ public class VMwareInventory
       if (guestNicInfo[j].getDeviceConfigId() == vNic.getKey()) {
         if (guestNicInfo[j] != null) {
           if (guestNicInfo[j].getIpAddress() != null)  {
-              logger.fine("Exiting VMwareInventory.parse_nic_ip_address(VirtualEthernetCard vNic, GuestNicInfo[] guestNicInfo)");
-              return(guestNicInfo[j].getIpAddress()[0]);
+            logger.fine("Exiting VMwareInventory.parse_nic_ip_address(VirtualEthernetCard vNic, GuestNicInfo[] guestNicInfo)");
+            return(guestNicInfo[j].getIpAddress()[0]);
           }
         }
       }
@@ -544,28 +583,7 @@ public class VMwareInventory
     return "Unknown";
   }
 
-    //     rbvmomi.serviceInstance.RetrieveServiceContent.extensionManager.RegisterExtension(
-    //   :extension => {
-    //       :description => {
-    //         :label => "6fusionCloudResourceMeter", 
-    //         :summary=>"6fusionCloudResourceMeter"},
-    //     :key => "com.6fusion.cloudresourcemeter",
-    //     :company => "6fusion USA",
-    //     :type => "com.vmware.vim.viClientScripts",
-    //     :version => "1.0",
-    //     :lastHeartbeatTime => "2012-09-01T00:00:00Z",
-    //     :server => [
-    //       {
-    //       :url => plugin_url,
-    //       :description => {
-    //         :label => "6fusionCloudResourceMeter",
-    //         :summary => "6fusionCloudResourceMeter"},
-    //       :company => "6fusion USA",
-    //       :type => "com.vmware.vim.viClientScripts",
-    //       :adminEmail => ["support@6fusion.com"]}
-    //     ]
-    //   }
-    // )
+ 
 
   /**
    * readings
@@ -655,15 +673,15 @@ public class VMwareInventory
     List<PerfQuerySpec> qSpecList = new ArrayList<PerfQuerySpec>();
     Iterator it = vms.iterator();
     while (it.hasNext()) {
-        PerfQuerySpec qSpec = new PerfQuerySpec();
-        VirtualMachine vm = (VirtualMachine)it.next();
-        qSpec.setEntity(vm.getMOR());
-        qSpec.setFormat("normal");
-        qSpec.setIntervalId(300);
-        qSpec.setMetricId( new PerfMetricId[] {cpu_usage,cpu_usagemhz,mem,vdisk_read,vdisk_write,vdisk_write,net_trans,net_recv});
-        qSpec.setStartTime(startTime);
-        qSpec.setEndTime(endTime);
-        qSpecList.add(qSpec);
+      PerfQuerySpec qSpec = new PerfQuerySpec();
+      VirtualMachine vm = (VirtualMachine)it.next();
+      qSpec.setEntity(vm.getMOR());
+      qSpec.setFormat("normal");
+      qSpec.setIntervalId(300);
+      qSpec.setMetricId( new PerfMetricId[] {cpu_usage,cpu_usagemhz,mem,vdisk_read,vdisk_write,vdisk_write,net_trans,net_recv});
+      qSpec.setStartTime(startTime);
+      qSpec.setEndTime(endTime);
+      qSpecList.add(qSpec);
     }
 
     PerformanceManager pm = getPerformanceManager();
@@ -677,10 +695,10 @@ public class VMwareInventory
     this.tsSet.add(timestamp);
     for(int i=0; pembs!=null && i< pembs.length; i++)
     {
-        if(pembs[i] instanceof PerfEntityMetric)
-        {
-            parseValidTimestamps((PerfEntityMetric)pembs[i]);
-        }
+      if(pembs[i] instanceof PerfEntityMetric)
+      {
+        parseValidTimestamps((PerfEntityMetric)pembs[i]);
+      }
 
     }
     // Prepopulate with all timestamps
@@ -696,14 +714,14 @@ public class VMwareInventory
     logger.info("Start parsing metrics");
     for(int i=0; pembs!=null && i< pembs.length; i++)
     {
-        //DEBUG - printPerfMetric(pembs[i]);
-        if(pembs[i] instanceof PerfEntityMetric)
-        {
-            String vm_mor = pembs[i].getEntity().get_value();
-            HashMap<String, HashMap<String, Long>> metrics = parsePerfMetricForVM(vm_mor, (PerfEntityMetric)pembs[i]);
-            this.vmMap.get(vm_mor).put("stats",metrics);
-            //DEBUG - printMachineReading(vm_mor,metrics);
-        }
+      //DEBUG - printPerfMetric(pembs[i]);
+      if(pembs[i] instanceof PerfEntityMetric)
+      {
+        String vm_mor = pembs[i].getEntity().get_value();
+        HashMap<String, HashMap<String, Long>> metrics = parsePerfMetricForVM(vm_mor, (PerfEntityMetric)pembs[i]);
+        this.vmMap.get(vm_mor).put("stats",metrics);
+        //DEBUG - printMachineReading(vm_mor,metrics);
+      }
     }
     logger.info("Finished parsing metrics");
     logger.fine("Exiting VMwareInventory.readings(String startIso8601, String endIso8601)");
@@ -766,11 +784,11 @@ public class VMwareInventory
   {
     logger.fine("Entering VMwareInventory.printMachineReading(String vm_mor,  HashMap<String, HashMap<String, Long>> metrics)");
     HashMap<String, Object> machine_reading = new HashMap<String, Object>();
-    logger.info(vm_mor);
+    System.out.println(vm_mor);
     for (String date: metrics.keySet()) {
       HashMap<String, Long> metric = metrics.get(date);
       for(String name: metric.keySet()) {
-          logger.info(date+" "+name+" "+metric.get(name) );
+        System.out.println(date+" "+name+" "+metric.get(name) );
       }
     }
     logger.fine("Exiting VMwareInventory.printMachineReading(String vm_mor,  HashMap<String, HashMap<String, Long>> metrics)");
@@ -779,8 +797,7 @@ public class VMwareInventory
   private void printPerfMetric(PerfEntityMetricBase val)
   {
     logger.fine("Entering VMwareInventory.printPerfMetric(PerfEntityMetricBase val)");
-    String entityDesc = val.getEntity().getType() 
-        + ":" + val.getEntity().get_value();
+    String entityDesc = val.getEntity().getType() + ":" + val.getEntity().get_value();
     System.out.println("Entity:" + entityDesc);
     if(val instanceof PerfEntityMetric)
     {
@@ -806,21 +823,17 @@ public class VMwareInventory
     System.out.println("Sampling Times and Intervales:");
     for(int i=0; infos!=null && i<infos.length; i++)
     {
-        System.out.println("sample time: " 
-          + infos[i].getTimestamp().getTime());
-        System.out.println("sample interval (sec):" 
-          + infos[i].getInterval());
+        System.out.println("sample time: "+ infos[i].getTimestamp().getTime());
+        System.out.println("sample interval (sec):"+ infos[i].getInterval());
     }
 
     System.out.println("\nSample values:");
     for(int j=0; vals!=null && j<vals.length; ++j)
     {
       String counterName = this.counterIdMap.get(vals[j].getId().getCounterId());
-      System.out.println("Perf counter ID:" 
-          + vals[j].getId().getCounterId());
+      System.out.println("Perf counter ID:"+ vals[j].getId().getCounterId());
       System.out.println("Perf counter Name:" + counterName);
-      System.out.println("Device instance ID:" 
-          + vals[j].getId().getInstance());
+      System.out.println("Device instance ID:"+ vals[j].getId().getInstance());
       
       if(vals[j] instanceof PerfMetricIntSeries)
       {
@@ -844,15 +857,12 @@ public class VMwareInventory
   private void printPerfMetricCSV(PerfEntityMetricCSV pems)
   {
     logger.fine("Entering VMwareInventory.printPerfMetricCSV(PerfEntityMetricCSV pems)");
-      System.out.println("SampleInfoCSV:" 
-          + pems.getSampleInfoCSV());
+      System.out.println("SampleInfoCSV:"+ pems.getSampleInfoCSV());
       PerfMetricSeriesCSV[] csvs = pems.getValue();
       for(int i=0; i<csvs.length; i++)
       {
-        System.out.println("PerfCounterId:" 
-            + csvs[i].getId().getCounterId());
-        System.out.println("CSV sample values:" 
-            + csvs[i].getValue());
+        System.out.println("PerfCounterId:"+ csvs[i].getId().getCounterId());
+        System.out.println("CSV sample values:"+ csvs[i].getValue());
       }
     logger.fine("Exiting VMwareInventory.printPerfMetricCSV(PerfEntityMetricCSV pems)");
   }
