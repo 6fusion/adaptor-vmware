@@ -720,7 +720,8 @@ public class VMwareInventory
         String vm_mor = pembs[i].getEntity().get_value();
         HashMap<String, HashMap<String, Long>> metrics = parsePerfMetricForVM(vm_mor, (PerfEntityMetric)pembs[i]);
         this.vmMap.get(vm_mor).put("stats",metrics);
-        //DEBUG - printMachineReading(vm_mor,metrics);
+        // DEBUG - 
+        printMachineReading(vm_mor,metrics);
       }
     }
     logger.info("Finished parsing metrics");
