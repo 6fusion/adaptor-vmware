@@ -3,7 +3,7 @@ set :stages, Dir['config/deploy/*.rb'].map {|f| File.basename(f,'.rb')}
 
 set :default_stage, "development"
 require 'capistrano/ext/multistage'
-set :bundle_cmd, "jruby --1.8 -S bundle"
+set :bundle_cmd, "jruby -S bundle"
 require 'bundler/capistrano'
 default_run_options[:pty] = true
 set :application, "adaptor-vmware"
