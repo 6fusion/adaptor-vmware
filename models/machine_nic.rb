@@ -8,7 +8,7 @@ class MachineNic < Base::MachineNic
     #logger.info('machine_nic.readings')
     #Create machine nic readings
     result = []
-    if !@stats.nil?
+    unless @stats.nil?
       stats.keys.each do |timestamp|
         metrics = @stats[timestamp]
         receive_metric =  "net.received.average.#{key}"

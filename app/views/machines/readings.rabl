@@ -41,8 +41,8 @@ child :nics => :nics do
     r.readings(@inode, _interval, _since, _until).map do |r|
       {
         :date_time => r.date_time,
-        :receive => r.receive,
-        :transmit => r.transmit
+        :receive => r.receive * 8,
+        :transmit => r.transmit * 8
       }
     end
   end
