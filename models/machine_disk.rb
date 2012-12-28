@@ -21,7 +21,7 @@ class MachineDisk < Base::MachineDisk
 
     #Create machine disk readings from stats variable
     result = []
-    if !@stats.nil?
+    unless @stats.nil?
       stats.keys.each do |timestamp|
         metrics = @stats[timestamp]
         if @controller_key.eql?(1000)
