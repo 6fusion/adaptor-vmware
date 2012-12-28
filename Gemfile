@@ -1,6 +1,6 @@
 source :rubygems
-gem 'padrino', '0.10.7'
-
+#gem 'padrino', '~> 0.10.0'
+gem 'padrino', :git => "git://github.com/padrino/padrino-framework.git", :branch => 'master'
 gem 'rabl'
 gem 'yajl-ruby', :require => 'yajl', :platform => :mri_19
 gem 'haml'
