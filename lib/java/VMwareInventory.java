@@ -486,7 +486,7 @@ public class VMwareInventory
   {
     logger.fine("Entering get_disk(VirtualDisk vDisk, Hashtable[] pTables, int i)");
     HashMap<String, Object> disk_hash = new HashMap<String, Object>();
-    disk_hash.put("maximum_size",(vDisk.getCapacityInKB() * VMwareInventory.KB) / VMwareInventory.GB);
+    disk_hash.put("maximum_size",(vDisk.getCapacityInKB() * VMwareInventory.KB) );
     disk_hash.put("controller_key",vDisk.getControllerKey());
     disk_hash.put("type","Disk");
     disk_hash.put("unit_number",vDisk.getUnitNumber());
@@ -515,7 +515,7 @@ public class VMwareInventory
               for (int n=0; n < filekeys.length; n++) {
                 if (layoutexFiles[m].getKey() == filekeys[n]) {
                   //              Add to vdisk_files
-                  usage += layoutexFiles[m].size;
+                  usage += layoutexFiles[m].size * GB;
                 }
               }
             }
@@ -720,8 +720,7 @@ public class VMwareInventory
         String vm_mor = pembs[i].getEntity().get_value();
         HashMap<String, HashMap<String, Long>> metrics = parsePerfMetricForVM(vm_mor, (PerfEntityMetric)pembs[i]);
         this.vmMap.get(vm_mor).put("stats",metrics);
-        // DEBUG - 
-        printMachineReading(vm_mor,metrics);
+        // DEBUG - printMachineReading(vm_mor,metrics);
       }
     }
     logger.info("Finished parsing metrics");
