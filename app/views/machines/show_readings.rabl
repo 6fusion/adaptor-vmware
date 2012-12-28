@@ -1,5 +1,4 @@
-collection @machines
-
+object @machine
 attributes :uuid,
            :external_vm_id,
            :external_host_id,

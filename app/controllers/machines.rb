@@ -51,7 +51,7 @@ AdaptorVMware.controllers :machines, :map => "/inodes/:inode_uuid" do
 
     @machine = Machine.find_by_uuid_with_readings(@inode, params[:uuid], _interval, _since, _until)
 
-    render 'machines/readings'
+    render 'machines/show_readings'
   end
 
   # Updates
