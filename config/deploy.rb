@@ -1,5 +1,5 @@
 require 'capistrano_colors'
-set :stages, Dir['config/deploy/*.rb'].map {|f| File.basename(f,'.rb')}
+set :stages, Dir['config/deploy/*.rb'].map { |f| File.basename(f, '.rb') }
 
 set :default_stage, "development"
 require 'capistrano/ext/multistage'
@@ -17,7 +17,7 @@ set :deploy_to, "/var/6fusion/#{application}"
 set :deploy_via, :copy
 set :deploy_env, 'development'
 set :keep_releases, 2
-set :context, "/"
+set :context_path, "/"
 set :user, "deploy"
 set :group, "deploy"
 
@@ -96,7 +96,7 @@ namespace :torquebox do
 
   desc 'deploy'
   task :deploy, :roles => :app do
-    run "#{sudo} torquebox deploy #{current_path} --name #{application} --env #{deploy_env} --context-path=#{context}"
+    run "#{sudo} torquebox deploy #{current_path} --name #{application} --env #{deploy_env} --context-path=#{context_path}"
   end
 
   desc 'undeploy'
