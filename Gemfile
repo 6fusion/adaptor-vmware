@@ -16,7 +16,7 @@ gem 'padrino-rpm', :git => 'https://github.com/6fusion/padrino-rpm.git'
 gem 'newrelic_rpm'
 
 platform :jruby do
-  gem 'jruby-openssl'
+  #gem 'jruby-openssl'
   gem 'json-jruby', :require => 'json'
   gem 'jruby-rack', '1.0.10'
   torquebox_version = "2.2.0"
