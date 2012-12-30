@@ -1,13 +1,13 @@
 source :rubygems
-gem 'padrino', '0.10.7'
-
+#gem 'padrino', '~> 0.10.0'
+gem 'padrino', :git => "git://github.com/padrino/padrino-framework.git", :branch => 'master'
 gem 'rabl'
 gem 'yajl-ruby', :require => 'yajl', :platform => :mri_19
 gem 'haml'
 gem 'activemodel', :require => 'active_model'
 gem 'activesupport', :require => 'active_support/time'
-gem 'rbvmomi'
-gem 'rake', :require => false
+#gem 'rbvmomi'
+#gem 'rake', :require => false
 gem 'kaminari', :require => 'kaminari/sinatra'
 gem 'rubyzip', :git => 'git://github.com/aussiegeek/rubyzip.git', :require => "zip/zip"
 gem 'uuid'
