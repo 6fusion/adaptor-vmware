@@ -122,10 +122,10 @@ class Machine < Base::Machine
     
       result = []
       # timestamps.keys.each do |timestamp|
-      if !stats.nil? 
-        stats.keys.each do | timestamp |  
-            metrics = stats[timestamp]
-            cpu_usage = metrics["cpu.usage.average"].nil? ? 0 : metrics["cpu.usage.average"] == -1 ? 0 : (metrics["cpu.usage.average"].to_f / (100**2)).to_f * cpu_count
+      if !@stats.nil? 
+        @stats.keys.each do | timestamp |  
+            metrics = @stats[timestamp]
+            cpu_usage = metrics["cpu.usage.average"].nil? ? 0 : metrics["cpu.usage.average"] == -1 ? 0 : (metrics["cpu.usage.average"].to_f / 100) * @cpu_speed * @cpu_count
             memory_bytes = metrics["mem.consumed.average"].nil? ? 0 : metrics["mem.consumed.average"] == -1 ? 0 : metrics["mem.consumed.average"] * 1024
             result << MachineReading.new({
                                            :interval     => _interval,
