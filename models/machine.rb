@@ -127,7 +127,7 @@ class Machine < Base::Machine
             metrics = @stats[timestamp]
             # Note: cpu.usage.average unit of measure is hundreths of a percent so 1023 is really 10.23% or .1023
             # you could assert that metric["cpu.usage.average"].to_f /10000) * @cpu_speed * @cpu_count = metrics["cpu.usagemhz.average"]
-            cpu_usage = metrics["cpu.usage.average"].nil? ? 0 : metrics["cpu.usage.average"] == -1 ? 0 : (metrics["cpu.usage.average"].to_f / 10000) * @cpu_speed * @cpu_count
+            cpu_usage = metrics["cpu.usage.average"].nil? ? 0 : metrics["cpu.usage.average"] == -1 ? 0 : (metrics["cpu.usage.average"].to_f / 10000)
             memory_bytes = metrics["mem.consumed.average"].nil? ? 0 : metrics["mem.consumed.average"] == -1 ? 0 : metrics["mem.consumed.average"] * 1024
             result << MachineReading.new({
                                            :interval     => _interval,
