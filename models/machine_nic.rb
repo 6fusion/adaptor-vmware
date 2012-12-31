@@ -17,8 +17,8 @@ class MachineNic < Base::MachineNic
         # logger.debug(metrics.keys)
         # logger.debug(metrics[receive_metric])
         result << MachineNicReading.new({
-                                          :receive      => metrics[receive_metric].nil? ? 0 : metrics[receive_metric] == -1 ? 0 : metrics[receive_metric],
-                                          :transmit     => metrics[transmit_metric].nil? ? 0 : metrics[transmit_metric] == -1 ? 0 : metrics[transmit_metric],
+                                          :receive      => metrics[receive_metric].nil? ? 0 : metrics[receive_metric] == -1 ? 0 : metrics[receive_metric] * 8,
+                                          :transmit     => metrics[transmit_metric].nil? ? 0 : metrics[transmit_metric] == -1 ? 0 : metrics[transmit_metric] * 8,
         :date_time => timestamp})
       end
     end
