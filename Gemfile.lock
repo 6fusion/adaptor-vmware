@@ -219,6 +219,7 @@ DEPENDENCIES
   padrino-rpm!
   rabl
   rack-test
+  rake
   rspec
   rubyzip!
   torquebox (= 2.2.0)
