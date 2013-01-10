@@ -225,7 +225,6 @@ DEPENDENCIES
   rabl
   rack
   rack-test
-  rake
   rspec
   rubyzip!
   torquebox
