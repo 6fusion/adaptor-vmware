@@ -223,6 +223,7 @@ DEPENDENCIES
   padrino!
   padrino-rpm!
   rabl
+  rack
   rack-test
   rake
   rspec

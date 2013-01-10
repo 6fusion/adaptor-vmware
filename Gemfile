@@ -14,6 +14,7 @@ gem 'rubyzip', :git => 'git://github.com/aussiegeek/rubyzip.git', :require => "z
 gem 'uuid'
 gem 'json-jruby', :require => 'json'
 gem 'jruby-rack'
+gem 'rack'
 gem "torquebox-rake-support"
 gem 'torquebox-cache'
 gem "torquebox"
