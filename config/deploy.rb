@@ -17,7 +17,7 @@ set :deploy_to, "/var/6fusion/#{application}"
 set :deploy_via, :copy
 set :deploy_env, 'development'
 set :keep_releases, 2
-set :context_path, "/"
+set :context_path, ""
 set :user, "deploy"
 set :group, "deploy"
 
