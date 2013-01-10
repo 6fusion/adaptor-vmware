@@ -6,7 +6,7 @@ GIT
 
 GIT
   remote: git://github.com/padrino/padrino-framework.git
-  revision: 32c93497865b3075c8c26c130455390c232a094b
+  revision: d399600eec014ab4b8747d524e128a3d553c01ac
   branch: master
   specs:
     padrino (0.10.7)
@@ -66,7 +66,7 @@ GEM
     archive-tar-minitar (0.5.2)
     blankslate (2.1.2.4)
     builder (3.0.4)
-    capistrano (2.14.0)
+    capistrano (2.14.1)
       highline
       net-scp (>= 1.0.0)
       net-sftp (>= 2.0.0)
@@ -225,6 +225,7 @@ DEPENDENCIES
   rabl
   rack
   rack-test
+  rake
   rspec
   rubyzip!
   torquebox
