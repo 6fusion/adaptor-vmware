@@ -7,7 +7,7 @@ gem 'haml'
 gem 'activemodel', :require => 'active_model'
 gem 'activesupport', :require => 'active_support/time'
 #gem 'rbvmomi'
-gem 'rake', :require => false
+#gem 'rake', :require => false
 gem 'kaminari', :require => 'kaminari/sinatra'
 gem 'rubyzip', :git => 'git://github.com/aussiegeek/rubyzip.git', :require => "zip/zip"
 gem 'uuid'
