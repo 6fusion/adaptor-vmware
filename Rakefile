@@ -6,7 +6,7 @@ end
 task :default => "lib/java/VMwareInventory.class"
 
 task :server => "lib/java/VMwareInventory.class" do
-  sh "padrino start"
+  sh "trinidad -e development -r config.ru"
 end
 
 task :console => "lib/java/VMwareInventory.class" do
