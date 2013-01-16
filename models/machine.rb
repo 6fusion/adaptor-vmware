@@ -53,7 +53,7 @@ class Machine < Base::Machine
     vm_inventory.gatherVirtualMachines
     vm_inventory.vmMap.to_hash
   ensure
-    vm_inventory.close
+    inode.close_vm_inventory(vm_inventory)
   end
 
 
@@ -84,7 +84,7 @@ class Machine < Base::Machine
       logger.error(e.backtrace)
       raise Exceptions::Unrecoverable
     ensure
-      vm_inventory.close
+      inode.close_vm_inventory(vm_inventory)
     end
   end
 
@@ -93,7 +93,7 @@ class Machine < Base::Machine
       vm_inventory = VMwareInventory.new("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
       self.new(vm_inventory.findByUuid(uuid).to_hash)
     ensure
-      vm_inventory.close
+      inode.close_vm_inventory(vm_inventory)
     end
   end
  
@@ -112,7 +112,7 @@ class Machine < Base::Machine
       end
       vm        
     ensure
-      vm_inventory.close
+      inode.close_vm_inventory(vm_inventory)
     end
   end
 
@@ -285,8 +285,6 @@ class Machine < Base::Machine
 
 
   private
-
- 
 
   # Helper Method for converting machine power states.
   def self.convert_power_state(tools_status, power_status)

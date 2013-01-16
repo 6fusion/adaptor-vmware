@@ -19,7 +19,7 @@ class INode < Base::INode
       vm_inventory.gatherVirtualMachines
       vm_inventory.getAboutInfo.to_hash
     ensure
-      vm_inventory.close
+      close_vm_inventory(vm_inventory)
     end
   end
 
@@ -36,7 +36,7 @@ class INode < Base::INode
       end
       rList
     ensure
-      vm_inventory.close
+      close_vm_inventory(vm_inventory)
     end
   end
 
@@ -62,5 +62,13 @@ class INode < Base::INode
     logger.info("INode.delete(#{uuid})")
 
     super
+  end
+
+  def close_vm_inventory(vm_inventory)
+    if vm_inventory
+      vm_inventory.close
+    else
+      fail Exceptions::Unrecoverable, "problem with inode #{uuid.inspect} probably misconfigured"
+    end
   end
 end
