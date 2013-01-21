@@ -1,2 +1,3 @@
-server 'adaptor-vmware.6fusion.whiskey', :app
-set :deploy_env, 'whiskey'
+set :deploy_env, "whiskey"
+
+server "adaptor-vmware-1-0-001.6fusion.#{deploy_env}", :app
