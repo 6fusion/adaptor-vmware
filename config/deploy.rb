@@ -11,8 +11,7 @@ set :application, "adaptor-vmware"
 set :ssh_options, { :forward_agent => true }
 set :scm, :git
 set :use_sudo, true
-#set :repository, "git@github.com:6fusion/#{application}.git"
-set :repository, "file://."
+set :repository, "git@github.com:6fusion/#{application}.git"
 set :deploy_to, "/var/6fusion/#{application}"
 set :deploy_via, :copy
 set :deploy_env, 'development'
