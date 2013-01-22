@@ -88,9 +88,12 @@ AdaptorVMware.controllers :inodes, :priority => :low do
       diag_file.print(diag.to_yaml)
       diag_file.flush
 
+      # Unable to zip these due to permissions
+        # :cron => "/var/log/cron",
+        # :messages => "/var/log/messages"
       file_list = {
-        :cron => "/var/log/cron",
         :torquebox => "/var/log/torquebox/torquebox.log",
+        :cron => "/var/log/cron",
         :messages => "/var/log/messages"
       }
 
@@ -113,9 +116,12 @@ AdaptorVMware.controllers :inodes, :priority => :low do
         # dump available system logs to temp files and store them in the zip
         file_list.each do |k, c|
           if File.exists?(c) || File.zero?(c)
+            logger.info('DIAGNOSTICS.ZIP - Adding '+c)
             temp = File.open(c)
             z.put_next_entry(k.to_s)
             z.print(IO.read(temp.path))
+          else
+            logger.info('DIAGNOSTICS.ZIP - Skipping '+c)
           end
         end
 
