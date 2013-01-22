@@ -92,9 +92,7 @@ AdaptorVMware.controllers :inodes, :priority => :low do
         # :cron => "/var/log/cron",
         # :messages => "/var/log/messages"
       file_list = {
-        :torquebox => "/var/log/torquebox/torquebox.log",
-        :cron => "/var/log/cron",
-        :messages => "/var/log/messages"
+        :torquebox => "/var/log/torquebox/torquebox.log"
       }
 
       cmd_list = {
