@@ -127,7 +127,7 @@ AdaptorVMware.controllers :inodes, :priority => :low do
         # dump command output to temp files and store them in the zip
         cmd_list.each do |k, c|
           begin
-            temp = Tempfile.new(k.to_s) 
+            temp = Tempfile.new(k.to_s, "#{PADRINO_ROOT}/tmp")
             temp.print(`#{c}`)
             temp.flush
             z.put_next_entry(k.to_s)
