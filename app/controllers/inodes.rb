@@ -75,7 +75,7 @@ AdaptorVMware.controllers :inodes, :priority => :low do
 
   get :diagnostics, "/inodes/:uuid/diagnostics.zip" do
     logger.info('DIAGNOSTICS.ZIP - inodes#index')
-    ENV['TMP'] = ENV['PADRINO_ROOT']+'/tmp'
+    ENV['TMP'] = "#{PADRINO_ROOT}/tmp"
     @inode = INode.find_by_uuid(params[:uuid])
     diag = {
       :about => @inode.about,
