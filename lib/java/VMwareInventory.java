@@ -94,20 +94,20 @@ public class VMwareInventory
     DateTimeFormatter parser2 = ISODateTimeFormat.dateTimeNoMillis();
     Calendar lastHeartbeatTime = (Calendar) Calendar.getInstance(TimeZone.getTimeZone("GMT")).clone();
     lastHeartbeatTime.setTime(parser2.parseDateTime("2012-12-21T00:00:00Z").toDate());
-    extension.setKey(this.EXT_KEY);
-    extension.setCompany(this.EXT_COMPANY);
-    extension.setType(this.EXT_TYPE);
-    extension.setVersion(this.EXT_VERSION);
+    extension.setKey(VMwareInventory.EXT_KEY);
+    extension.setCompany(VMwareInventory.EXT_COMPANY);
+    extension.setType(VMwareInventory.EXT_TYPE);
+    extension.setVersion(VMwareInventory.EXT_VERSION);
     extension.setLastHeartbeatTime(lastHeartbeatTime);
-    description.setLabel(this.EXT_LABEL);
-    description.setSummary(this.EXT_LABEL);
+    description.setLabel(VMwareInventory.EXT_LABEL);
+    description.setSummary(VMwareInventory.EXT_LABEL);
     extension.setDescription(description);
     serverInfo.setUrl(url);
     serverInfo.setDescription(description);
-    serverInfo.setCompany(this.EXT_COMPANY);
-    serverInfo.setType(this.EXT_TYPE);
-    serverInfo.setAdminEmail(this.EXT_ADMIN_EMAIL);
-    this.getExtensionManager().unregisterExtension(this.EXT_KEY);
+    serverInfo.setCompany(VMwareInventory.EXT_COMPANY);
+    serverInfo.setType(VMwareInventory.EXT_TYPE);
+    serverInfo.setAdminEmail(VMwareInventory.EXT_ADMIN_EMAIL);
+    this.getExtensionManager().unregisterExtension(VMwareInventory.EXT_KEY);
     this.getExtensionManager().registerExtension(extension);
   }
 
@@ -660,10 +660,10 @@ public class VMwareInventory
     net_trans.setInstance("*");
 
     List<PerfQuerySpec> qSpecList = new ArrayList<PerfQuerySpec>();
-    Iterator it = vms.iterator();
+    Iterator<VirtualMachine> it = vms.iterator();
     while (it.hasNext()) {
       PerfQuerySpec qSpec = new PerfQuerySpec();
-      VirtualMachine vm = (VirtualMachine)it.next();
+      VirtualMachine vm = it.next();
       qSpec.setEntity(vm.getMOR());
       qSpec.setFormat("normal");
       qSpec.setIntervalId(300);
