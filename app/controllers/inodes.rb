@@ -83,7 +83,7 @@ AdaptorVMware.controllers :inodes, :priority => :low do
     }
 
     begin
-      logger.info('DIAGNOSTICS.ZIP - #{PADRINO_ROOT}/tmp/diagnostics')
+      logger.info("DIAGNOSTICS.ZIP - #{PADRINO_ROOT}/tmp/diagnostics")
       t = Tempfile.new("diagnostics", "#{PADRINO_ROOT}/tmp")
       diag_file = Tempfile.new("vcenter_diagnostics", "#{PADRINO_ROOT}/tmp")
       diag_file.print(diag.to_yaml)
