@@ -15,6 +15,7 @@ gem 'uuid'
 gem 'json-jruby', :require => 'json'
 gem 'jruby-rack'
 gem 'rack'
+
 gem "torquebox-rake-support"
 gem 'torquebox-cache'
 gem "torquebox"
@@ -23,7 +24,6 @@ gem 'newrelic_rpm'
 
 group :development do
   gem 'trinidad'
-  gem 'vagrant'
   gem 'capistrano'
   gem 'capistrano-ext'
   gem 'capistrano_colors'
