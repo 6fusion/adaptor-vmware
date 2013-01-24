@@ -58,7 +58,7 @@ after("deploy") do
   run "#{sudo} mkdir -p #{shared_path}/dead_letters"
   run "#{sudo} chown -R torquebox:torquebox #{shared_path}"
   run "#{sudo} chmod 0666 #{tail_logs_location}"
-  run "#{sudo} torquebox deploy #{current_path} --name #{application} --env #{rails_env}"
+  run "#{sudo} torquebox deploy #{current_path} --name #{application} --env #{deploy_env} --context-path=#{context_path}"
 
   # New Relic Setup
   run "if [ -f #{shared_path}/newrelic.yml ]; then #{sudo} ln -sfn #{shared_path}/newrelic.yml #{current_path}/config; fi"
