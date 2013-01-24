@@ -1,6 +1,6 @@
 require 'capistrano/ext/multistage'
 require 'capistrano_colors'
-# require 'capistrano-helpers/specs'
+require 'capistrano-helpers/specs'
 require 'capistrano-helpers/version'
 require 'bundler/capistrano'
 require 'open-uri'
