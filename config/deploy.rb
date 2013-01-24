@@ -12,8 +12,8 @@ default_run_options[:pty] = true
 set :stages, Dir['config/deploy/*.rb'].map { |f| File.basename(f, '.rb') }
 set :default_stage, "development"
 set :bundle_without, [:development, :test, :automation, :assets]
-set :bundle_dir, -> { File.join(deploy_to, "bundle") }
 # set :bundle_cmd, "jruby -S bundle"
+# set :bundle_dir, fetch(:shared_path)+"/bundle"
 # set :bundle_flags, "--deployment --quiet"
 
 set :application, "adaptor-vmware"
@@ -31,11 +31,11 @@ set :deploy_env, lambda { fetch(:stage) }
 set :rails_env, lambda { fetch(:stage) }
 set :keep_releases, 2
 set :tail_logs_location, "#{shared_path}/log/#{application}.log"
+set :context_path, ""
 set :hipchat_alert, true
 
 # Adaptor-VMware Specifics
 set :ssh_port, 22
-set :context_path, ""
 set :copy_exclude do
   %w{Capfile Vagrantfile README.* spec config/deploy.rb
      config/deploy .rvmrc .rspec data .git .gitignore **/test.* .yardopts} +
@@ -43,25 +43,39 @@ set :copy_exclude do
 end
 
 # Additional Deployment Actions
-before 'verify:rules', 'build:get_tag'
-before 'deploy', 'verify:rules'
-after 'deploy:cleanup', 'alert:hipchat'
-after 'deploy:update', 'newrelic:notice_deployment'
+before "verify:rules", "build:get_tag"
+before "deploy", "verify:rules"
+
+after "deploy:cleanup", "alert:hipchat"
+after "deploy:cleanup", "newrelic:notice_deployment"
 
 after("deploy") do
-  run "#{sudo} touch #{shared_path}/inodes.yml"
+  # Setup data directory
   run "#{sudo} mkdir -p #{shared_path}/data"
-  run "#{sudo} ln -sfn #{shared_path}/data #{current_path}/data"
-  run "#{sudo} chown -R torquebox:torquebox #{current_path}"
+  run "#{sudo} chown -R torquebox:torquebox #{shared_path}/data"
+  run "#{sudo} chmod 0666 #{shared_path}/data"
 
+  # Symlink to data directory
+  run "#{sudo} ln -sfn #{shared_path}/data #{current_path}/data"
+  run "#{sudo} chown -R torquebox:torquebox #{current_path}/data"
+
+  # Setup logs
   run "#{sudo} touch #{tail_logs_location}"
-  run "#{sudo} mkdir -p #{shared_path}/dead_letters"
-  run "#{sudo} chown -R torquebox:torquebox #{shared_path}"
+  run "#{sudo} chown -R torquebox:torquebox #{shared_path}/log"
   run "#{sudo} chmod 0666 #{tail_logs_location}"
+
+  # Setup dead letters directory
+  run "#{sudo} mkdir -p #{shared_path}/dead_letters"
+  run "#{sudo} chown -R torquebox:torquebox #{shared_path}/dead_letters"
+  run "#{sudo} chmod 0666 #{shared_path}/dead_letters"
+
+  # Deploy the application
   run "#{sudo} torquebox deploy #{current_path} --name #{application} --env #{deploy_env} --context-path=#{context_path}"
 
-  # New Relic Setup
+  # Setup New Relic
   run "if [ -f #{shared_path}/newrelic.yml ]; then #{sudo} ln -sfn #{shared_path}/newrelic.yml #{current_path}/config; fi"
+
+  deploy.cleanup
 end
 
 before("deploy:restart") do
