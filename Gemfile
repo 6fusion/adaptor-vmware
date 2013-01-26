@@ -16,20 +16,21 @@ gem 'json-jruby', require: 'json'
 gem 'jruby-rack'
 gem 'rack'
 
-gem 'torquebox-cache'
-gem 'torquebox-messaging'
-gem 'torquebox-rake-support'
-gem 'torquebox'
+torquebox_version = "2.2.0"
+gem 'torquebox-cache', torquebox_version
+gem 'torquebox-messaging', torquebox_version
+gem 'torquebox-rake-support', torquebox_version
+gem 'torquebox', torquebox_version
 gem 'padrino-rpm', github: '6fusion/padrino-rpm'
 gem 'newrelic_rpm'
 
 group :development do
   gem 'trinidad'
-
   gem 'capistrano'
   gem 'capistrano-ext'
   gem 'capistrano_colors'
   gem 'capistrano-helpers'
+  gem 'rest-client'
 end
 
 group :test do

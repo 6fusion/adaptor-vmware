@@ -142,6 +142,8 @@ GEM
     rack-test (0.6.2)
       rack (>= 1.0)
     rake (10.0.3)
+    rest-client (1.6.7)
+      mime-types (>= 1.16)
     rspec (2.12.0)
       rspec-core (~> 2.12.0)
       rspec-expectations (~> 2.12.0)
@@ -248,12 +250,13 @@ DEPENDENCIES
   rack
   rack-test
   rake
+  rest-client
   rspec
   rubyzip!
-  torquebox
-  torquebox-cache
-  torquebox-messaging
-  torquebox-rake-support
+  torquebox (= 2.2.0)
+  torquebox-cache (= 2.2.0)
+  torquebox-messaging (= 2.2.0)
+  torquebox-rake-support (= 2.2.0)
   trinidad
   uuid
   yajl-ruby
