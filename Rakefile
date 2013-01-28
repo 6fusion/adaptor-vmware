@@ -12,3 +12,8 @@ end
 task :console => "lib/java/VMwareInventory.class" do
   sh "padrino console"
 end
+
+desc 'run specs'
+task :spec do
+  `rspec`
+end
