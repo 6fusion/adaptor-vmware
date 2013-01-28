@@ -17,11 +17,6 @@ import com.vmware.vim25.mo.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Sample code to show how to use the Managed Object APIs.
- * @author Steve JIN (sjin@vmware.com)
- */
-
 public class VMwareInventory 
 {
   private final static Logger logger = Logger.getLogger("VMwareInventory");
@@ -39,17 +34,17 @@ public class VMwareInventory
   public TreeSet<String> tsSet = new TreeSet<String>();
   // List of VirtualMachine MORs 
   // Utility Constants
-  public static long KB = 1024;
-  public static double MB = Math.pow(1024,2);
-  public static double GB = Math.pow(1024,3);
-  public static double TB = Math.pow(1024,4);
+  public final static long KB = 1024;
+  public final static double MB = Math.pow(1024,2);
+  public final static double GB = Math.pow(1024,3);
+  public final static double TB = Math.pow(1024,4);
   // used for registering VMware Plugin
-  public static String EXT_KEY = "com.6fusion.cloudresourcemeter";
-  public static String EXT_COMPANY = "6fusion USA";
-  public static String EXT_TYPE = "com.vmware.vim.viClientScripts";
-  public static String EXT_VERSION = "3.0";
-  public static String EXT_LABEL = "6fusionCloudResourceMeter";
-  public static String[] EXT_ADMIN_EMAIL = {"support@6fusion.com"};
+  public final static String EXT_KEY = "com.6fusion.cloudresourcemeter";
+  public final static String EXT_COMPANY = "6fusion USA";
+  public final static String EXT_TYPE = "com.vmware.vim.viClientScripts";
+  public final static String EXT_VERSION = "3.0";
+  public final static String EXT_LABEL = "6fusionCloudResourceMeter";
+  public final static String[] EXT_ADMIN_EMAIL = {"support@6fusion.com"};
 
  /**
  * VMwareInventory - API adaptor between VI Java VMWARE API and JRUBY
@@ -99,20 +94,20 @@ public class VMwareInventory
     DateTimeFormatter parser2 = ISODateTimeFormat.dateTimeNoMillis();
     Calendar lastHeartbeatTime = (Calendar) Calendar.getInstance(TimeZone.getTimeZone("GMT")).clone();
     lastHeartbeatTime.setTime(parser2.parseDateTime("2012-12-21T00:00:00Z").toDate());
-    extension.setKey(this.EXT_KEY);
-    extension.setCompany(this.EXT_COMPANY);
-    extension.setType(this.EXT_TYPE);
-    extension.setVersion(this.EXT_VERSION);
+    extension.setKey(VMwareInventory.EXT_KEY);
+    extension.setCompany(VMwareInventory.EXT_COMPANY);
+    extension.setType(VMwareInventory.EXT_TYPE);
+    extension.setVersion(VMwareInventory.EXT_VERSION);
     extension.setLastHeartbeatTime(lastHeartbeatTime);
-    description.setLabel(this.EXT_LABEL);
-    description.setSummary(this.EXT_LABEL);
+    description.setLabel(VMwareInventory.EXT_LABEL);
+    description.setSummary(VMwareInventory.EXT_LABEL);
     extension.setDescription(description);
     serverInfo.setUrl(url);
     serverInfo.setDescription(description);
-    serverInfo.setCompany(this.EXT_COMPANY);
-    serverInfo.setType(this.EXT_TYPE);
-    serverInfo.setAdminEmail(this.EXT_ADMIN_EMAIL);
-    this.getExtensionManager().unregisterExtension(this.EXT_KEY);
+    serverInfo.setCompany(VMwareInventory.EXT_COMPANY);
+    serverInfo.setType(VMwareInventory.EXT_TYPE);
+    serverInfo.setAdminEmail(VMwareInventory.EXT_ADMIN_EMAIL);
+    this.getExtensionManager().unregisterExtension(VMwareInventory.EXT_KEY);
     this.getExtensionManager().registerExtension(extension);
   }
 
@@ -634,13 +629,7 @@ public class VMwareInventory
   public void readings(List<VirtualMachine> vms, Calendar startTime, Calendar endTime) throws Exception
   {
     logger.fine("Entering VMwareInventory.readings(List<VirtualMachine> vms, Calendar startTime, Calendar endTime)");
-    String[] counterNames = { "cpu.usage.average",
-                    "cpu.usagemhz.average",
-                    "mem.consumed.average",
-                    "virtualDisk.read.average",
-                    "virtualDisk.write.average",
-                    "net.received.average",
-                    "net.transmitted.average"};
+
     gatherCounters();
     PerfMetricId cpu_usage = new PerfMetricId();
     cpu_usage.setCounterId(this.counterMap.get("cpu.usage.average"));
@@ -671,10 +660,10 @@ public class VMwareInventory
     net_trans.setInstance("*");
 
     List<PerfQuerySpec> qSpecList = new ArrayList<PerfQuerySpec>();
-    Iterator it = vms.iterator();
+    Iterator<VirtualMachine> it = vms.iterator();
     while (it.hasNext()) {
       PerfQuerySpec qSpec = new PerfQuerySpec();
-      VirtualMachine vm = (VirtualMachine)it.next();
+      VirtualMachine vm = it.next();
       qSpec.setEntity(vm.getMOR());
       qSpec.setFormat("normal");
       qSpec.setIntervalId(300);

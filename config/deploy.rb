@@ -57,6 +57,9 @@ after("deploy") do
 
   # Symlink to data directory
   run "#{sudo} ln -sfn #{shared_path}/data #{current_path}/data"
+  run "#{sudo} chown -R torquebox:torquebox #{current_path}/*"
+  run "#{sudo} chown -R torquebox:torquebox #{shared_path}/*"
+  run "#{sudo} chmod 0666 #{shared_path}/log/#{deploy_env}.log"
   run "#{sudo} chown -R torquebox:torquebox #{current_path}/data"
 
   # Setup logs
