@@ -91,7 +91,7 @@ class Machine < Base::Machine
   def self.find_by_uuid(inode, uuid)
     begin
       vm_inventory = VMwareInventory.new("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
-      props = vm_inventory.findByUuid(uuid).to_hash
+      props = vm_inventory.findByUuid(uuid)
       unless props.nil?
         self.new(props.to_hash)
       else
@@ -111,7 +111,7 @@ class Machine < Base::Machine
       endTime = _until.round(5.minutes).utc.strftime('%Y-%m-%dT%H:%M:%S')+"Z"
       props = vm_inventory.findByUuidWithReadings(uuid.to_java, startTime.to_java, endTime.to_java)
       unless props.nil?
-        self.new(props.to_hash)
+        vm = self.new(props.to_hash)
       else
         raise Exceptions::NotFound 
       end 
