@@ -165,6 +165,10 @@ public class VMwareInventory
     logger.fine("Entering VMwareInventory.findByUuid(String uuid)");
     VirtualMachine[] vms = new VirtualMachine[1];
     VirtualMachine vm = (VirtualMachine) this.si.getSearchIndex().findByUuid(null,uuid,true,false);
+    if (vm == null) {
+      logger.info("Machine UUID "+uuid+" not found");
+      return null
+    }
     vms[0] = vm;
     gatherProperties(vms);
     logger.fine("Exiting VMwareInventory.findByUuid(String uuid)");
@@ -181,6 +185,10 @@ public class VMwareInventory
     Calendar endTime = (Calendar) Calendar.getInstance(TimeZone.getTimeZone("GMT")).clone();
     startTime.setTime(parser2.parseDateTime(startIso8601).toDate());
     endTime.setTime(parser2.parseDateTime(endIso8601).toDate());
+    if (vm == null) {
+      logger.info("Machine UUID "+uuid+" not found");
+      return null
+    }
     vms[0] = vm;
     gatherProperties(vms);
     List<VirtualMachine> vms_list = new ArrayList<VirtualMachine>(Arrays.asList(vms));
