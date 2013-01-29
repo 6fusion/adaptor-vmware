@@ -53,7 +53,7 @@ after("deploy") do
   # Setup data directory
   run "#{sudo} mkdir -p #{shared_path}/data"
   run "#{sudo} chown -R torquebox:torquebox #{shared_path}/data"
-  run "#{sudo} chmod 0666 #{shared_path}/data"
+  run "#{sudo} chmod 0755 #{shared_path}/data"
 
   # Symlink to data directory
   run "#{sudo} ln -sfn #{shared_path}/data #{current_path}/data"
@@ -70,7 +70,7 @@ after("deploy") do
   # Setup dead letters directory
   run "#{sudo} mkdir -p #{shared_path}/dead_letters"
   run "#{sudo} chown -R torquebox:torquebox #{shared_path}/dead_letters"
-  run "#{sudo} chmod 0666 #{shared_path}/dead_letters"
+  run "#{sudo} chmod 0755 #{shared_path}/dead_letters"
 
   # compile any java resources
   run "cd #{current_path} && #{sudo} rake"
