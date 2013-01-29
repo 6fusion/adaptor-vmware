@@ -7,6 +7,7 @@ end
 $CLASSPATH << "#{PADRINO_ROOT}/lib/java"
 java_import "VMwareInventory"
 java_import "java.util.ArrayList"
+java_import "com.vmware.vim25.InvalidLogin"
 
 class INode < Base::INode
   attr_reader :uuid, :session, :host_ip_address, :user, :password
@@ -18,8 +19,16 @@ class INode < Base::INode
       vm_inventory = VMwareInventory.new("https://#{@host_ip_address}/sdk", @user, @password)
       vm_inventory.gatherVirtualMachines
       vm_inventory.getAboutInfo.to_hash
+    rescue InvalidLogin => e
+      raise Exceptions::Forbidden, "Invalid Login" 
+    rescue => e
+      logger.error(e.message)
+      logger.error(e.backtrace)
+      raise Exceptions::Unrecoverable, e.to_s
     ensure
-      close_vm_inventory(vm_inventory)
+      unless vm_inventory.nil?
+        self.close_vm_inventory(vm_inventory)
+      end
     end
   end
 
@@ -35,8 +44,14 @@ class INode < Base::INode
         rList << statistics_level.to_hash
       end
       rList
+    rescue InvalidLogin => e
+      raise Exceptions::Forbidden, "Invalid Login" 
+    rescue => e
+      logger.error(e.message)
+      logger.error(e.backtrace)
+      raise Exceptions::Unrecoverable, e.to_s
     ensure
-      close_vm_inventory(vm_inventory)
+      self.close_vm_inventory(vm_inventory)
     end
   end
 
@@ -67,8 +82,6 @@ class INode < Base::INode
   def close_vm_inventory(vm_inventory)
     if vm_inventory
       vm_inventory.close
-    else
-      fail Exceptions::Unrecoverable, "Problem with inode #{uuid.inspect}, probably misconfigured."
     end
   end
 end
