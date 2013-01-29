@@ -167,7 +167,7 @@ public class VMwareInventory
     VirtualMachine vm = (VirtualMachine) this.si.getSearchIndex().findByUuid(null,uuid,true,false);
     if (vm == null) {
       logger.info("Machine UUID "+uuid+" not found");
-      return null
+      return null;
     }
     vms[0] = vm;
     gatherProperties(vms);
@@ -187,7 +187,7 @@ public class VMwareInventory
     endTime.setTime(parser2.parseDateTime(endIso8601).toDate());
     if (vm == null) {
       logger.info("Machine UUID "+uuid+" not found");
-      return null
+      return null;
     }
     vms[0] = vm;
     gatherProperties(vms);
