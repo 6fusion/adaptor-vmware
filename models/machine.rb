@@ -82,7 +82,7 @@ class Machine < Base::Machine
     rescue => e
       logger.error(e.message)
       logger.error(e.backtrace)
-      raise Exceptions::Unrecoverable
+      raise Exceptions::Unrecoverable, e.message
     ensure
       inode.close_vm_inventory(vm_inventory)
     end
@@ -144,7 +144,7 @@ class Machine < Base::Machine
 
     rescue => e
       logger.error(e.message)
-      raise Exceptions::Unrecoverable
+      raise Exceptions::Unrecoverable, e.message
     end
   end
   add_method_tracer :readings
@@ -315,7 +315,7 @@ class Machine < Base::Machine
       end
     rescue => e
       logger.error(e.message)
-      raise Exceptions::Unrecoverable
+      raise Exceptions::Unrecoverable, e.message
     end
   end
 
