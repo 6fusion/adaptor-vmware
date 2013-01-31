@@ -501,7 +501,9 @@ public class VMwareInventory
     disk_hash.put("key",vDisk.getKey());
     // Determine disk usage.  Usage is not considered a metric in VMware.
     long usage = 0;
-    if  (pTables[i].get("layoutEx.disk") != null) {
+    if  (pTables[i].get("layoutEx.disk") == null) {
+      logger.warning("Missing layoutEx.disk ("+pTables[i].get("name")+")");
+    } else {
       //   find layoutex.disk that matches the VirtualDisk.getKey()
       VirtualMachineFileLayoutExDiskLayout[] layoutexDisks = (VirtualMachineFileLayoutExDiskLayout[])pTables[i].get("layoutEx.disk");
       for (int j=0; j < layoutexDisks.length; j++) {
@@ -509,16 +511,22 @@ public class VMwareInventory
         if (diskLayout.getKey() == vDisk.getKey()) {
           //      Iterate over layoutex.disk.chain of disk units
           VirtualMachineFileLayoutExDiskUnit[] diskUnits = diskLayout.getChain();
-          if (diskUnits != null) {
+          if (diskUnits == null) {
+            logger.warning("Missing layoutEx.disk["+diskLayout.getKey()+"].chain for ("+pTables[i].get("name")+")");
+          } else {
             for(int k=0; k < diskUnits.length; k++) {
               //         Find layoutex.file where getKey matches any chainfilekey     
               VirtualMachineFileLayoutExFileInfo[] layoutexFiles = (VirtualMachineFileLayoutExFileInfo[])pTables[i].get("layoutEx.file");
-              for (int m=0; m < layoutexFiles.length; m++) {
-                int[] filekeys = diskUnits[k].getFileKey();
-                for (int n=0; n < filekeys.length; n++) {
-                  if (layoutexFiles[m].getKey() == filekeys[n]) {
-                    //              Add to vdisk_files
-                    usage += layoutexFiles[m].size * GB;
+              if (layoutexFiles == null) {
+                logger.warning("Missing layoutEx.file for ("+pTables[i].get("name")+")");
+              } else {
+                for (int m=0; m < layoutexFiles.length; m++) {
+                  int[] filekeys = diskUnits[k].getFileKey();
+                  for (int n=0; n < filekeys.length; n++) {
+                    if (layoutexFiles[m].getKey() == filekeys[n]) {
+                      //              Add to vdisk_files
+                      usage += layoutexFiles[m].size * GB;
+                    }
                   }
                 }
               }
