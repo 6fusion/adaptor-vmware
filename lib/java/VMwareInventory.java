@@ -261,6 +261,7 @@ public class VMwareInventory
             "guest.guestId",
             "guest.net",
             "config.uuid",
+            "config.template",
             "layoutEx.disk",
             "layoutEx.file",
             "runtime.powerState",
@@ -270,53 +271,58 @@ public class VMwareInventory
     logger.info("Finished PropertyCollectorUtil.retrieveProperties");
     for(int i=0; i<pTables.length; i++)
     {
-      HashMap<String, Object> vm = new HashMap<String, Object>();
-      vmsList.add((VirtualMachine)vms[i]);
-      vm.put("external_vm_id",vms[i].getMOR().get_value().toString());
-      ManagedObjectReference host_ref = (ManagedObjectReference) pTables[i].get("runtime.host");
-      vm.put("external_host_id", host_ref.get_value().toString());
-      vm.put("uuid",pTables[i].get("config.uuid"));
-      vm.put("name",pTables[i].get("name"));
-      vm.put("cpu_count",pTables[i].get("config.hardware.numCPU"));
-      
-      long hz = get_host_hz((ManagedObjectReference) pTables[i].get("runtime.host"));
-      vm.put("cpu_speed",hz / 1000000);
-
-      vm.put("maximum_memory",pTables[i].get("config.hardware.memoryMB"));
-      boolean tool_status = true;
-      if (pTables[i].get("guest.toolsStatus") == "toolsNotInstalled") {
-        tool_status = false;
+      if (pTables[i].get("config.template") == true){
+        logger.info("template "+pTables[i].get("name"));
       }
-      vm.put("guest_agent",tool_status);
-      String guest_agent = (String) pTables[i].get("guest.guestId");
-      String arch = "x32";
-      if (guest_agent != null) {
-        if (guest_agent.indexOf("64") > -1) {
-            arch = "x64";
+      else {
+        HashMap<String, Object> vm = new HashMap<String, Object>();
+        vmsList.add((VirtualMachine)vms[i]);
+        vm.put("external_vm_id",vms[i].getMOR().get_value().toString());
+        ManagedObjectReference host_ref = (ManagedObjectReference) pTables[i].get("runtime.host");
+        vm.put("external_host_id", host_ref.get_value().toString());
+        vm.put("uuid",pTables[i].get("config.uuid"));
+        vm.put("name",pTables[i].get("name"));
+        vm.put("cpu_count",pTables[i].get("config.hardware.numCPU"));
+        
+        long hz = get_host_hz((ManagedObjectReference) pTables[i].get("runtime.host"));
+        vm.put("cpu_speed",hz / 1000000);
+
+        vm.put("maximum_memory",pTables[i].get("config.hardware.memoryMB"));
+        boolean tool_status = true;
+        if (pTables[i].get("guest.toolsStatus") == "toolsNotInstalled") {
+          tool_status = false;
         }
-      }
-      HashMap<String, Object> system = new HashMap<String, Object>();
-      system.put("architecture",arch);
-      system.put("operating_system",guest_agent);
-      vm.put("system",system);
-      vm.put("power_state",pTables[i].get("runtime.powerState").toString());
-      VirtualDevice[] vds =  (VirtualDevice[]) pTables[i].get("config.hardware.device");
-      List<Map <String, Object>> vm_disks=new ArrayList<Map<String, Object>>();
-      List<Map <String, Object>> vm_nics=new ArrayList<Map<String, Object>>();
-      for(VirtualDevice vd:vds) {
-        // if virtual disk then
-        if(vd instanceof VirtualDisk) {
-          HashMap<String, Object> disk_hash = get_disk((VirtualDisk) vd, pTables, i); 
-          vm_disks.add(disk_hash);
+        vm.put("guest_agent",tool_status);
+        String guest_agent = (String) pTables[i].get("guest.guestId");
+        String arch = "x32";
+        if (guest_agent != null) {
+          if (guest_agent.indexOf("64") > -1) {
+              arch = "x64";
+          }
+        }
+        HashMap<String, Object> system = new HashMap<String, Object>();
+        system.put("architecture",arch);
+        system.put("operating_system",guest_agent);
+        vm.put("system",system);
+        vm.put("power_state",pTables[i].get("runtime.powerState").toString());
+        VirtualDevice[] vds =  (VirtualDevice[]) pTables[i].get("config.hardware.device");
+        List<Map <String, Object>> vm_disks=new ArrayList<Map<String, Object>>();
+        List<Map <String, Object>> vm_nics=new ArrayList<Map<String, Object>>();
+        for(VirtualDevice vd:vds) {
+          // if virtual disk then
+          if(vd instanceof VirtualDisk) {
+            HashMap<String, Object> disk_hash = get_disk((VirtualDisk) vd, pTables, i); 
+            vm_disks.add(disk_hash);
 
-        } else if ((vd instanceof VirtualPCNet32) || (vd instanceof VirtualE1000) || (vd instanceof VirtualVmxnet)) {
-          HashMap<String, Object> nic_hash = get_nic((VirtualEthernetCard) vd, pTables, i);
-          vm_nics.add(nic_hash);
-        } 
+          } else if ((vd instanceof VirtualPCNet32) || (vd instanceof VirtualE1000) || (vd instanceof VirtualVmxnet)) {
+            HashMap<String, Object> nic_hash = get_nic((VirtualEthernetCard) vd, pTables, i);
+            vm_nics.add(nic_hash);
+          } 
+        }
+        vm.put("disks",vm_disks);
+        vm.put("nics",vm_nics);
+        this.vmMap.put(vms[i].getMOR().get_value().toString(), vm);
       }
-      vm.put("disks",vm_disks);
-      vm.put("nics",vm_nics);
-      this.vmMap.put(vms[i].getMOR().get_value().toString(), vm);
     }    
     logger.fine("Exiting VMwareInventory.gatherProperties(ManagedEntity[] vms)");
     return(vmsList);
@@ -510,6 +516,7 @@ public class VMwareInventory
               for (int n=0; n < filekeys.length; n++) {
                 if (layoutexFiles[m].getKey() == filekeys[n]) {
                   //              Add to vdisk_files
+                  logger.info(layoutexFiles[m].getType());
                   usage += layoutexFiles[m].size * GB;
                 }
               }
