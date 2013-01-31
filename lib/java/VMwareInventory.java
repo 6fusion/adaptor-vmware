@@ -272,9 +272,10 @@ public class VMwareInventory
     for(int i=0; i<pTables.length; i++)
     {
       if (pTables[i].get("config.template") == true){
-        logger.info("template "+pTables[i].get("name"));
+        logger.fine("Filtering Template ("+pTables[i].get("name")+")");
       }
       else {
+        logger.info("Parsing ("+pTables[i].get("name")+")");
         HashMap<String, Object> vm = new HashMap<String, Object>();
         vmsList.add((VirtualMachine)vms[i]);
         vm.put("external_vm_id",vms[i].getMOR().get_value().toString());
@@ -508,16 +509,17 @@ public class VMwareInventory
         if (diskLayout.getKey() == vDisk.getKey()) {
           //      Iterate over layoutex.disk.chain of disk units
           VirtualMachineFileLayoutExDiskUnit[] diskUnits = diskLayout.getChain();
-          for(int k=0; k < diskUnits.length; k++) {
-            //         Find layoutex.file where getKey matches any chainfilekey     
-            VirtualMachineFileLayoutExFileInfo[] layoutexFiles = (VirtualMachineFileLayoutExFileInfo[])pTables[i].get("layoutEx.file");
-            for (int m=0; m < layoutexFiles.length; m++) {
-              int[] filekeys = diskUnits[k].getFileKey();
-              for (int n=0; n < filekeys.length; n++) {
-                if (layoutexFiles[m].getKey() == filekeys[n]) {
-                  //              Add to vdisk_files
-                  logger.info(layoutexFiles[m].getType());
-                  usage += layoutexFiles[m].size * GB;
+          if (diskUnits != null) {
+            for(int k=0; k < diskUnits.length; k++) {
+              //         Find layoutex.file where getKey matches any chainfilekey     
+              VirtualMachineFileLayoutExFileInfo[] layoutexFiles = (VirtualMachineFileLayoutExFileInfo[])pTables[i].get("layoutEx.file");
+              for (int m=0; m < layoutexFiles.length; m++) {
+                int[] filekeys = diskUnits[k].getFileKey();
+                for (int n=0; n < filekeys.length; n++) {
+                  if (layoutexFiles[m].getKey() == filekeys[n]) {
+                    //              Add to vdisk_files
+                    usage += layoutexFiles[m].size * GB;
+                  }
                 }
               }
             }
