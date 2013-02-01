@@ -6,6 +6,8 @@ end
 $CLASSPATH << "#{PADRINO_ROOT}/lib/java"
 java_import "VMwareInventory"
 
+java_import "com.vmware.vim25.InvalidLogin"
+
 
 class Time
   def round(seconds = 60)
@@ -40,23 +42,35 @@ class Machine < Base::Machine
     logger.info("Creating Machine(s) from OVF")
 
     begin
-
+      vm_inventory = VMwareInventory.new("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
+      #do something like deploy an OVF!
+    rescue InvalidLogin => e
+      raise Exceptions::Forbidden, "Invalid Login" 
     rescue => e
       logger.error(e.message)
-      raise Exceptions::Unrecoverable
+      logger.error(e.backtrace)
+      raise Exceptions::Unrecoverable, e.to_s
+    ensure
+      inode.close_vm_inventory(vm_inventory)
     end
   end
   add_method_tracer :create_from_ovf
 
   def self.vm_inventory(inode)
-    vm_inventory = VMwareInventory.new("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
-    vm_inventory.gatherVirtualMachines
-    vm_inventory.vmMap.to_hash
-  ensure
-    inode.close_vm_inventory(vm_inventory)
+    begin
+      vm_inventory = VMwareInventory.new("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
+      vm_inventory.gatherVirtualMachines
+      vm_inventory.vmMap.to_hash
+    rescue InvalidLogin => e
+      raise Exceptions::Forbidden, "Invalid Login" 
+    rescue => e
+      logger.error(e.message)
+      logger.error(e.backtrace)
+      raise Exceptions::Unrecoverable, e.to_s
+    ensure
+      inode.close_vm_inventory(vm_inventory)
+    end
   end
-
-
 
   def self.all(inode)
     self.vm_inventory(inode)
@@ -79,10 +93,12 @@ class Machine < Base::Machine
       # Returns update machine array
       machines
 
+    rescue InvalidLogin => e
+      raise Exceptions::Forbidden, "Invalid Login" 
     rescue => e
       logger.error(e.message)
       logger.error(e.backtrace)
-      raise Exceptions::Unrecoverable
+      raise Exceptions::Unrecoverable, e.to_s
     ensure
       inode.close_vm_inventory(vm_inventory)
     end
@@ -91,7 +107,18 @@ class Machine < Base::Machine
   def self.find_by_uuid(inode, uuid)
     begin
       vm_inventory = VMwareInventory.new("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
-      self.new(vm_inventory.findByUuid(uuid).to_hash)
+      props = vm_inventory.findByUuid(uuid)
+      unless props.nil?
+        self.new(props.to_hash)
+      else
+        raise Exceptions::NotFound 
+      end 
+    rescue InvalidLogin => e
+      raise Exceptions::Forbidden, "Invalid Login" 
+    rescue => e
+      logger.error(e.message)
+      logger.error(e.backtrace)
+      raise Exceptions::Unrecoverable, e.to_s
     ensure
       inode.close_vm_inventory(vm_inventory)
     end
@@ -105,12 +132,18 @@ class Machine < Base::Machine
       startTime = _since.floor(5.minutes).utc.strftime('%Y-%m-%dT%H:%M:%S')+"Z"
       endTime = _until.round(5.minutes).utc.strftime('%Y-%m-%dT%H:%M:%S')+"Z"
       props = vm_inventory.findByUuidWithReadings(uuid.to_java, startTime.to_java, endTime.to_java)
-      vm = nil
-      # logger.info(props.to_hash)
-      if !props.nil?
+      unless props.nil?
         vm = self.new(props.to_hash)
-      end
-      vm        
+      else
+        raise Exceptions::NotFound 
+      end 
+      vm       
+    rescue InvalidLogin => e
+      raise Exceptions::Forbidden, "Invalid Login" 
+    rescue => e
+      logger.error(e.message)
+      logger.error(e.backtrace)
+      raise Exceptions::Unrecoverable, e.to_s
     ensure
       inode.close_vm_inventory(vm_inventory)
     end
@@ -144,7 +177,8 @@ class Machine < Base::Machine
 
     rescue => e
       logger.error(e.message)
-      raise Exceptions::Unrecoverable
+      logger.error(e.backtrace)
+      raise Exceptions::Unrecoverable, e.to_s
     end
   end
   add_method_tracer :readings
@@ -315,7 +349,7 @@ class Machine < Base::Machine
       end
     rescue => e
       logger.error(e.message)
-      raise Exceptions::Unrecoverable
+      raise Exceptions::Unrecoverable, e.message
     end
   end
 

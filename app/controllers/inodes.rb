@@ -1,3 +1,11 @@
+require 'java'
+Dir['lib/java/**/*.jar'].each do |jar|
+  $CLASSPATH << jar
+  require jar
+end
+$CLASSPATH << "#{PADRINO_ROOT}/lib/java"
+java_import "com.vmware.vim25.InvalidLogin"
+
 AdaptorVMware.controllers :inodes, :priority => :low do
   before do
     logger.info('inodes#before')
@@ -143,6 +151,14 @@ AdaptorVMware.controllers :inodes, :priority => :low do
       send_file t.path, :type => 'application/zip',
                         :disposition => "attachment",
                         :filename => "diagnostics.zip"
+                           rescue InvalidLogin => e
+
+    rescue InvalidLogin => e
+      raise Exceptions::Forbidden, "Invalid Login" 
+    rescue => e
+      logger.error(e.message)
+      logger.error(e.backtrace)
+      raise Exceptions::Unrecoverable, e.to_s
     ensure
       diag_file.close
       diag_file.unlink
