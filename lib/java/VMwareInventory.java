@@ -42,7 +42,7 @@ public class VMwareInventory
   public final static String EXT_KEY = "com.6fusion.cloudresourcemeter";
   public final static String EXT_COMPANY = "6fusion USA";
   public final static String EXT_TYPE = "com.vmware.vim.viClientScripts";
-  public final static String EXT_VERSION = "3.0";
+  public final static String EXT_VERSION = "3.1";
   public final static String EXT_LABEL = "6fusionCloudResourceMeter";
   public final static String[] EXT_ADMIN_EMAIL = {"support@6fusion.com"};
 
@@ -160,6 +160,15 @@ public class VMwareInventory
     return stats;
   }
 
+ /**
+   * findByUuid 
+   *
+   * Fine the virtual machine by UUID 
+   * <p>
+   *
+   * @param  uuid UUID of the virtural machine
+   * @return virtual machine HashMap of properties 
+   */
   public HashMap<String, Object> findByUuid(String uuid) throws Exception
   {
     logger.fine("Entering VMwareInventory.findByUuid(String uuid)");
@@ -171,6 +180,17 @@ public class VMwareInventory
     return vmMap.get(vm.getMOR().get_value().toString());
   }
 
+  /**
+   * findByUuidWithReadings 
+   *
+   * Find the virtual machine by UUID and assocated readings for a date range
+   * <p>
+   *
+   * @param  uuid UUID of the virtural machine
+   * @param  startIso8601 String representation of an ISO8601 date 
+   * @param  endIso8601 String representation of an ISO8601 date 
+   * @return virtual machine HashMap of properties and reading 
+   */
   public HashMap<String, Object>  findByUuidWithReadings(String uuid, String startIso8601, String endIso8601) throws Exception
   {
     logger.fine("Entering VMwareInventory.findByUuidWithReadings()");
@@ -193,7 +213,7 @@ public class VMwareInventory
   /**
    * gatherVirtualMachines
    *
-   * Populates hostMap and vmMap.
+   * Populates this.hostMap and this.vmMap.
    * <p>
    * JSON representation of vmMap.
    *
@@ -234,6 +254,12 @@ public class VMwareInventory
    * vmMap Key:    VirtualMachien MORef
    * vmMap Values: uuid, name, cpu_count, cpu_speed, maximum_memory, guest_agent architecture,
    *               operating_system, power_state, disks and nics
+   *
+   *
+   * Helper function for finding the hz for a Host MORef
+   *
+   * @return List<VirtualMachine> List of VirtualMachine objects from API call that can be used 
+   *                              with this.readings as a parameter
    */
   public List<VirtualMachine>  gatherVirtualMachines() throws Exception
   {
@@ -244,15 +270,28 @@ public class VMwareInventory
     return(gatherProperties(vms));
   }
 
+  /* gatherProperties
+   *
+   * @param  vms ManagedEntity[] array of ManagedEntities.
+   * @return List<VirtualMachine> List of VirtualMachine objects from API call that can be used 
+   *                              with this.readings as a parameter
+   */
   private List<VirtualMachine> gatherProperties(ManagedEntity[] vms) throws Exception
   {
     logger.fine("Entering VMwareInventory.gatherProperties(ManagedEntity[] vms)");
+    // vmsList is the result being returned
     List<VirtualMachine> vmsList = new ArrayList<VirtualMachine>(); 
+
+    // Check params
     if(vms==null || vms.length ==0)
     {
         return new ArrayList<VirtualMachine>();
     }
+
+    // Need hosts to properly calculate cpu metrics
     gatherHosts();
+
+    // Retrieve properties from VMware on the virtual machines
     logger.info("Starting PropertyCollectorUtil.retrieveProperties");
     Hashtable[] pTables = PropertyCollectorUtil.retrieveProperties(vms, "VirtualMachine",
             new String[] {"name",
@@ -269,31 +308,48 @@ public class VMwareInventory
             "config.hardware.memoryMB",
             "config.hardware.numCPU"});
     logger.info("Finished PropertyCollectorUtil.retrieveProperties");
+
+    // Make sure we got a valid result from VMware
+    if (pTables == null) 
+    {
+        return new ArrayList<VirtualMachine>();
+    }
+
+    // Process the property list
     for(int i=0; i<pTables.length; i++)
     {
-      if (pTables[i].get("config.template") == true){
+      // Ignore virtual machine templates
+      if (pTables[i].get("config.template") == true)
+      {
         logger.fine("Filtering Template ("+pTables[i].get("name")+")");
       }
-      else {
+      else 
+      {
         logger.info("Parsing ("+pTables[i].get("name")+")");
-        HashMap<String, Object> vm = new HashMap<String, Object>();
+        // Add to the result set the virtual machine
         vmsList.add((VirtualMachine)vms[i]);
-        vm.put("external_vm_id",vms[i].getMOR().get_value().toString());
+
+        // Build a hash of the virtual machine used for reporting to 6fusion
+        HashMap<String, Object> vm = new HashMap<String, Object>();
+
         ManagedObjectReference host_ref = (ManagedObjectReference) pTables[i].get("runtime.host");
+        vm.put("external_vm_id",vms[i].getMOR().get_value().toString());
         vm.put("external_host_id", host_ref.get_value().toString());
         vm.put("uuid",pTables[i].get("config.uuid"));
         vm.put("name",pTables[i].get("name"));
         vm.put("cpu_count",pTables[i].get("config.hardware.numCPU"));
-        
+        vm.put("maximum_memory",pTables[i].get("config.hardware.memoryMB"));
+        vm.put("power_state",pTables[i].get("runtime.powerState").toString());
+        // CPU in MHZ        
         long hz = get_host_hz((ManagedObjectReference) pTables[i].get("runtime.host"));
         vm.put("cpu_speed",hz / 1000000);
-
-        vm.put("maximum_memory",pTables[i].get("config.hardware.memoryMB"));
+        // Determine tool status
         boolean tool_status = true;
         if (pTables[i].get("guest.toolsStatus") == "toolsNotInstalled") {
           tool_status = false;
         }
         vm.put("guest_agent",tool_status);
+        // Determine 32-bit or 64-bit OS
         String guest_agent = (String) pTables[i].get("guest.guestId");
         String arch = "x32";
         if (guest_agent != null) {
@@ -301,20 +357,20 @@ public class VMwareInventory
               arch = "x64";
           }
         }
+        // Build system hash
         HashMap<String, Object> system = new HashMap<String, Object>();
         system.put("architecture",arch);
         system.put("operating_system",guest_agent);
         vm.put("system",system);
-        vm.put("power_state",pTables[i].get("runtime.powerState").toString());
+        // Build Devices
         VirtualDevice[] vds =  (VirtualDevice[]) pTables[i].get("config.hardware.device");
         List<Map <String, Object>> vm_disks=new ArrayList<Map<String, Object>>();
         List<Map <String, Object>> vm_nics=new ArrayList<Map<String, Object>>();
         for(VirtualDevice vd:vds) {
-          // if virtual disk then
+          // Build disks and NICs 
           if(vd instanceof VirtualDisk) {
             HashMap<String, Object> disk_hash = get_disk((VirtualDisk) vd, pTables, i); 
             vm_disks.add(disk_hash);
-
           } else if ((vd instanceof VirtualPCNet32) || (vd instanceof VirtualE1000) || (vd instanceof VirtualVmxnet)) {
             HashMap<String, Object> nic_hash = get_nic((VirtualEthernetCard) vd, pTables, i);
             vm_nics.add(nic_hash);
@@ -322,10 +378,12 @@ public class VMwareInventory
         }
         vm.put("disks",vm_disks);
         vm.put("nics",vm_nics);
+        // Add hash representation to object instance
         this.vmMap.put(vms[i].getMOR().get_value().toString(), vm);
       }
     }    
     logger.fine("Exiting VMwareInventory.gatherProperties(ManagedEntity[] vms)");
+    // This result is mainly used for the command-line version to print the results of the API calls made to VMware
     return(vmsList);
   }
 
@@ -355,6 +413,13 @@ public class VMwareInventory
     logger.fine("Exiting VMwareInventory.printVMs()");
   }
 
+  /**
+   * virtualMachines
+   *
+   * Build the Disk hash of properties
+   *
+   * @return List<VirtualMachine> List of virtual machines
+   */
   public List<VirtualMachine>  virtualMachines()
   { 
     logger.fine("Entering virtualMachines()");
@@ -428,7 +493,14 @@ public class VMwareInventory
     }
     logger.fine("Exiting VMwareInventory.gatherCounters()");
   }
-
+  /**
+   * getCounterIds
+   *
+   * Build the Disk hash of properties
+   *
+   * @param  counter_names String[]
+   * @return List<Integer> List of counter IDs
+   */
   private List<Integer> getCounterIds(String[] counter_names)
   {
     logger.fine("Entering VMwareInventory.getCounterIds(String[] counter_names)");
@@ -488,6 +560,9 @@ public class VMwareInventory
   {
     logger.fine("Entering get_disk(VirtualDisk vDisk, Hashtable[] pTables, int i)");
     HashMap<String, Object> disk_hash = new HashMap<String, Object>();
+    if (vDisk == null || pTables == null) {
+      return(disk_hash);
+    }
     disk_hash.put("maximum_size",(vDisk.getCapacityInKB() * VMwareInventory.KB) );
     disk_hash.put("controller_key",vDisk.getControllerKey());
     disk_hash.put("type","Disk");
@@ -594,8 +669,6 @@ public class VMwareInventory
     logger.fine("Exiting parse_nic_ip_address(VirtualEthernetCard vNic, GuestNicInfo[] guestNicInfo)");
     return "Unknown";
   }
-
- 
 
   /**
    * readings
@@ -755,6 +828,7 @@ public class VMwareInventory
     PerfMetricSeries[] vals = pem.getValue();
     PerfSampleInfo[]  infos = pem.getSampleInfo();
     HashMap<String, Object> vm_hash = this.vmMap.get(vm_mor);
+    // Ignore compile warning
     @SuppressWarnings("unchecked")
     HashMap<String, HashMap<String, Long>> metrics = (HashMap<String, HashMap<String, Long>>)vm_hash.get("stats");
     // Prepopulate with all timestamps
@@ -882,23 +956,11 @@ public class VMwareInventory
   {
     logger.fine("Entering VMwareInventory.main()");
     if (args.length != 5) {
-            System.err.println("Usage: VMwareInventory https://10.10.10.10/sdk username password startIso8601 endIso8601");
+            System.err.println("Usage: VMwareInventory https://<vcenter_host>/sdk username password startIso8601 endIso8601");
             System.exit(1);
     }
     VMwareInventory vmware_inventory = new VMwareInventory(args[0],args[1],args[2]);
-    // vmware_inventory.printHosts();
-    // Calendar curTime = vmware_inventory.currentTime();
-    // Calendar startTime = (Calendar) curTime.clone();
-    // startTime.roll(Calendar.HOUR, -5);
-    // System.out.println("start:" + startTime.getTime());
-    // Calendar endTime = (Calendar) curTime.clone();
-    // endTime.roll(Calendar.MINUTE, -5);
-    // System.out.println("end:" + endTime.getTime());
     vmware_inventory.readings(args[3],args[4]);
-    // vmware_inventory.findByUuid("42031956-ae87-8eec-8da2-5a01e55d07e3");
-    // vmware_inventory.findByUuid("xxxxxxxx-ae87-8eec-8da2-5a01e55d07e3");
-    //vmware_inventory.findByUuidWithReadings("4203e384-7067-d2bf-1808-aa414e0eb810",args[3],args[4]);
-    //vmware_inventory.readings("2012-12-12T23:00:00Z","2012-12-12T23:20:00Z");
     vmware_inventory.printVMs();
     System.out.println(vmware_inventory.getAboutInfo().toString());
     System.out.println(vmware_inventory.getStatisticLevels().toString());
