@@ -1,3 +1,11 @@
+require 'java'
+Dir['lib/java/**/*.jar'].each do |jar|
+  $CLASSPATH << jar
+  require jar
+end
+$CLASSPATH << "#{PADRINO_ROOT}/lib/java"
+java_import "com.vmware.vim25.InvalidLogin"
+
 AdaptorVMware.controllers :inodes, :priority => :low do
   before do
     logger.info('inodes#before')
@@ -83,16 +91,18 @@ AdaptorVMware.controllers :inodes, :priority => :low do
     }
 
     begin
-      t = Tempfile.new("diagnostics")
-      diag_file = Tempfile.new("vcenter_diagnostics")
+      logger.info("DIAGNOSTICS.ZIP - #{PADRINO_ROOT}/tmp/diagnostics")
+      t = Tempfile.new("diagnostics", "#{PADRINO_ROOT}/tmp")
+      diag_file = Tempfile.new("vcenter_diagnostics", "#{PADRINO_ROOT}/tmp")
       diag_file.print(diag.to_yaml)
       diag_file.flush
 
-      # file_list = {
-      #   :cron => "/var/log/cron",
-      #   :torquebox => "/var/log/torquebox/torquebox",
-      #   :messages => "/var/log/messages"
-      # }
+      # Unable to zip these due to permissions
+        # :cron => "/var/log/cron",
+        # :messages => "/var/log/messages"
+      file_list = {
+        :torquebox => "/var/log/torquebox/torquebox.log"
+      }
 
       cmd_list = {
         :date => "date -u",
@@ -111,18 +121,21 @@ AdaptorVMware.controllers :inodes, :priority => :low do
         z.print(IO.read(diag_file.path))
 
         # dump available system logs to temp files and store them in the zip
-        # file_list.each do |k, c|
-        #   if File.exists?(c) || File.zero?(c)
-        #     temp = File.open(c)
-        #     z.put_next_entry(k.to_s)
-        #     z.print(IO.read(temp.path))
-        #   end
-        # end
+        file_list.each do |k, c|
+          if File.exists?(c) || File.zero?(c)
+            logger.info('DIAGNOSTICS.ZIP - Adding '+c)
+            temp = File.open(c)
+            z.put_next_entry(k.to_s)
+            z.print(IO.read(temp.path))
+          else
+            logger.info('DIAGNOSTICS.ZIP - Skipping '+c)
+          end
+        end
 
         # dump command output to temp files and store them in the zip
         cmd_list.each do |k, c|
           begin
-            temp = Tempfile.new(k.to_s) 
+            temp = Tempfile.new(k.to_s, "#{PADRINO_ROOT}/tmp")
             temp.print(`#{c}`)
             temp.flush
             z.put_next_entry(k.to_s)
@@ -138,6 +151,14 @@ AdaptorVMware.controllers :inodes, :priority => :low do
       send_file t.path, :type => 'application/zip',
                         :disposition => "attachment",
                         :filename => "diagnostics.zip"
+                           rescue InvalidLogin => e
+
+    rescue InvalidLogin => e
+      raise Exceptions::Forbidden, "Invalid Login" 
+    rescue => e
+      logger.error(e.message)
+      logger.error(e.backtrace)
+      raise Exceptions::Unrecoverable, e.to_s
     ensure
       diag_file.close
       diag_file.unlink
