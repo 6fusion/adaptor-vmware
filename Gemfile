@@ -16,7 +16,7 @@ gem 'json-jruby', require: 'json'
 gem 'jruby-rack'
 gem 'rack'
 
-torquebox_version = "2.2.0"
+torquebox_version = "2.3.0"
 gem 'torquebox-cache', torquebox_version
 gem 'torquebox-messaging', torquebox_version
 gem 'torquebox-rake-support', torquebox_version
