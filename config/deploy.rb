@@ -25,6 +25,7 @@ set :scm, "git"
 set :use_sudo, true
 set :repository, "git@github.com:6fusion/#{application}.git"
 set :branch, ENV['TAG'] || ENV['BRANCH'] || `git branch --no-color 2> /dev/null`.chomp.split("\n").grep(/^[*]/).first[/(\S+)$/, 1]
+set :use_default_branch, ENV['USE_DEFAULT_BRANCH'] || false
 set :deploy_to, "/var/6fusion/#{application}"
 set :deploy_via, :remote_cache
 set :deploy_env, lambda { fetch(:stage) }
@@ -147,8 +148,11 @@ namespace :build do
   task :get_tag, roles: :builder do
     default_tag = `git branch --no-color 2> /dev/null`.chomp.split("\n").grep(/^[*]/).first[/(\S+)$/, 1]
 
-    branch_tag = Capistrano::CLI.ui.ask "Branch/Tag to deploy (make sure to push the branch/tag to origin first) [#{default_tag}]: "
-    branch_tag = default_tag if branch_tag.empty?
+    unless use_default_branch
+      branch_tag = Capistrano::CLI.ui.ask "Branch/Tag to deploy (make sure to push the branch/tag to origin first) [#{default_tag}]: "
+    end
+
+    branch_tag = default_tag if branch_tag.to_s == ''
 
     set :tag, branch_tag
   end
