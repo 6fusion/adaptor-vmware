@@ -2,19 +2,22 @@
  * @author      Geoff Corey <gcorey@6fusion.com>
  * @since       2012-12-09        
  */
+import java.lang.reflect.Type;
+import java.lang.Math;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.rmi.RemoteException;
 import java.util.*;
-import java.lang.Math;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import org.joda.time.format.ISODateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.DateTimeZone;
 import com.vmware.vim25.*;
 import com.vmware.vim25.mo.*;
 import com.vmware.vim25.mo.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class VMwareAdaptor 
 {
@@ -400,24 +403,13 @@ public class VMwareAdaptor
    * Dumps the vmMap to STDOUT 
    *
    */
-  public void printVMs()
+  public String json()
   {   
-    logger.fine("Entering VMwareAdaptor.printVMs()");
-    int i = 0;
-    for (String moref: this.vmMap.keySet()) {
-      i++;
-      String comma = "";
-      System.out.print(moref+" : { ");
-      for (Map.Entry<String,Object> entry : this.vmMap.get(moref).entrySet()) {
-        System.out.println(comma);
-        System.out.print(entry.getKey()+" : "+entry.getValue());
-        comma=",";
-      }
-      System.out.println("");
-      System.out.println("}");
-    }
-    System.out.println("Total # of VMs "+i);
-    logger.fine("Exiting VMwareAdaptor.printVMs()");
+    logger.fine("Entering VMwareAdaptor.json()");
+    Gson gson = new Gson();
+    String json = gson.toJson(this.vmMap);
+    logger.fine("Exiting VMwareAdaptor.json()");
+    return json;
   }
 
   /**
@@ -577,8 +569,12 @@ public class VMwareAdaptor
     disk_hash.put("name",vDisk.getDeviceInfo().getLabel());
     if(vDisk.getBacking() instanceof VirtualDiskFlatVer2BackingInfo){
       VirtualDiskFlatVer2BackingInfo backing = (VirtualDiskFlatVer2BackingInfo) vDisk.getBacking();
+      disk_hash.put("disk_mode",backing.getDiskMode());
+      disk_hash.put("split",backing.getSplit());
+      disk_hash.put("write_through",backing.getWriteThrough());
       disk_hash.put("thin",backing.getThinProvisioned());
       disk_hash.put("uuid",backing.getUuid());     
+      disk_hash.put("file_name",backing.getFileName());
     } else if (vDisk.getBacking() instanceof VirtualDiskRawDiskMappingVer1BackingInfo){
       VirtualDiskRawDiskMappingVer1BackingInfo backing = (VirtualDiskRawDiskMappingVer1BackingInfo) vDisk.getBacking();
       disk_hash.put("device_name",backing.getDeviceName());
@@ -986,13 +982,18 @@ public class VMwareAdaptor
   public static void main(String[] args) throws Exception 
   {
     logger.fine("Entering VMwareAdaptor.main()");
-    if (args.length != 5) {
-            System.err.println("Usage: VMwareAdaptor https://<vcenter_host>/sdk username password startIso8601 endIso8601");
+    if (args.length < 3) {
+            System.err.println("Usage: VMwareAdaptor https://<vcenter_host>/sdk username password <startIso8601> <endIso8601>");
+            System.err.println("       startIso8601/endIso8601 are optional parameters used only to pull metrics");
             System.exit(1);
     }
     VMwareAdaptor vmware_adaptor = new VMwareAdaptor(args[0],args[1],args[2]);
-    vmware_adaptor.readings(args[3],args[4]);
-    vmware_adaptor.printVMs();
+    if (args.length == 5) {
+      vmware_adaptor.readings(args[3],args[4]);
+    } else {
+      vmware_adaptor.gatherVirtualMachines();
+    }
+    System.out.println(vmware_adaptor.json());
     System.out.println(vmware_adaptor.getAboutInfo().toString());
     System.out.println(vmware_adaptor.getStatisticLevels().toString());
     vmware_adaptor.close();
