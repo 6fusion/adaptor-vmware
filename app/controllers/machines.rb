@@ -18,7 +18,7 @@ AdaptorVMware.controllers :machines, :map => "/inodes/:inode_uuid" do
   # Reads
   get :index do
     logger.info('GET - machines#index')
-    @machines = Machine.vm_inventory(@inode).map {|_, vm| Machine.new(vm)}
+    @machines = Machine.vmware_adaptor(@inode).map {|_, vm| Machine.new(vm)}
     render 'machines/index'
   end
 

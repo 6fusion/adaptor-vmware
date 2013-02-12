@@ -1,6 +1,5 @@
 /**
  * @author      Geoff Corey <gcorey@6fusion.com>
- * @version     0.1                 
  * @since       2012-12-09        
  */
 import java.net.MalformedURLException;
@@ -17,9 +16,9 @@ import com.vmware.vim25.mo.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class VMwareInventory 
+public class VMwareAdaptor 
 {
-  private final static Logger logger = Logger.getLogger("VMwareInventory");
+  private final static Logger logger = Logger.getLogger("VMwareAdaptor");
   private ServiceInstance si = null;
   private Folder rootFolder = null;
   // Hash of host-morefID to host hash of attributes / values
@@ -47,7 +46,7 @@ public class VMwareInventory
   public final static String[] EXT_ADMIN_EMAIL = {"support@6fusion.com"};
 
  /**
- * VMwareInventory - API adaptor between VI Java VMWARE API and JRUBY
+ * VMwareAdaptor - API adaptor between VI Java VMWARE API and JRUBY
  *
  * This class is a helper class to gather virtual machine info and
  * metric readings from VMware 4.1/5.0/5.1 vSphere
@@ -60,7 +59,7 @@ public class VMwareInventory
  * @param  username String vCenter username
  * @param  password String vCenter password
  */
-  public VMwareInventory(String url, String username, String password ) throws Exception
+  public VMwareAdaptor(String url, String username, String password ) throws Exception
   {
     ServiceInstance si = new ServiceInstance(new URL(url), username, password, true);
     this.si = si;
@@ -94,26 +93,26 @@ public class VMwareInventory
     DateTimeFormatter parser2 = ISODateTimeFormat.dateTimeNoMillis();
     Calendar lastHeartbeatTime = (Calendar) Calendar.getInstance(TimeZone.getTimeZone("GMT")).clone();
     lastHeartbeatTime.setTime(parser2.parseDateTime("2012-12-21T00:00:00Z").toDate());
-    extension.setKey(VMwareInventory.EXT_KEY);
-    extension.setCompany(VMwareInventory.EXT_COMPANY);
-    extension.setType(VMwareInventory.EXT_TYPE);
-    extension.setVersion(VMwareInventory.EXT_VERSION);
+    extension.setKey(VMwareAdaptor.EXT_KEY);
+    extension.setCompany(VMwareAdaptor.EXT_COMPANY);
+    extension.setType(VMwareAdaptor.EXT_TYPE);
+    extension.setVersion(VMwareAdaptor.EXT_VERSION);
     extension.setLastHeartbeatTime(lastHeartbeatTime);
-    description.setLabel(VMwareInventory.EXT_LABEL);
-    description.setSummary(VMwareInventory.EXT_LABEL);
+    description.setLabel(VMwareAdaptor.EXT_LABEL);
+    description.setSummary(VMwareAdaptor.EXT_LABEL);
     extension.setDescription(description);
     serverInfo.setUrl(url);
     serverInfo.setDescription(description);
-    serverInfo.setCompany(VMwareInventory.EXT_COMPANY);
-    serverInfo.setType(VMwareInventory.EXT_TYPE);
-    serverInfo.setAdminEmail(VMwareInventory.EXT_ADMIN_EMAIL);
-    this.getExtensionManager().unregisterExtension(VMwareInventory.EXT_KEY);
+    serverInfo.setCompany(VMwareAdaptor.EXT_COMPANY);
+    serverInfo.setType(VMwareAdaptor.EXT_TYPE);
+    serverInfo.setAdminEmail(VMwareAdaptor.EXT_ADMIN_EMAIL);
+    this.getExtensionManager().unregisterExtension(VMwareAdaptor.EXT_KEY);
     this.getExtensionManager().registerExtension(extension);
   }
 
   public HashMap<String, String>  getAboutInfo() throws Exception
   {
-    logger.fine("Entering VMwareInventory.getAboutInfo()");
+    logger.fine("Entering VMwareAdaptor.getAboutInfo()");
     AboutInfo about = this.si.getAboutInfo();
     HashMap<String, String> props = new HashMap<String, String>();
     props.put("name",about.getName());
@@ -135,13 +134,13 @@ public class VMwareInventory
       DynamicProperty dynamicProperty = about.getDynamicProperty()[i];
       props.put(dynamicProperty.getName(),dynamicProperty.getVal().toString());
     }
-    logger.fine("Exiting VMwareInventory.getAboutInfo()");
+    logger.fine("Exiting VMwareAdaptor.getAboutInfo()");
     return props;
   }
 
   public List<HashMap<String, String>>  getStatisticLevels() throws Exception
   {
-    logger.fine("Entering VMwareInventory.getStatisticLevels()");
+    logger.fine("Entering VMwareAdaptor.getStatisticLevels()");
     PerformanceManager perfMgr = this.si.getPerformanceManager();
     PerfInterval[] perfIntervals = perfMgr.getHistoricalInterval();
     ArrayList<HashMap<String, String>> stats = new ArrayList<HashMap<String, String>>();
@@ -156,7 +155,7 @@ public class VMwareInventory
       props.put("enabled",Boolean.toString(interval.isEnabled()));
       stats.add(props);
     }
-    logger.fine("Exiting VMwareInventory.getStatisticLevels()");
+    logger.fine("Exiting VMwareAdaptor.getStatisticLevels()");
     return stats;
   }
 
@@ -171,7 +170,7 @@ public class VMwareInventory
    */
   public HashMap<String, Object> findByUuid(String uuid) throws Exception
   {
-    logger.fine("Entering VMwareInventory.findByUuid(String uuid)");
+    logger.fine("Entering VMwareAdaptor.findByUuid(String uuid)");
     VirtualMachine[] vms = new VirtualMachine[1];
     VirtualMachine vm = (VirtualMachine) this.si.getSearchIndex().findByUuid(null,uuid,true,false);
     if (vm == null) {
@@ -180,7 +179,7 @@ public class VMwareInventory
     }
     vms[0] = vm;
     gatherProperties(vms);
-    logger.fine("Exiting VMwareInventory.findByUuid(String uuid)");
+    logger.fine("Exiting VMwareAdaptor.findByUuid(String uuid)");
     return vmMap.get(vm.getMOR().get_value().toString());
   }
 
@@ -197,7 +196,7 @@ public class VMwareInventory
    */
   public HashMap<String, Object>  findByUuidWithReadings(String uuid, String startIso8601, String endIso8601) throws Exception
   {
-    logger.fine("Entering VMwareInventory.findByUuidWithReadings()");
+    logger.fine("Entering VMwareAdaptor.findByUuidWithReadings()");
     VirtualMachine[] vms = new VirtualMachine[1];
     VirtualMachine vm = (VirtualMachine) this.si.getSearchIndex().findByUuid(null,uuid,true,false);
     DateTimeFormatter parser2 = ISODateTimeFormat.dateTimeNoMillis();
@@ -213,7 +212,7 @@ public class VMwareInventory
     gatherProperties(vms);
     List<VirtualMachine> vms_list = new ArrayList<VirtualMachine>(Arrays.asList(vms));
     readings(vms_list,startTime,endTime);
-    logger.fine("Exiting VMwareInventory.findByUuidWithReadings()");
+    logger.fine("Exiting VMwareAdaptor.findByUuidWithReadings()");
     return vmMap.get(vm.getMOR().get_value().toString());
   }
 
@@ -271,10 +270,10 @@ public class VMwareInventory
    */
   public List<VirtualMachine>  gatherVirtualMachines() throws Exception
   {
-    logger.fine("Entering VMwareInventory.gatherVirtualMachines()");
+    logger.fine("Entering VMwareAdaptor.gatherVirtualMachines()");
     Folder rootFolder = this.si.getRootFolder();
     ManagedEntity[] vms = new InventoryNavigator(rootFolder).searchManagedEntities("VirtualMachine");
-    logger.fine("Exiting VMwareInventory.gatherVirtualMachines()");
+    logger.fine("Exiting VMwareAdaptor.gatherVirtualMachines()");
     return(gatherProperties(vms));
   }
 
@@ -286,7 +285,7 @@ public class VMwareInventory
    */
   private List<VirtualMachine> gatherProperties(ManagedEntity[] vms) throws Exception
   {
-    logger.fine("Entering VMwareInventory.gatherProperties(ManagedEntity[] vms)");
+    logger.fine("Entering VMwareAdaptor.gatherProperties(ManagedEntity[] vms)");
     // vmsList is the result being returned
     List<VirtualMachine> vmsList = new ArrayList<VirtualMachine>(); 
 
@@ -390,7 +389,7 @@ public class VMwareInventory
         this.vmMap.put(vms[i].getMOR().get_value().toString(), vm);
       }
     }    
-    logger.fine("Exiting VMwareInventory.gatherProperties(ManagedEntity[] vms)");
+    logger.fine("Exiting VMwareAdaptor.gatherProperties(ManagedEntity[] vms)");
     // This result is mainly used for the command-line version to print the results of the API calls made to VMware
     return(vmsList);
   }
@@ -403,7 +402,7 @@ public class VMwareInventory
    */
   public void printVMs()
   {   
-    logger.fine("Entering VMwareInventory.printVMs()");
+    logger.fine("Entering VMwareAdaptor.printVMs()");
     int i = 0;
     for (String moref: this.vmMap.keySet()) {
       i++;
@@ -418,7 +417,7 @@ public class VMwareInventory
       System.out.println("}");
     }
     System.out.println("Total # of VMs "+i);
-    logger.fine("Exiting VMwareInventory.printVMs()");
+    logger.fine("Exiting VMwareAdaptor.printVMs()");
   }
 
   /**
@@ -436,7 +435,7 @@ public class VMwareInventory
     for (String moref: this.vmMap.keySet()) {
         vms.add((VirtualMachine)this.vmMap.get(moref).get("vm"));
     }
-    logger.fine("Exiting VMwareInventory.virtualMachines()");
+    logger.fine("Exiting VMwareAdaptor.virtualMachines()");
     return vms;
   }
 
@@ -448,13 +447,13 @@ public class VMwareInventory
    */
   public void printHosts()
   {
-    logger.fine("Entering VMwareInventory.printHosts()");
+    logger.fine("Entering VMwareAdaptor.printHosts()");
     for (String moref: this.hostMap.keySet()) {
       for (Map.Entry<String,Object> entry : this.hostMap.get(moref).entrySet()) {
         System.out.println(moref+" "+entry.getKey()+" "+entry.getValue());
       }
     }
-    logger.fine("Exiting VMwareInventory.printHosts()");
+    logger.fine("Exiting VMwareAdaptor.printHosts()");
   }
 
   /**
@@ -467,11 +466,11 @@ public class VMwareInventory
    */
   private long get_host_hz(ManagedObjectReference host_mor)
   {
-    logger.fine("Entering VMwareInventory.get_host_hz(ManagedObjectReference host_mor)");
+    logger.fine("Entering VMwareAdaptor.get_host_hz(ManagedObjectReference host_mor)");
     String host_key = host_mor.get_value().toString();
     HashMap<String, Object> host_hash = this.hostMap.get(host_key);
     Long hz = (Long) host_hash.get("hz");
-    logger.fine("Exiting VMwareInventory.get_host_hz(ManagedObjectReference host_mor))");
+    logger.fine("Exiting VMwareAdaptor.get_host_hz(ManagedObjectReference host_mor))");
     return hz;
   }
   /**
@@ -483,7 +482,7 @@ public class VMwareInventory
    */
   private void gatherCounters() throws Exception
   {
-    logger.fine("Entering VMwareInventory.gatherCounters()");
+    logger.fine("Entering VMwareAdaptor.gatherCounters()");
     PerformanceManager perfMgr = this.si.getPerformanceManager();
     PerfCounterInfo[] pcis = perfMgr.getPerfCounter();
     for(int i=0; pcis!=null && i<pcis.length; i++)
@@ -499,7 +498,7 @@ public class VMwareInventory
       this.counterMap.put(perfCounter, (Integer) pcis[i].getKey());
       this.counterIdMap.put((Integer) pcis[i].getKey(), perfCounter);
     }
-    logger.fine("Exiting VMwareInventory.gatherCounters()");
+    logger.fine("Exiting VMwareAdaptor.gatherCounters()");
   }
   /**
    * getCounterIds
@@ -511,7 +510,7 @@ public class VMwareInventory
    */
   private List<Integer> getCounterIds(String[] counter_names)
   {
-    logger.fine("Entering VMwareInventory.getCounterIds(String[] counter_names)");
+    logger.fine("Entering VMwareAdaptor.getCounterIds(String[] counter_names)");
     List<Integer> result = new ArrayList<Integer>();
     for ( int i=0; i < counter_names.length; i++)
     {
@@ -521,7 +520,7 @@ public class VMwareInventory
         result.add(counterId);
       }
     }
-    logger.fine("Exiting VMwareInventory.getCounterIds(String[] counter_names)");
+    logger.fine("Exiting VMwareAdaptor.getCounterIds(String[] counter_names)");
     return result;
   }
 
@@ -534,7 +533,7 @@ public class VMwareInventory
    */
   private void gatherHosts() throws Exception
   {
-    logger.fine("Entering VMwareInventory.gatherHosts()");
+    logger.fine("Entering VMwareAdaptor.gatherHosts()");
     Folder rootFolder = this.si.getRootFolder();
     ManagedEntity[] hosts = new InventoryNavigator(rootFolder).searchManagedEntities(
                     new String[][] { {"HostSystem", "name"}, }, true);
@@ -552,7 +551,7 @@ public class VMwareInventory
       this.hostMap.put(hosts[i].getMOR().get_value().toString(), host);
       logger.fine("host key is "+hosts[i].getMOR().get_value().toString());
     }
-    logger.fine("Exiting VMwareInventory.gatherHosts()");
+    logger.fine("Exiting VMwareAdaptor.gatherHosts()");
   }
   /**
    * get_disk
@@ -571,16 +570,40 @@ public class VMwareInventory
     if (vDisk == null || pTables == null) {
       return(disk_hash);
     }
-    disk_hash.put("maximum_size",(vDisk.getCapacityInKB() * VMwareInventory.KB) );
+    disk_hash.put("maximum_size",(vDisk.getCapacityInKB() * VMwareAdaptor.KB) );
     disk_hash.put("controller_key",vDisk.getControllerKey());
     disk_hash.put("type","Disk");
     disk_hash.put("unit_number",vDisk.getUnitNumber());
     disk_hash.put("name",vDisk.getDeviceInfo().getLabel());
     if(vDisk.getBacking() instanceof VirtualDiskFlatVer2BackingInfo){
-      VirtualDiskFlatVer2BackingInfo rdmBaking = (VirtualDiskFlatVer2BackingInfo) vDisk.getBacking();
-      disk_hash.put("thin",rdmBaking.getThinProvisioned());
-      disk_hash.put("uuid",rdmBaking.getUuid());     
-    } 
+      VirtualDiskFlatVer2BackingInfo backing = (VirtualDiskFlatVer2BackingInfo) vDisk.getBacking();
+      disk_hash.put("thin",backing.getThinProvisioned());
+      disk_hash.put("uuid",backing.getUuid());     
+    } else if (vDisk.getBacking() instanceof VirtualDiskRawDiskMappingVer1BackingInfo){
+      VirtualDiskRawDiskMappingVer1BackingInfo backing = (VirtualDiskRawDiskMappingVer1BackingInfo) vDisk.getBacking();
+      disk_hash.put("device_name",backing.getDeviceName());
+      disk_hash.put("lun_uuid",backing.getLunUuid());     
+      disk_hash.put("uuid",backing.getUuid());     
+    } else if (vDisk.getBacking() instanceof VirtualDiskRawDiskVer2BackingInfo){
+      VirtualDiskRawDiskVer2BackingInfo backing = (VirtualDiskRawDiskVer2BackingInfo) vDisk.getBacking();
+      disk_hash.put("descriptive_file_name",backing.getDescriptorFileName());
+      disk_hash.put("uuid",backing.getUuid());     
+    } else if (vDisk.getBacking() instanceof VirtualDiskSparseVer2BackingInfo){
+      VirtualDiskSparseVer2BackingInfo backing = (VirtualDiskSparseVer2BackingInfo) vDisk.getBacking();
+      disk_hash.put("disk_mode",backing.getDiskMode());
+      disk_hash.put("split",backing.getSplit());
+      disk_hash.put("write_through",backing.getWriteThrough());
+      disk_hash.put("space_used_in_kb",backing.getSpaceUsedInKB());
+      disk_hash.put("uuid",backing.getUuid());     
+    } else if (vDisk.getBacking() instanceof VirtualDiskSeSparseBackingInfo){
+      VirtualDiskSeSparseBackingInfo backing = (VirtualDiskSeSparseBackingInfo) vDisk.getBacking();
+      disk_hash.put("disk_mode",backing.getDiskMode());
+      disk_hash.put("write_through",backing.getWriteThrough());
+      disk_hash.put("uuid",backing.getUuid());     
+      disk_hash.put("delta_disk_format",backing.getDeltaDiskFormat());
+      disk_hash.put("digest_enabled",backing.getDigestEnabled());
+      disk_hash.put("grain_size",backing.getGrainSize());
+    }
     disk_hash.put("key",vDisk.getKey());
     // Determine disk usage.  Usage is not considered a metric in VMware.
     long usage = 0;
@@ -635,7 +658,7 @@ public class VMwareInventory
    */
   private HashMap<String, Object> get_nic(VirtualEthernetCard vNic, Hashtable[] pTables, int i)
   {
-    logger.fine("Entering VMwareInventory.get_nic(VirtualEthernetCard vNic, Hashtable[] pTables, int i)");
+    logger.fine("Entering VMwareAdaptor.get_nic(VirtualEthernetCard vNic, Hashtable[] pTables, int i)");
     HashMap<String, Object> nic_hash = new HashMap<String, Object>();
     nic_hash.put("mac_address",vNic.getMacAddress());
     nic_hash.put("name",vNic.getDeviceInfo().getLabel());
@@ -646,7 +669,7 @@ public class VMwareInventory
       String ip_address = parse_nic_ip_address(vNic, guestNicInfo);
       nic_hash.put("ip_address", ip_address);     
     }
-    logger.fine("Exiting VMwareInventory.get_nic(VirtualEthernetCard vNic, Hashtable[] pTables, int i)");
+    logger.fine("Exiting VMwareAdaptor.get_nic(VirtualEthernetCard vNic, Hashtable[] pTables, int i)");
     return nic_hash;
   }
 
@@ -663,12 +686,12 @@ public class VMwareInventory
    */
   private String parse_nic_ip_address(VirtualEthernetCard vNic, GuestNicInfo[] guestNicInfo)
   {
-    logger.fine("Entering VMwareInventory.parse_nic_ip_address(VirtualEthernetCard vNic, GuestNicInfo[] guestNicInfo)");
+    logger.fine("Entering VMwareAdaptor.parse_nic_ip_address(VirtualEthernetCard vNic, GuestNicInfo[] guestNicInfo)");
     for(int j=0; j < guestNicInfo.length; j++) {
       if (guestNicInfo[j].getDeviceConfigId() == vNic.getKey()) {
         if (guestNicInfo[j] != null) {
           if (guestNicInfo[j].getIpAddress() != null)  {
-            logger.fine("Exiting VMwareInventory.parse_nic_ip_address(VirtualEthernetCard vNic, GuestNicInfo[] guestNicInfo)");
+            logger.fine("Exiting VMwareAdaptor.parse_nic_ip_address(VirtualEthernetCard vNic, GuestNicInfo[] guestNicInfo)");
             return(guestNicInfo[j].getIpAddress()[0]);
           }
         }
@@ -688,7 +711,7 @@ public class VMwareInventory
    */
   public void readings(String startIso8601, String endIso8601) throws Exception
   {
-    logger.fine("Entering VMwareInventory.readings(String startIso8601, String endIso8601)");
+    logger.fine("Entering VMwareAdaptor.readings(String startIso8601, String endIso8601)");
     DateTimeFormatter parser2 = ISODateTimeFormat.dateTimeNoMillis();
     logger.info(startIso8601+" "+endIso8601);
     Calendar startTime = (Calendar) Calendar.getInstance(TimeZone.getTimeZone("GMT")).clone();
@@ -696,7 +719,7 @@ public class VMwareInventory
     startTime.setTime(parser2.parseDateTime(startIso8601).toDate());
     endTime.setTime(parser2.parseDateTime(endIso8601).toDate());
     readings(startTime,endTime);
-    logger.fine("Exiting VMwareInventory.readings(String startIso8601, String endIso8601)");
+    logger.fine("Exiting VMwareAdaptor.readings(String startIso8601, String endIso8601)");
   }
 
   /**
@@ -709,10 +732,10 @@ public class VMwareInventory
    */
   public void readings(Calendar startTime, Calendar endTime) throws Exception
   {
-    logger.fine("Entering VMwareInventory.readings(Calendar startTime, Calendar endTime)");
+    logger.fine("Entering VMwareAdaptor.readings(Calendar startTime, Calendar endTime)");
     List<VirtualMachine> vms = gatherVirtualMachines();
     readings(vms,startTime, endTime);
-    logger.fine("Exiting VMwareInventory.readings(Calendar startTime, Calendar endTime)");
+    logger.fine("Exiting VMwareAdaptor.readings(Calendar startTime, Calendar endTime)");
   }
 
   /**
@@ -726,7 +749,7 @@ public class VMwareInventory
    */
   public void readings(List<VirtualMachine> vms, Calendar startTime, Calendar endTime) throws Exception
   {
-    logger.fine("Entering VMwareInventory.readings(List<VirtualMachine> vms, Calendar startTime, Calendar endTime)");
+    logger.fine("Entering VMwareAdaptor.readings(List<VirtualMachine> vms, Calendar startTime, Calendar endTime)");
 
     gatherCounters();
     PerfMetricId cpu_usage = new PerfMetricId();
@@ -811,13 +834,13 @@ public class VMwareInventory
       }
     }
     logger.info("Finished parsing metrics");
-    logger.fine("Exiting VMwareInventory.readings(String startIso8601, String endIso8601)");
+    logger.fine("Exiting VMwareAdaptor.readings(String startIso8601, String endIso8601)");
   }
 
   // Gather all timestamps pulled for the metrics
   private void parseValidTimestamps(PerfEntityMetric pem)
   {
-    logger.fine("Entering VMwareInventory.readings(String startIso8601, String endIso8601)");
+    logger.fine("Entering VMwareAdaptor.readings(String startIso8601, String endIso8601)");
     PerfSampleInfo[]  infos = pem.getSampleInfo();
     for(int i=0; infos!=null && i<infos.length; i++) {
       DateTimeFormatter fmt = ISODateTimeFormat.dateTimeNoMillis();
@@ -825,14 +848,14 @@ public class VMwareInventory
       this.tsSet.add(timestamp);
       logger.finer("parseValidTimestmaps() found "+timestamp);
     }
-    logger.fine("Exiting VMwareInventory.readings(List<VirtualMachine> vms, Calendar startTime, Calendar endTime)");
+    logger.fine("Exiting VMwareAdaptor.readings(List<VirtualMachine> vms, Calendar startTime, Calendar endTime)");
   
   }
 
   // This does one virtual machine parsing of metrics
   private HashMap<String, HashMap<String, Long>> parsePerfMetricForVM(String vm_mor, PerfEntityMetric pem)
   {
-    logger.fine("Entering VMwareInventory.parsePerfMetricForVM(String vm_mor, PerfEntityMetric pem)");
+    logger.fine("Entering VMwareAdaptor.parsePerfMetricForVM(String vm_mor, PerfEntityMetric pem)");
     PerfMetricSeries[] vals = pem.getValue();
     PerfSampleInfo[]  infos = pem.getSampleInfo();
     HashMap<String, Object> vm_hash = this.vmMap.get(vm_mor);
@@ -864,13 +887,13 @@ public class VMwareInventory
         } 
       }
     }
-    logger.fine("Exiting VMwareInventory.parsePerfMetricForVM(String vm_mor, PerfEntityMetric pem)");
+    logger.fine("Exiting VMwareAdaptor.parsePerfMetricForVM(String vm_mor, PerfEntityMetric pem)");
     return(metrics);
   }
 
   private void printMachineReading(String vm_mor,  HashMap<String, HashMap<String, Long>> metrics)
   {
-    logger.fine("Entering VMwareInventory.printMachineReading(String vm_mor,  HashMap<String, HashMap<String, Long>> metrics)");
+    logger.fine("Entering VMwareAdaptor.printMachineReading(String vm_mor,  HashMap<String, HashMap<String, Long>> metrics)");
     HashMap<String, Object> machine_reading = new HashMap<String, Object>();
     System.out.println(vm_mor);
     for (String date: metrics.keySet()) {
@@ -879,12 +902,12 @@ public class VMwareInventory
         System.out.println(date+" "+name+" "+metric.get(name) );
       }
     }
-    logger.fine("Exiting VMwareInventory.printMachineReading(String vm_mor,  HashMap<String, HashMap<String, Long>> metrics)");
+    logger.fine("Exiting VMwareAdaptor.printMachineReading(String vm_mor,  HashMap<String, HashMap<String, Long>> metrics)");
   }
 
   private void printPerfMetric(PerfEntityMetricBase val)
   {
-    logger.fine("Entering VMwareInventory.printPerfMetric(PerfEntityMetricBase val)");
+    logger.fine("Entering VMwareAdaptor.printPerfMetric(PerfEntityMetricBase val)");
     String entityDesc = val.getEntity().getType() + ":" + val.getEntity().get_value();
     System.out.println("Entity:" + entityDesc);
     if(val instanceof PerfEntityMetric)
@@ -899,12 +922,12 @@ public class VMwareInventory
     {
       logger.severe("UnExpected sub-type of PerfEntityMetricBase.");
     }
-    logger.fine("Exiting VMwareInventory.printPerfMetric(PerfEntityMetricBase val)");
+    logger.fine("Exiting VMwareAdaptor.printPerfMetric(PerfEntityMetricBase val)");
   }
 
   private void printPerfMetric(PerfEntityMetric pem)
   {
-    logger.fine("Entering VMwareInventory.printPerfMetricCSV(PerfEntityMetricCSV pems)");
+    logger.fine("Entering VMwareAdaptor.printPerfMetricCSV(PerfEntityMetricCSV pems)");
     PerfMetricSeries[] vals = pem.getValue();
     PerfSampleInfo[]  infos = pem.getSampleInfo();
 
@@ -939,12 +962,12 @@ public class VMwareInventory
         System.out.println("CSV value:" + val.getValue());
       }
     }
-    logger.fine("Exiting VMwareInventory.printPerfMetricCSV(PerfEntityMetricCSV pems)");
+    logger.fine("Exiting VMwareAdaptor.printPerfMetricCSV(PerfEntityMetricCSV pems)");
   }
 
   private void printPerfMetricCSV(PerfEntityMetricCSV pems)
   {
-    logger.fine("Entering VMwareInventory.printPerfMetricCSV(PerfEntityMetricCSV pems)");
+    logger.fine("Entering VMwareAdaptor.printPerfMetricCSV(PerfEntityMetricCSV pems)");
       System.out.println("SampleInfoCSV:"+ pems.getSampleInfoCSV());
       PerfMetricSeriesCSV[] csvs = pems.getValue();
       for(int i=0; i<csvs.length; i++)
@@ -952,7 +975,7 @@ public class VMwareInventory
         System.out.println("PerfCounterId:"+ csvs[i].getId().getCounterId());
         System.out.println("CSV sample values:"+ csvs[i].getValue());
       }
-    logger.fine("Exiting VMwareInventory.printPerfMetricCSV(PerfEntityMetricCSV pems)");
+    logger.fine("Exiting VMwareAdaptor.printPerfMetricCSV(PerfEntityMetricCSV pems)");
   }
   /**
    * main
@@ -962,18 +985,18 @@ public class VMwareInventory
    */
   public static void main(String[] args) throws Exception 
   {
-    logger.fine("Entering VMwareInventory.main()");
+    logger.fine("Entering VMwareAdaptor.main()");
     if (args.length != 5) {
-            System.err.println("Usage: VMwareInventory https://<vcenter_host>/sdk username password startIso8601 endIso8601");
+            System.err.println("Usage: VMwareAdaptor https://<vcenter_host>/sdk username password startIso8601 endIso8601");
             System.exit(1);
     }
-    VMwareInventory vmware_inventory = new VMwareInventory(args[0],args[1],args[2]);
-    vmware_inventory.readings(args[3],args[4]);
-    vmware_inventory.printVMs();
-    System.out.println(vmware_inventory.getAboutInfo().toString());
-    System.out.println(vmware_inventory.getStatisticLevels().toString());
-    vmware_inventory.close();
-    logger.fine("Exiting VMwareInventory.main()");
+    VMwareAdaptor vmware_adaptor = new VMwareAdaptor(args[0],args[1],args[2]);
+    vmware_adaptor.readings(args[3],args[4]);
+    vmware_adaptor.printVMs();
+    System.out.println(vmware_adaptor.getAboutInfo().toString());
+    System.out.println(vmware_adaptor.getStatisticLevels().toString());
+    vmware_adaptor.close();
+    logger.fine("Exiting VMwareAdaptor.main()");
   }
 }
 

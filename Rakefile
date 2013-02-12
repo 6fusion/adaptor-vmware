@@ -3,13 +3,13 @@ rule ".class" => [".java"] do |t|
   sh "javac -cp ./lib/java:#{jars} -Xlint #{t.source}"
 end
 
-task :default => "lib/java/VMwareInventory.class"
+task :default => "lib/java/VMwareAdaptor.class"
 
-task :server => "lib/java/VMwareInventory.class" do
+task :server => "lib/java/VMwareAdaptor.class" do
   sh "trinidad -e development -r config.ru"
 end
 
-task :console => "lib/java/VMwareInventory.class" do
+task :console => "lib/java/VMwareAdaptor.class" do
   sh "padrino console"
 end
 
