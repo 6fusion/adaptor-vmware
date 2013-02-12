@@ -72,9 +72,10 @@ after("deploy") do
   run "#{sudo} chmod 0755 #{shared_path}/dead_letters"
   run "#{sudo} chown -R torquebox:torquebox #{shared_path}/dead_letters"
 
-  # Set torquebox as the owner of the shared and current paths
-  run "#{sudo} chown -R torquebox:torquebox #{shared_path}/*"
-  run "#{sudo} chown -R torquebox:torquebox #{current_path}/*"
+  # Setup the tmp directory
+  run "#{sudo} mkdir -p #{current_path}/tmp"
+  run "#{sudo} chmod 0755 #{current_path}/tmp"
+  run "#{sudo} chown -R torquebox:torquebox #{current_path}/tmp"
   
   # compile any java resources
   run "cd #{current_path} && #{sudo} rake"
