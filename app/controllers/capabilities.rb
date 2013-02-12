@@ -5,7 +5,7 @@ AdaptorVMware.controllers :capabilities, :map => "/inodes/:inode_uuid" do
     @inode = INode.find_by_uuid(params[:inode_uuid])
   end
 
-   get :index do
+   get :index, "/inodes/:inode_uuid/capabilities" do
     logger.info('GET - capabilities#index')
     @capabilities = Capability.all(@inode)
 

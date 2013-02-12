@@ -1,4 +1,3 @@
-set :password, ENV['PASSWORD'] if ENV['PASSWORD']
 set :deploy_env, "production"
 set :context_path, "/vmware"
 

@@ -25,7 +25,6 @@ set :scm, "git"
 set :use_sudo, true
 set :repository, "git@github.com:6fusion/#{application}.git"
 set :branch, ENV['TAG'] || ENV['BRANCH'] || `git branch --no-color 2> /dev/null`.chomp.split("\n").grep(/^[*]/).first[/(\S+)$/, 1]
-set :use_default_branch, ENV['USE_DEFAULT_BRANCH'] || false
 set :deploy_to, "/var/6fusion/#{application}"
 set :deploy_via, :remote_cache
 set :deploy_env, lambda { fetch(:stage) }
@@ -34,6 +33,8 @@ set :keep_releases, 2
 set :tail_logs_location, "#{shared_path}/log/#{application}.log"
 set :context_path, ""
 set :hipchat_alert, true
+set :use_default_branch, ENV['USE_DEFAULT_BRANCH'] || false
+set :password, ENV['PASSWORD'] if ENV['PASSWORD']
 
 # Adaptor-VMware Specifics
 set :ssh_port, 22
@@ -71,9 +72,10 @@ after("deploy") do
   run "#{sudo} chmod 0755 #{shared_path}/dead_letters"
   run "#{sudo} chown -R torquebox:torquebox #{shared_path}/dead_letters"
 
-  # Set torquebox as the owner of the shared and current paths
-  run "#{sudo} chown -R torquebox:torquebox #{shared_path}/*"
-  run "#{sudo} chown -R torquebox:torquebox #{current_path}/*"
+  # Setup the tmp directory
+  run "#{sudo} mkdir -p #{current_path}/tmp"
+  run "#{sudo} chmod 0755 #{current_path}/tmp"
+  run "#{sudo} chown -R torquebox:torquebox #{current_path}/tmp"
   
   # compile any java resources
   run "cd #{current_path} && #{sudo} rake"
@@ -100,8 +102,8 @@ namespace :verify do
   task :rules, roles: :app do
     next if stage == :development
 
-    if tag == "development"
-      puts "Skipping verification since you are deploying development."
+    if tag == "master"
+      puts "Skipping verification since you are deploying master."
       next
     end
 
@@ -116,34 +118,34 @@ namespace :verify do
       next
     end
 
-    if deployed_branch == "development"
-      puts "Skipping verification since development is currently deployed."
+    if deployed_branch == "master"
+      puts "Skipping verification since master is currently deployed."
       next
     end
 
     puts "Updating local commit logs to check the status of the found commit."
     `git fetch origin`
 
-    puts "Looking at development branch to determine if commit exists."
+    puts "Looking at master branch to determine if commit exists."
     branches = `git branch -r --contains #{deployed_branch}`.split(/\r\n|\n/).map { |branch| branch.strip! }
 
-    unless branches.include?('origin/development') || branches.include?("origin/#{tag}")
-      action_requested = Capistrano::CLI.ui.ask "If you continue deploying this branch you will be overwriting someone else's work.  Would you like to [c]ontinue, [s]top, or [r]eset the environment back to development? [stop]: "
+    unless branches.include?('origin/master') || branches.include?("origin/#{tag}")
+      action_requested = Capistrano::CLI.ui.ask "If you continue deploying this branch you will be overwriting someone else's work.  Would you like to [c]ontinue, [s]top, or [r]eset the environment back to master? [stop]: "
 
       case action_requested.to_s
       when "c"
         puts "Overriding default rules and deploying your branch, you evil evil coder.  You were warned!"
         next
       when "r"
-        puts "Reseting the environment to development."
-        set :tag, "development"
+        puts "Reseting the environment to master."
+        set :tag, "master"
       else
         puts "Aborting deploy..."
         abort = true
       end
     end
 
-    abort "Since #{deployed_branch} is currently deployed to #{rails_env}.  Please either merge #{deployed_branch} to development OR re-deploy either #{deployed_branch} or development branch to this environment." unless branches.include?('origin/development') || branches.include?("origin/#{tag}") if abort
+    abort "Since #{deployed_branch} is currently deployed to #{rails_env}.  Please either merge #{deployed_branch} to master OR re-deploy either #{deployed_branch} or master branch to this environment." unless branches.include?('origin/master') || branches.include?("origin/#{tag}") if abort
     puts "All rules have passed, continuing with deployment."
   end
 end
