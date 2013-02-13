@@ -51,7 +51,7 @@ class Machine < Base::Machine
       logger.error(e.backtrace)
       raise Exceptions::Unrecoverable, e.to_s
     ensure
-      inode.close_vmware_adaptor(vmware_adaptor)
+      inode.close_connection
     end
   end
   add_method_tracer :create_from_ovf
@@ -68,7 +68,7 @@ class Machine < Base::Machine
       logger.error(e.backtrace)
       raise Exceptions::Unrecoverable, e.to_s
     ensure
-      inode.close_vmware_adaptor(vmware_adaptor)
+      inode.close_connection
     end
   end
 
@@ -100,7 +100,7 @@ class Machine < Base::Machine
       logger.error(e.backtrace)
       raise Exceptions::Unrecoverable, e.to_s
     ensure
-      inode.close_vmware_adaptor(vmware_adaptor)
+      inode.close_connection
     end
   end
 
@@ -120,7 +120,7 @@ class Machine < Base::Machine
       logger.error(e.backtrace)
       raise Exceptions::Unrecoverable, e.to_s
     ensure
-      inode.close_vmware_adaptor(vmware_adaptor)
+      inode.close_connection
     end
   end
  
@@ -145,7 +145,7 @@ class Machine < Base::Machine
       logger.error(e.backtrace)
       raise Exceptions::Unrecoverable, e.to_s
     ensure
-      inode.close_vmware_adaptor(vmware_adaptor)
+      inode.close_connection
     end
   end
 

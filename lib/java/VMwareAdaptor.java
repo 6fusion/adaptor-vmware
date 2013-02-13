@@ -302,7 +302,7 @@ public class VMwareAdaptor
     gatherHosts();
 
     // Retrieve properties from VMware on the virtual machines
-    logger.info("Starting PropertyCollectorUtil.retrieveProperties");
+    logger.fine("Starting PropertyCollectorUtil.retrieveProperties");
     Hashtable[] pTables = PropertyCollectorUtil.retrieveProperties(vms, "VirtualMachine",
             new String[] {"name",
             "config.hardware.device",
@@ -317,7 +317,7 @@ public class VMwareAdaptor
             "runtime.host",
             "config.hardware.memoryMB",
             "config.hardware.numCPU"});
-    logger.info("Finished PropertyCollectorUtil.retrieveProperties");
+    logger.fine("Finished PropertyCollectorUtil.retrieveProperties");
 
     // Make sure we got a valid result from VMware
     if (pTables == null) 
