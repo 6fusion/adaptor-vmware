@@ -2,6 +2,8 @@
  * @author      Geoff Corey <gcorey@6fusion.com>
  * @since       2012-12-09        
  */
+package com.sixfusion;
+
 import java.lang.reflect.Type;
 import java.lang.Math;
 import java.net.MalformedURLException;

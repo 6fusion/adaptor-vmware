@@ -5,7 +5,7 @@ Dir['lib/java/**/*.jar'].each do |jar|
   require jar
 end
 $CLASSPATH << "#{PADRINO_ROOT}/lib/java"
-java_import "VMwareAdaptor"
+java_import "com.sixfusion.VMwareAdaptor"
 java_import "java.util.ArrayList"
 java_import "com.vmware.vim25.InvalidLogin"
 
