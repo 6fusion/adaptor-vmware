@@ -4,7 +4,7 @@ Dir['lib/java/**/*.jar'].each do |jar|
   require jar
 end
 $CLASSPATH << "#{PADRINO_ROOT}/lib/java"
-java_import "VMwareInventory"
+java_import "com.sixfusion.VMwareAdaptor"
 
 java_import "com.vmware.vim25.InvalidLogin"
 
@@ -42,7 +42,7 @@ class Machine < Base::Machine
     logger.info("Creating Machine(s) from OVF")
 
     begin
-      vm_inventory = VMwareInventory.new("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
+      vmware_adaptor = VMwareAdaptor.new("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
       #do something like deploy an OVF!
     rescue InvalidLogin => e
       raise Exceptions::Forbidden, "Invalid Login" 
@@ -51,16 +51,16 @@ class Machine < Base::Machine
       logger.error(e.backtrace)
       raise Exceptions::Unrecoverable, e.to_s
     ensure
-      inode.close_vm_inventory(vm_inventory)
+      inode.close_connection
     end
   end
   add_method_tracer :create_from_ovf
 
-  def self.vm_inventory(inode)
+  def self.vmware_adaptor(inode)
     begin
-      vm_inventory = VMwareInventory.new("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
-      vm_inventory.gatherVirtualMachines
-      vm_inventory.vmMap.to_hash
+      vmware_adaptor = VMwareAdaptor.new("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
+      vmware_adaptor.gatherVirtualMachines
+      vmware_adaptor.vmMap.to_hash
     rescue InvalidLogin => e
       raise Exceptions::Forbidden, "Invalid Login" 
     rescue => e
@@ -68,12 +68,12 @@ class Machine < Base::Machine
       logger.error(e.backtrace)
       raise Exceptions::Unrecoverable, e.to_s
     ensure
-      inode.close_vm_inventory(vm_inventory)
+      inode.close_connection
     end
   end
 
   def self.all(inode)
-    self.vm_inventory(inode)
+    self.vmware_adaptor(inode)
   end
 
   def self.all_with_readings(inode, _interval = 300,  _since = 10.minutes.ago.utc, _until = 5.minutes.ago.utc)
@@ -81,14 +81,14 @@ class Machine < Base::Machine
     begin
       # Retrieve all machines and virtual machine references
 
-      vm_inventory = VMwareInventory.new("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
+      vmware_adaptor = VMwareAdaptor.new("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
       startTime = _since.floor(5.minutes).utc.strftime('%Y-%m-%dT%H:%M:%S')+"Z"
       endTime = _until.round(5.minutes).utc.strftime('%Y-%m-%dT%H:%M:%S')+"Z"
-      vm_inventory.readings( startTime.to_java, endTime.to_java)
+      vmware_adaptor.readings( startTime.to_java, endTime.to_java)
       # DEBUG
-      # vm_inventory.printVMs()
+      # vmware_adaptor.printVMs()
 
-      machines = vm_inventory.vmMap.to_hash.map {|_, vm| Machine.new(vm)}
+      machines = vmware_adaptor.vmMap.to_hash.map {|_, vm| Machine.new(vm)}
 
       # Returns update machine array
       machines
@@ -100,14 +100,14 @@ class Machine < Base::Machine
       logger.error(e.backtrace)
       raise Exceptions::Unrecoverable, e.to_s
     ensure
-      inode.close_vm_inventory(vm_inventory)
+      inode.close_connection
     end
   end
 
   def self.find_by_uuid(inode, uuid)
     begin
-      vm_inventory = VMwareInventory.new("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
-      props = vm_inventory.findByUuid(uuid)
+      vmware_adaptor = VMwareAdaptor.new("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
+      props = vmware_adaptor.findByUuid(uuid)
       unless props.nil?
         self.new(props.to_hash)
       else
@@ -120,18 +120,18 @@ class Machine < Base::Machine
       logger.error(e.backtrace)
       raise Exceptions::Unrecoverable, e.to_s
     ensure
-      inode.close_vm_inventory(vm_inventory)
+      inode.close_connection
     end
   end
  
 
   def self.find_by_uuid_with_readings(inode, uuid, _interval = 300, _since = 10.minutes.ago.utc, _until =  5.minutes.ago.utc)
     begin
-      vm_inventory = VMwareInventory.new("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
+      vmware_adaptor = VMwareAdaptor.new("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
 
       startTime = _since.floor(5.minutes).utc.strftime('%Y-%m-%dT%H:%M:%S')+"Z"
       endTime = _until.round(5.minutes).utc.strftime('%Y-%m-%dT%H:%M:%S')+"Z"
-      props = vm_inventory.findByUuidWithReadings(uuid.to_java, startTime.to_java, endTime.to_java)
+      props = vmware_adaptor.findByUuidWithReadings(uuid.to_java, startTime.to_java, endTime.to_java)
       unless props.nil?
         vm = self.new(props.to_hash)
       else
@@ -145,7 +145,7 @@ class Machine < Base::Machine
       logger.error(e.backtrace)
       raise Exceptions::Unrecoverable, e.to_s
     ensure
-      inode.close_vm_inventory(vm_inventory)
+      inode.close_connection
     end
   end
 
@@ -355,7 +355,7 @@ class Machine < Base::Machine
 
   class << self
     include ::NewRelic::Agent::MethodTracer
-    add_method_tracer :vm_inventory
+    add_method_tracer :vmware_adaptor
     add_method_tracer :all
     add_method_tracer :all_with_readings
     add_method_tracer :find_by_uuid

@@ -1,11 +1,11 @@
-AdaptorVMware.controllers :machines, :map => "/inodes/:inode_uuid" do
+AdaptorVMware.controllers :machines, :parent => :inodes do
   include ::NewRelic::Agent::MethodTracer
   add_method_tracer :render
   before do
     logger.info('machines#before')
     logger.debug(route.as_options[:__name__])
     content_type 'application/json'
-    @inode = INode.find_by_uuid(params[:inode_uuid])
+    @inode = INode.find_by_uuid(params[:inode_id])
   end
 
   # Creates
@@ -18,7 +18,7 @@ AdaptorVMware.controllers :machines, :map => "/inodes/:inode_uuid" do
   # Reads
   get :index do
     logger.info('GET - machines#index')
-    @machines = Machine.vm_inventory(@inode).map {|_, vm| Machine.new(vm)}
+    @machines = Machine.vmware_adaptor(@inode).map {|_, vm| Machine.new(vm)}
     render 'machines/index'
   end
 

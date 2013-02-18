@@ -83,12 +83,48 @@ AdaptorVMware.controllers :inodes, :priority => :low do
 
   get :diagnostics, "/inodes/:uuid/diagnostics.zip" do
     logger.info('DIAGNOSTICS.ZIP - inodes#index')
-    @inode = INode.find_by_uuid(params[:uuid])
     diag = {
-      :about => @inode.about,
-      :statistics_levels => @inode.statistics_levels.to_a,
-      :virtual_machine_count => Machine::all(@inode).count
+      :about => "Not Available",
+      :statistics_levels => "Not Available",
+      :virtual_machines => "Not Available" 
     }
+    begin
+      @inode = INode.find_by_uuid(params[:uuid])
+      diag[:about] = @inode.about
+    rescue InvalidLogin => e
+      diag[:about] = "Invalid Login"
+    rescue => e
+      logger.error(e.message)
+      logger.error(e.backtrace)
+      diag[:about] = "Unable to connect ("+e.to_s+")"
+    ensure
+      @inode.close_connection
+    end
+
+    begin
+      diag[:statistics_levels] = @inode.statistics_levels.to_a
+    rescue InvalidLogin => e
+      diag[:statistics_levels] = "Invalid Login"
+    rescue => e
+      logger.error(e.message)
+      logger.error(e.backtrace)
+      diag[:statistics_levels] = "Unable to connect ("+e.to_s+")"
+    ensure
+      @inode.close_connection
+    end
+
+    begin
+      diag[:virtual_machines] = @inode.virtual_machines.to_s
+    rescue InvalidLogin => e
+      diag[:virtual_machines] = "Invalid Login"
+    rescue => e
+      logger.error(e.message)
+      logger.error(e.backtrace)
+      diag[:virtual_machines] = "Unable to connect ("+e.to_s+")"
+    ensure
+      @inode.close_connection
+    end    
+    @inode.close_connection
 
     begin
       logger.info("DIAGNOSTICS.ZIP - #{PADRINO_ROOT}/tmp/diagnostics")

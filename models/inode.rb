@@ -5,54 +5,40 @@ Dir['lib/java/**/*.jar'].each do |jar|
   require jar
 end
 $CLASSPATH << "#{PADRINO_ROOT}/lib/java"
-java_import "VMwareInventory"
+java_import "com.sixfusion.VMwareAdaptor"
 java_import "java.util.ArrayList"
 java_import "com.vmware.vim25.InvalidLogin"
 
 class INode < Base::INode
-  attr_reader :uuid, :session, :host_ip_address, :user, :password
+  attr_reader :uuid, :session, :host_ip_address, :user, :password, :vmware_adaptor
 
   def about
-    begin
-      # Connect to vCenter if the session is not already established
-      logger.info("INode.open_session")        
-      vm_inventory = VMwareInventory.new("https://#{@host_ip_address}/sdk", @user, @password)
-      vm_inventory.gatherVirtualMachines
-      vm_inventory.getAboutInfo.to_hash
-    rescue InvalidLogin => e
-      raise Exceptions::Forbidden, "Invalid Login" 
-    rescue => e
-      logger.error(e.message)
-      logger.error(e.backtrace)
-      raise Exceptions::Unrecoverable, e.to_s
-    ensure
-      unless vm_inventory.nil?
-        self.close_vm_inventory(vm_inventory)
-      end
-    end
+    # Connect to vCenter if the session is not already established
+    logger.info("INode.open_session")        
+    @vmware_adaptor = VMwareAdaptor.new("https://#{@host_ip_address}/sdk", @user, @password)
+    @vmware_adaptor.gatherVirtualMachines
+    @vmware_adaptor.getAboutInfo.to_hash
+  end
+
+  def virtual_machines
+    # Connect to vCenter if the session is not already established
+    logger.info("INode.open_session")        
+    @vmware_adaptor = VMwareAdaptor.new("https://#{@host_ip_address}/sdk", @user, @password)
+    @vmware_adaptor.gatherVirtualMachines
+    @vmware_adaptor.json
   end
 
   def statistics_levels 
-    begin
-      # Connect to vCenter if the session is not already established
-      logger.info("INode.open_session")        
-      vm_inventory = VMwareInventory.new("https://#{@host_ip_address}/sdk", @user, @password)
-      vm_inventory.gatherVirtualMachines
-      rList = []
-      arrList = vm_inventory.getStatisticLevels
-      arrList.each do | statistics_level |
-        rList << statistics_level.to_hash
-      end
-      rList
-    rescue InvalidLogin => e
-      raise Exceptions::Forbidden, "Invalid Login" 
-    rescue => e
-      logger.error(e.message)
-      logger.error(e.backtrace)
-      raise Exceptions::Unrecoverable, e.to_s
-    ensure
-      self.close_vm_inventory(vm_inventory)
+    # Connect to vCenter if the session is not already established
+    logger.info("INode.open_session")        
+    @vmware_adaptor = VMwareAdaptor.new("https://#{@host_ip_address}/sdk", @user, @password)
+    @vmware_adaptor.gatherVirtualMachines
+    rList = []
+    arrList = vmware_adaptor.getStatisticLevels
+    arrList.each do | statistics_level |
+      rList << statistics_level.to_hash
     end
+    rList
   end
 
   def self.find_by_uuid(uuid)
@@ -79,9 +65,9 @@ class INode < Base::INode
     super
   end
 
-  def close_vm_inventory(vm_inventory)
-    if vm_inventory
-      vm_inventory.close
+  def close_connection
+    if @vmware_adaptor
+      @vmware_adaptor.close
     end
   end
 end
