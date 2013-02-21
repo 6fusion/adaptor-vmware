@@ -58,8 +58,8 @@ AdaptorVMware.controllers :machines, :parent => :inodes do
   put :show, :map => 'machines/:uuid/start' do
     logger.info('PUT - machines.uuid#start')
 
-    @inode.open_session
     @machine = Machine.find_by_uuid(@inode, params[:uuid])
+    logger.info @machine.inspect
     @machine.start(@inode) if @machine.present?
 
     render 'machines/show'

@@ -34,7 +34,7 @@ group :development do
 end
 
 group :test do
-  gem 'mocha'
+  gem 'mocha', require: 'mocha/setup'
   gem 'rspec'
   gem 'rack-test', require: 'rack/test'
 end

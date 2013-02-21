@@ -2,19 +2,35 @@
 require 'java'
 Dir['lib/java/**/*.jar'].each do |jar|
   $CLASSPATH << jar
+  logger.info("#{jar}")
   require jar
 end
 $CLASSPATH << "#{PADRINO_ROOT}/lib/java"
+java_import "java.net.URL"
 java_import "com.sixfusion.VMwareAdaptor"
 java_import "java.util.ArrayList"
 java_import "com.vmware.vim25.InvalidLogin"
 
 class INode < Base::INode
+  attr_accessor :vmware_api_adaptor
   attr_reader :uuid, :session, :host_ip_address, :user, :password, :vmware_adaptor
+
+  def initialize(attributes)
+    super
+    self.vmware_api_adaptor = VmwareApiAdaptor.new(self)
+  end
+
+  def connection
+    self.hypervisor.connection
+  end
+
+  def hypervisor
+    self.vmware_api_adaptor
+  end
 
   def about
     # Connect to vCenter if the session is not already established
-    logger.info("INode.open_session")        
+    logger.info("INode.open_session")
     @vmware_adaptor = VMwareAdaptor.new("https://#{@host_ip_address}/sdk", @user, @password)
     @vmware_adaptor.gatherVirtualMachines
     @vmware_adaptor.getAboutInfo.to_hash
@@ -22,15 +38,15 @@ class INode < Base::INode
 
   def virtual_machines
     # Connect to vCenter if the session is not already established
-    logger.info("INode.open_session")        
+    logger.info("INode.open_session")
     @vmware_adaptor = VMwareAdaptor.new("https://#{@host_ip_address}/sdk", @user, @password)
     @vmware_adaptor.gatherVirtualMachines
     @vmware_adaptor.json
   end
 
-  def statistics_levels 
+  def statistics_levels
     # Connect to vCenter if the session is not already established
-    logger.info("INode.open_session")        
+    logger.info("INode.open_session")
     @vmware_adaptor = VMwareAdaptor.new("https://#{@host_ip_address}/sdk", @user, @password)
     @vmware_adaptor.gatherVirtualMachines
     rList = []

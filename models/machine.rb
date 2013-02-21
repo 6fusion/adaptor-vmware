@@ -37,7 +37,7 @@ class Machine < Base::Machine
 
   # Used to cache Host CPU hz to avoid making repetitive VMWare SOAP calls
   @@hz_cache = {}
-  
+
   def create_from_ovf(inode, ovf)
     logger.info("Creating Machine(s) from OVF")
 
@@ -45,7 +45,7 @@ class Machine < Base::Machine
       vmware_adaptor = VMwareAdaptor.new("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
       #do something like deploy an OVF!
     rescue InvalidLogin => e
-      raise Exceptions::Forbidden, "Invalid Login" 
+      raise Exceptions::Forbidden, "Invalid Login"
     rescue => e
       logger.error(e.message)
       logger.error(e.backtrace)
@@ -62,7 +62,7 @@ class Machine < Base::Machine
       vmware_adaptor.gatherVirtualMachines
       vmware_adaptor.vmMap.to_hash
     rescue InvalidLogin => e
-      raise Exceptions::Forbidden, "Invalid Login" 
+      raise Exceptions::Forbidden, "Invalid Login"
     rescue => e
       logger.error(e.message)
       logger.error(e.backtrace)
@@ -94,7 +94,7 @@ class Machine < Base::Machine
       machines
 
     rescue InvalidLogin => e
-      raise Exceptions::Forbidden, "Invalid Login" 
+      raise Exceptions::Forbidden, "Invalid Login"
     rescue => e
       logger.error(e.message)
       logger.error(e.backtrace)
@@ -111,10 +111,10 @@ class Machine < Base::Machine
       unless props.nil?
         self.new(props.to_hash)
       else
-        raise Exceptions::NotFound 
-      end 
+        raise Exceptions::NotFound
+      end
     rescue InvalidLogin => e
-      raise Exceptions::Forbidden, "Invalid Login" 
+      raise Exceptions::Forbidden, "Invalid Login"
     rescue => e
       logger.error(e.message)
       logger.error(e.backtrace)
@@ -123,7 +123,7 @@ class Machine < Base::Machine
       inode.close_connection
     end
   end
- 
+
 
   def self.find_by_uuid_with_readings(inode, uuid, _interval = 300, _since = 10.minutes.ago.utc, _until =  5.minutes.ago.utc)
     begin
@@ -135,11 +135,11 @@ class Machine < Base::Machine
       unless props.nil?
         vm = self.new(props.to_hash)
       else
-        raise Exceptions::NotFound 
-      end 
-      vm       
+        raise Exceptions::NotFound
+      end
+      vm
     rescue InvalidLogin => e
-      raise Exceptions::Forbidden, "Invalid Login" 
+      raise Exceptions::Forbidden, "Invalid Login"
     rescue => e
       logger.error(e.message)
       logger.error(e.backtrace)
@@ -152,11 +152,11 @@ class Machine < Base::Machine
   def readings(_interval = 300, _since = 10.minutes.ago.utc, _until = 5.minutes.ago.utc)
     begin
 
-    
+
       result = []
       # timestamps.keys.each do |timestamp|
-      if !@stats.nil? 
-        @stats.keys.each do | timestamp |  
+      if !@stats.nil?
+        @stats.keys.each do | timestamp |
             metrics = @stats[timestamp]
             # Note: cpu.usage.average unit of measure is hundreths of a percent so 1023 is really 10.23% or .1023
             # you could assert that metric["cpu.usage.average"].to_f /10000) * @cpu_speed * @cpu_count = metrics["cpu.usagemhz.average"]
@@ -168,7 +168,7 @@ class Machine < Base::Machine
                                            :memory_bytes => memory_bytes,
                                            :date_time    => timestamp }
             )
-         
+
         end
       end
       #       logger.debug("CPU Metric Usage="+(metric_readings[cpu_metric_usage][i].to_f / (100**2)).to_s)
@@ -183,59 +183,20 @@ class Machine < Base::Machine
   end
   add_method_tracer :readings
 
-  # def start(inode)
-  #   logger.info("machine.start")
+  def start(inode)
+    logger.info("machine.start")
+    machine = inode.vmware_api_adaptor.start(uuid)
+  end
 
-  #   begin
-  #     vm.PowerOnVM_Task.wait_for_completion
-  #     @power_state = "starting"
+  def stop(inode)
+    logger.info("machine.stop")
+    machine = inode.vmware_api_adaptor.stop(uuid)
+  end
 
-  #   rescue RbVmomi::Fault => e
-  #     logger.error(e.message)
-  #     raise Exceptionss::Forbidden.new(e.message)
-
-  #   rescue => e
-  #     logger.error(e.message)
-  #     raise Exceptionss::Unrecoverable
-  #   end
-  # end
-  # add_method_tracer :start
-
-  # def stop(inode)
-  #   logger.info("machine.stop")
-
-  #   begin
-  #     vm.ShutdownGuest
-  #     @power_state = "stopping"
-
-  #   rescue RbVmomi::Fault => e
-  #     logger.error(e.message)
-  #     raise Exceptionss::Forbidden.new(e.message)
-
-  #   rescue => e
-  #     logger.error(e.message)
-  #     raise Exceptionss::Unrecoverable
-  #   end
-  # end
-  # add_method_tracer :stop
-
-  # def restart(inode)
-  #   logger.info("machine.restart")
-
-  #   begin
-  #     vm.RebootGuest
-  #     @power_state = "restarting"
-
-  #   rescue RbVmomi::Fault => e
-  #     logger.error(e.message)
-  #     raise Exceptionss::Forbidden.new(e.message)
-
-  #   rescue => e
-  #     logger.error(e.message)
-  #     raise Exceptionss::Unrecoverable
-  #   end
-  # end
-  # add_method_tracer :restart
+  def restart(inode)
+    logger.info("machine.restart")
+    machine = inode.vmware_api_adaptor.restart(uuid)
+  end
 
   # def force_stop(inode)
   #   logger.info("machine.force_stop")
@@ -313,14 +274,14 @@ class Machine < Base::Machine
        @disks.each do |disk|
          disk.stats = stats
        end
-     end      
+     end
   end
   add_method_tracer :disks=
 
 
   private
 
- 
+
 
   # Helper Method for converting machine power states.
   def self.convert_power_state(tools_status, power_status)
@@ -330,17 +291,17 @@ class Machine < Base::Machine
       status = "#{tools_status}|#{power_status}"
 
       case status
-        when "toolsOk|poweredOn" 
+        when "toolsOk|poweredOn"
           "started"
-        when "toolsOld|poweredOn" 
+        when "toolsOld|poweredOn"
           "started"
-        when "toolsNotInstalled|poweredOn" 
+        when "toolsNotInstalled|poweredOn"
           "started"
-        when "toolsNotRunning|poweredOff" 
+        when "toolsNotRunning|poweredOff"
           "stopped"
-        when "toolsOld|poweredOff" 
+        when "toolsOld|poweredOff"
           "stopped"
-        when "toolsNotInstalled|poweredOff" 
+        when "toolsNotInstalled|poweredOff"
           "stopped"
         when "toolsNotRunning|poweredOn"
           "started"
