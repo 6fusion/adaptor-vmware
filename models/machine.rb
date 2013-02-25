@@ -77,18 +77,16 @@ class Machine < Base::Machine
   end
 
   def self.all_with_readings(inode, _interval = 300,  _since = 10.minutes.ago.utc, _until = 5.minutes.ago.utc)
-
     begin
       # Retrieve all machines and virtual machine references
 
-      vmware_adaptor = VMwareAdaptor.new("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
-      startTime = _since.floor(5.minutes).utc.strftime('%Y-%m-%dT%H:%M:%S')+"Z"
-      endTime = _until.round(5.minutes).utc.strftime('%Y-%m-%dT%H:%M:%S')+"Z"
-      vmware_adaptor.readings( startTime.to_java, endTime.to_java)
-      # DEBUG
-      # vmware_adaptor.printVMs()
+      # vmware_adaptor = VMwareAdaptor.new("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
+      startTime = _since #.floor(5.minutes).utc.strftime('%Y-%m-%dT%H:%M:%S')+"Z"
+      endTime = _until #.round(5.minutes).utc.strftime('%Y-%m-%dT%H:%M:%S')+"Z"
+      inode.vmware_api_adaptor.readings(inode.vmware_api_adaptor.virtual_machines, startTime, endTime)
+      # vmware_adaptor.readings( startTime.to_java, endTime.to_java)
 
-      machines = vmware_adaptor.vmMap.to_hash.map {|_, vm| Machine.new(vm)}
+      machines = inode.vmware_api_adaptor.virtual_machines.map {|_, vm| Machine.new(vm)}
 
       # Returns update machine array
       machines

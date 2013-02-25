@@ -160,6 +160,7 @@ class VmwareApiAdaptor
         vm_properties_hash = {}
 
         vm_mor_id = vm_managed_object.get_mor.get_value.to_s
+        vm_properties_hash["mor"] = vm_managed_object
         vm_properties_hash["external_vm_id"] = vm_mor_id if vm_mor_id.present?
         vm_properties_hash["external_host_id"] =  vm["runtime.host"].get_value if vm["runtime.host"].get_value.present?
         vm_properties_hash["uuid"] = vm["config.uuid"] if vm["config.uuid"].present?
@@ -296,6 +297,91 @@ class VmwareApiAdaptor
     	logger.warn("Invalid #{e.cause.shortDescription}")
       raise Exceptions::MethodNotAllowed.new("Cannot Complete Requested Action: #{e.cause.shortDescription}")
     end
+  end
+
+  # --------------------------------------------------------
+  # Readings
+  # --------------------------------------------------------
+
+  def readings(_vms, _start_time, _end_time)
+    logger.info("vmware_api_adaptor.gather_counters")
+    if _vms.present?
+      performance_metrics = [
+        { :metric_name => "cpu.usage.average", :instance => ""},
+        { :metric_name => "cpu.usagemhz.average", :instance => ""},
+        { :metric_name => "mem.consumed.average", :instance => ""},
+        { :metric_name => "virtualDisk.read.average", :instance => "*"},
+        { :metric_name => "virtualDisk.write.average", :instance => "*"},
+        { :metric_name => "net.received.average", :instance => "*"},
+        { :metric_name => "net.transmitted.average", :instance => "*"},
+      ]
+
+      # build performance metric hash with counter keys, and performance metric id array for query
+      performance_manager = self.connection.get_performance_manager
+      performance_counter_info = performance_manager.get_perf_counter
+      perf_metric_ids = []
+      performance_counter_info.each do |pci|
+        perf_counter = "#{pci.get_group_info.get_key.to_s}.#{pci.get_name_info.get_key.to_s}.#{pci.get_rollup_type.to_s}"
+        perf_metric = performance_metrics.select { |e| e[:metric_name].downcase == perf_counter.downcase }.first
+        if perf_metric.present?
+          perf_metric[:perf_metric_key] = pci.get_key.to_i
+          temp_perf_metric_id = Vim::PerfMetricId.new()
+          temp_perf_metric_id.set_counter_id(pci.get_key)
+          temp_perf_metric_id.set_instance(perf_metric[:instance])
+          perf_metric_ids << temp_perf_metric_id
+        end
+      end
+
+      query_spec_list = []
+
+      _vms.each do |vm|
+        temp_perf_query_spec = Vim::PerfQuerySpec.new()
+        temp_perf_query_spec.set_entity(vm["mor"].get_mor)
+        temp_perf_query_spec.set_format("normal");
+        temp_perf_query_spec.set_interval_id(300);
+        temp_perf_query_spec.set_metric_id(perf_metric_ids)
+        temp_perf_query_spec.set_start_time(_start_time)
+        temp_perf_query_spec.set_end_time(_end_time)
+        query_spec_list << temp_perf_query_spec
+      end
+
+
+      logger.info "start performance_manager.query_perf"
+      performance_entity_metric_base = performance_manager.query_perf(query_spec_list)
+      # parse timestamps?
+      logger.info "end performance_manager.query_perf"
+
+      all_metrics = []
+      performance_entity_metric_base.each do |pemb|
+        if pemb.instance_of?(Vim::PerfEntityMetric)
+          infos = pemb.get_sample_info
+          values = pemb.get_value
+
+          if infos.present?
+            infos.each_with_index do |info, info_index|
+              metric_hash = {}
+              metric_hash[:timestamp] = info.get_timestamp.get_time.to_s.to_datetime.iso8601
+
+              if values.present?
+                values.each do |value|
+                  metric = performance_metrics.select { |e| e[:perf_metric_key] == value.get_id.get_counter_id }.first
+                  metric_name = ( value.get_id.get_instance.to_s.length > 0 ? "#{metric[:metric_name]}.#{value.get_id.get_instance}" : "#{metric[:metric_name]}" )
+                  if value.instance_of?(Vim::PerfMetricIntSeries)
+                    long_values = value.get_value
+                    metric_hash[metric_name.to_sym] = long_values[info_index]
+                  end
+                end
+              end
+
+              all_metrics << metric_hash
+            end
+          end
+        end
+      end
+
+      return all_metrics
+    end
+    return nil
   end
 
 end
