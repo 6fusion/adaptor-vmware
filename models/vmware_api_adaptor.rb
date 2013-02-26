@@ -219,6 +219,7 @@ class VmwareApiAdaptor
       disk_hash["disk_mode"] = backing.get_disk_mode if backing.get_disk_mode
     end
 
+    # grab backing specific metainfo
     case backing
     when Vim::VirtualDiskFlatVer2BackingInfo
       disk_hash["split"] = backing.get_split if backing.get_split
@@ -244,6 +245,31 @@ class VmwareApiAdaptor
       disk_hash["digest_enabled"] = backing.get_digest_enabled if backing.get_digest_enabled
       disk_hash["grain_size"] = backing.get_grain_size if backing.get_grain_size
     end
+
+    # get disk usage
+    disk_hash["usage"] = 0.0
+    if properties["layoutEx.disk"]
+      layout_ex_disk = properties["layoutEx.disk"]
+      layout_ex_disk.each do |led|
+        if led.get_key == disk.get_key
+          disk_units = led.get_chain
+          if disk_units.present?
+            disk_units.each do |unit|
+              if properties["layoutEx.file"]
+                properties["layoutEx.file"].each do |layout_ex|
+                  unit.get_file_key.each do |file_key|
+                    if layout_ex.get_key == file_key
+                      disk_hash["usage"] += layout_ex.size * GB
+                    end
+                  end
+                end
+              end
+            end
+          end
+        end
+      end
+    end
+
     return disk_hash
   end
 
@@ -351,16 +377,18 @@ class VmwareApiAdaptor
       # parse timestamps?
       logger.info "end performance_manager.query_perf"
 
-      all_metrics = []
       performance_entity_metric_base.each do |pemb|
         if pemb.instance_of?(Vim::PerfEntityMetric)
           infos = pemb.get_sample_info
           values = pemb.get_value
 
+          entity = _vms.select { |e| e["external_vm_id"] == pemb.get_entity.get_value }.first
+          entity["stats"] = {}
           if infos.present?
             infos.each_with_index do |info, info_index|
               metric_hash = {}
-              metric_hash[:timestamp] = info.get_timestamp.get_time.to_s.to_datetime.iso8601
+              timestamp = info.get_timestamp.get_time.to_s.to_datetime.iso8601
+              metric_hash["timestamp"] = info.get_timestamp.get_time.to_s.to_datetime.iso8601
 
               if values.present?
                 values.each do |value|
@@ -368,18 +396,18 @@ class VmwareApiAdaptor
                   metric_name = ( value.get_id.get_instance.to_s.length > 0 ? "#{metric[:metric_name]}.#{value.get_id.get_instance}" : "#{metric[:metric_name]}" )
                   if value.instance_of?(Vim::PerfMetricIntSeries)
                     long_values = value.get_value
-                    metric_hash[metric_name.to_sym] = long_values[info_index]
+                    metric_hash[metric_name] = long_values[info_index]
                   end
                 end
               end
 
-              all_metrics << metric_hash
+              entity["stats"][timestamp] = metric_hash
             end
           end
         end
       end
 
-      return all_metrics
+      return _vms
     end
     return nil
   end
