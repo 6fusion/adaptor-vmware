@@ -1,12 +1,11 @@
 require 'java'
-Dir['lib/java/**/*.jar'].each do |jar|
-  $CLASSPATH << jar
-  require jar
-end
-$CLASSPATH << "#{PADRINO_ROOT}/lib/java"
-java_import "com.sixfusion.VMwareAdaptor"
-
-java_import "com.vmware.vim25.InvalidLogin"
+# Dir['lib/java/**/*.jar'].each do |jar|
+#   $CLASSPATH << jar
+#   require jar
+# end
+# $CLASSPATH << "#{PADRINO_ROOT}/lib/java"
+# java_import "com.sixfusion.VMwareAdaptor"
+# java_import "com.vmware.vim25.InvalidLogin"
 
 
 class Time
@@ -22,13 +21,11 @@ end
 class Machine < Base::Machine
   include TorqueBox::Messaging::Backgroundable
 
-  include ::NewRelic::Agent::MethodTracer
+  # include ::NewRelic::Agent::MethodTracer
 
   attr_accessor :external_vm_id,
                 :external_host_id,
                 :stats
-
-
 
   KB = 1024
   MB = 1024**2
@@ -39,7 +36,7 @@ class Machine < Base::Machine
   @@hz_cache = {}
 
   def initialize(args)
-    self.stats = args["stats"]
+    self.stats = args["stats"] if args["stats"]
     super
   end
 
@@ -47,7 +44,7 @@ class Machine < Base::Machine
     logger.info("Creating Machine(s) from OVF")
 
     begin
-      vmware_adaptor = VMwareAdaptor.new("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
+      vmware_adaptor = inode.connect("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
       #do something like deploy an OVF!
     rescue InvalidLogin => e
       raise Exceptions::Forbidden, "Invalid Login"
@@ -63,10 +60,10 @@ class Machine < Base::Machine
 
   def self.vmware_adaptor(inode)
     begin
-      vmware_adaptor = VMwareAdaptor.new("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
-      vmware_adaptor.gatherVirtualMachines
-      vmware_adaptor.vmMap.to_hash
-    rescue InvalidLogin => e
+      vmware_adaptor = inode.vmware_api_adaptor.connect("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
+      # vmware_adaptor.gatherVirtualMachines
+      # vmware_adaptor.vmMap.to_hash
+    rescue Vim::InvalidLogin => e
       raise Exceptions::Forbidden, "Invalid Login"
     rescue => e
       logger.error(e.message)
@@ -78,16 +75,16 @@ class Machine < Base::Machine
   end
 
   def self.all(inode)
-    self.vmware_adaptor(inode)
+    inode.vmware_api_adaptor.virtual_machines
   end
 
-  def self.all_with_readings(inode, _interval = 300,  _since = 10.minutes.ago.utc, _until = 5.minutes.ago.utc)
+  def self.all_with_readings(inode, _interval = 300, _since = 10.minutes.ago.utc, _until = 5.minutes.ago.utc)
     begin
       # Retrieve all machines and virtual machine references
-      start_time = _since.floor(5.minutes).utc #.strftime('%Y-%m-%dT%H:%M:%S')+"Z"
-      end_time = _until.round(5.minutes).utc #.strftime('%Y-%m-%dT%H:%M:%S')+"Z"
+      start_time = _since.floor(5.minutes).utc
+      end_time = _until.round(5.minutes).utc
       adaptor = inode.vmware_api_adaptor
-      machines = adaptor.readings(adaptor.virtual_machines, start_time, end_time).map { |vm| Machine.new(vm) }
+      machines = adaptor.readings(adaptor.virtual_machines, start_time, end_time)
       machines
     rescue InvalidLogin => e
       raise Exceptions::Forbidden, "Invalid Login"
@@ -102,10 +99,9 @@ class Machine < Base::Machine
 
   def self.find_by_uuid(inode, uuid)
     begin
-      vmware_adaptor = VMwareAdaptor.new("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
-      props = vmware_adaptor.findByUuid(uuid)
-      unless props.nil?
-        self.new(props.to_hash)
+      vm = inode.vmware_api_adaptor.find_vm_by_uuid(uuid)
+      unless vm.nil? || vm.first.nil?
+        Machine.new(vm.first)
       else
         raise Exceptions::NotFound
       end
@@ -121,19 +117,17 @@ class Machine < Base::Machine
   end
 
 
-  def self.find_by_uuid_with_readings(inode, uuid, _interval = 300, _since = 10.minutes.ago.utc, _until =  5.minutes.ago.utc)
+  def self.find_by_uuid_with_readings(inode, uuid, _interval = 300, _since = 10.minutes.ago.utc, _until = 5.minutes.ago.utc)
     begin
-      vmware_adaptor = VMwareAdaptor.new("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
-
-      startTime = _since.floor(5.minutes).utc.strftime('%Y-%m-%dT%H:%M:%S')+"Z"
-      endTime = _until.round(5.minutes).utc.strftime('%Y-%m-%dT%H:%M:%S')+"Z"
-      props = vmware_adaptor.findByUuidWithReadings(uuid.to_java, startTime.to_java, endTime.to_java)
-      unless props.nil?
-        vm = self.new(props.to_hash)
+      start_time = _since.floor(5.minutes).utc
+      end_time = _until.round(5.minutes).utc
+      adaptor = inode.vmware_api_adaptor
+      vm = adaptor.readings(adaptor.find_vm_by_uuid(uuid), start_time, end_time)
+      unless vm.nil? || vm.first.nil?
+        Machine.new(vm.first)
       else
         raise Exceptions::NotFound
       end
-      vm
     rescue InvalidLogin => e
       raise Exceptions::Forbidden, "Invalid Login"
     rescue => e

@@ -1,6 +1,6 @@
 AdaptorVMware.controllers :machines, :parent => :inodes do
-  include ::NewRelic::Agent::MethodTracer
-  add_method_tracer :render
+  # include ::NewRelic::Agent::MethodTracer
+  # add_method_tracer :render
   before do
     logger.info('machines#before')
     logger.debug(route.as_options[:__name__])
@@ -18,7 +18,7 @@ AdaptorVMware.controllers :machines, :parent => :inodes do
   # Reads
   get :index do
     logger.info('GET - machines#index')
-    @machines = Machine.vmware_adaptor(@inode).map {|_, vm| Machine.new(vm)}
+    @machines = Machine.all(@inode).map { |vm| Machine.new(vm) }
     render 'machines/index'
   end
 
@@ -31,7 +31,7 @@ AdaptorVMware.controllers :machines, :parent => :inodes do
 
     params[:per_page] ||= 5
     logger.info("params "+_since.to_s+" "+_until.to_s)
-    @machines = Machine.all_with_readings(@inode,_interval,_since,_until)
+    @machines = Machine.all_with_readings(@inode,_interval,_since,_until).map { |vm| Machine.new(vm) }
     render 'machines/readings'
 
   end

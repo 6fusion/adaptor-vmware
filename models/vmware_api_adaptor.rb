@@ -6,7 +6,6 @@ Dir['lib/java/**/*.jar'].each do |jar|
 end
 $CLASSPATH << "#{PADRINO_ROOT}/lib/java"
 java_import "java.net.URL"
-# java_import "com.sixfusion.VMwareAdaptor"
 # java_import "java.util.ArrayList"
 # java_import "com.vmware.vim25.InvalidLogin"
 java_import "java.rmi.RemoteException"
@@ -81,6 +80,56 @@ class VmwareApiAdaptor
 	def root_folder
 		self.connection.get_root_folder
 	end
+
+  def get_about_info
+    logger.info("vmware_api_adaptor.get_about_info")
+    about = self.connection.get_about_info
+    about_hash = {}
+    about_hash["fullName"] = about.get_full_name
+    about_hash["vendor"] = about.get_vendor
+    about_hash["version"] = about.get_version
+    about_hash["build"] = about.get_build
+    about_hash["localeVersion"] = about.get_locale_version
+    about_hash["localeBuild"] = about.get_locale_build
+    about_hash["osType"] = about.get_os_type
+    about_hash["productLineId"] = about.get_product_line_id
+    about_hash["apiType"] = about.get_api_type
+    about_hash["apiVersion"] = about.get_api_version
+    about_hash["instanceUuid"] = about.get_instance_uuid
+    about_hash["licenseProductVersion"] = about.get_license_product_name
+    about_hash["name"] = about.get_name
+
+    dynamic_properties = about.get_dynamic_property
+    unless dynamic_properties.nil?
+      dynamic_properties.each do |dp|
+        about_hash[dp.get_name.to_s] = dp.get_value.to_s
+      end
+    end
+
+    return about_hash
+  end
+
+  def get_statistic_levels
+    logger.info("vmware_api_adaptor.get_statistic_levels")
+    performance_manager = self.connection.get_performance_manager
+    performance_intervals = performance_manager.get_historical_interval
+    stats = []
+
+    unless performance_intervals.nil?
+      performance_intervals.each do |pi|
+        pi_hash = {}
+        pi_hash["key"] = pi.get_key.to_s
+        pi_hash["samplingPeriod"] = pi.get_sampling_period.to_s
+        pi_hash["name"] = pi.get_name
+        pi_hash["length"] = pi.get_length.to_s
+        pi_hash["level"] = pi.get_level.to_s
+        pi_hash["enabled"] = pi.is_enabled.to_s
+        stats << pi_hash
+      end
+    end
+
+    return stats
+  end
 
 	# --------------------------------------------------------
 	# Hosts
@@ -298,7 +347,7 @@ class VmwareApiAdaptor
 	def find_vm_by_uuid(_uuid)
     logger.info("vmware_api_adaptor.find_vm_by_uuid");
     v = [self.connection.get_search_index.find_by_uuid(nil, _uuid, true, false)]
-    vm = gather_properties(v);
+    vm = gather_properties(v)
     return vm
   end
 
@@ -310,7 +359,7 @@ class VmwareApiAdaptor
 
   def stop(_uuid)
   	logger.info("vmware_api_adaptor.stop")
-    machine = find_vm_by_uuid(_uuid)
+  machine = find_vm_by_uuid(_uuid)
     machine.power_off_vm_task
   end
 
@@ -377,31 +426,33 @@ class VmwareApiAdaptor
       # parse timestamps?
       logger.info "end performance_manager.query_perf"
 
-      performance_entity_metric_base.each do |pemb|
-        if pemb.instance_of?(Vim::PerfEntityMetric)
-          infos = pemb.get_sample_info
-          values = pemb.get_value
+      unless performance_entity_metric_base.nil?
+        performance_entity_metric_base.each do |pemb|
+          if pemb.instance_of?(Vim::PerfEntityMetric)
+            infos = pemb.get_sample_info
+            values = pemb.get_value
 
-          entity = _vms.select { |e| e["external_vm_id"] == pemb.get_entity.get_value }.first
-          entity["stats"] = {}
-          if infos.present?
-            infos.each_with_index do |info, info_index|
-              metric_hash = {}
-              timestamp = info.get_timestamp.get_time.to_s.to_datetime.iso8601
-              metric_hash["timestamp"] = info.get_timestamp.get_time.to_s.to_datetime.iso8601
+            entity = _vms.select { |e| e["external_vm_id"] == pemb.get_entity.get_value }.first
+            entity["stats"] = {}
+            if infos.present?
+              infos.each_with_index do |info, info_index|
+                metric_hash = {}
+                timestamp = info.get_timestamp.get_time.to_s.to_datetime.iso8601
+                metric_hash["timestamp"] = info.get_timestamp.get_time.to_s.to_datetime.iso8601
 
-              if values.present?
-                values.each do |value|
-                  metric = performance_metrics.select { |e| e[:perf_metric_key] == value.get_id.get_counter_id }.first
-                  metric_name = ( value.get_id.get_instance.to_s.length > 0 ? "#{metric[:metric_name]}.#{value.get_id.get_instance}" : "#{metric[:metric_name]}" )
-                  if value.instance_of?(Vim::PerfMetricIntSeries)
-                    long_values = value.get_value
-                    metric_hash[metric_name] = long_values[info_index]
+                if values.present?
+                  values.each do |value|
+                    metric = performance_metrics.select { |e| e[:perf_metric_key] == value.get_id.get_counter_id }.first
+                    metric_name = ( value.get_id.get_instance.to_s.length > 0 ? "#{metric[:metric_name]}.#{value.get_id.get_instance}" : "#{metric[:metric_name]}" )
+                    if value.instance_of?(Vim::PerfMetricIntSeries)
+                      long_values = value.get_value
+                      metric_hash[metric_name] = long_values[info_index]
+                    end
                   end
                 end
-              end
 
-              entity["stats"][timestamp] = metric_hash
+                entity["stats"][timestamp] = metric_hash
+              end
             end
           end
         end

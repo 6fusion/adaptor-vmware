@@ -1,15 +1,10 @@
-
-require 'java'
-Dir['lib/java/**/*.jar'].each do |jar|
-  $CLASSPATH << jar
-  logger.info("#{jar}")
-  require jar
-end
-$CLASSPATH << "#{PADRINO_ROOT}/lib/java"
-java_import "java.net.URL"
-java_import "com.sixfusion.VMwareAdaptor"
-java_import "java.util.ArrayList"
-java_import "com.vmware.vim25.InvalidLogin"
+# require 'java'
+# Dir['lib/java/**/*.jar'].each do |jar|
+#   $CLASSPATH << jar
+#   logger.info("#{jar}")
+#   require jar
+# end
+# $CLASSPATH << "#{PADRINO_ROOT}/lib/java"
 
 class INode < Base::INode
   attr_accessor :vmware_api_adaptor
@@ -24,37 +19,27 @@ class INode < Base::INode
     self.hypervisor.connection
   end
 
+  def capabilities
+    Capability.all(uuid)
+  end
+
   def hypervisor
     self.vmware_api_adaptor
   end
 
   def about
-    # Connect to vCenter if the session is not already established
-    logger.info("INode.open_session")
-    @vmware_adaptor = VMwareAdaptor.new("https://#{@host_ip_address}/sdk", @user, @password)
-    @vmware_adaptor.gatherVirtualMachines
-    @vmware_adaptor.getAboutInfo.to_hash
+    logger.info("inode.about")
+    vmware_api_adaptor.get_about_info
   end
 
   def virtual_machines
-    # Connect to vCenter if the session is not already established
-    logger.info("INode.open_session")
-    @vmware_adaptor = VMwareAdaptor.new("https://#{@host_ip_address}/sdk", @user, @password)
-    @vmware_adaptor.gatherVirtualMachines
-    @vmware_adaptor.json
+    logger.info("inode.virtual_machines")
+    vmware_api_adaptor.virtual_machines
   end
 
   def statistics_levels
-    # Connect to vCenter if the session is not already established
-    logger.info("INode.open_session")
-    @vmware_adaptor = VMwareAdaptor.new("https://#{@host_ip_address}/sdk", @user, @password)
-    @vmware_adaptor.gatherVirtualMachines
-    rList = []
-    arrList = vmware_adaptor.getStatisticLevels
-    arrList.each do | statistics_level |
-      rList << statistics_level.to_hash
-    end
-    rList
+    logger.info("INode.statistics_levels")
+    vmware_api_adaptor.get_statistic_levels
   end
 
   def self.find_by_uuid(uuid)
@@ -82,8 +67,6 @@ class INode < Base::INode
   end
 
   def close_connection
-    if @vmware_adaptor
-      @vmware_adaptor.close
-    end
+    vmware_api_adaptor.disconnect if vmware_api_adaptor
   end
 end

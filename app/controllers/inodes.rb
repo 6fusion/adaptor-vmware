@@ -42,7 +42,7 @@ AdaptorVMware.controllers :inodes, :priority => :low do
 
   get :show, "/inodes/:uuid", :provides => [:json, :html] do
     logger.info('inodes#show')
-    
+
     @inode = INode.find_by_uuid(params[:uuid])
 
     case content_type
@@ -86,7 +86,7 @@ AdaptorVMware.controllers :inodes, :priority => :low do
     diag = {
       :about => "Not Available",
       :statistics_levels => "Not Available",
-      :virtual_machines => "Not Available" 
+      :virtual_machines => "Not Available"
     }
     begin
       @inode = INode.find_by_uuid(params[:uuid])
@@ -114,7 +114,7 @@ AdaptorVMware.controllers :inodes, :priority => :low do
     end
 
     begin
-      diag[:virtual_machines] = @inode.virtual_machines.to_s
+      diag[:virtual_machines] = @inode.virtual_machines.to_yaml
     rescue InvalidLogin => e
       diag[:virtual_machines] = "Invalid Login"
     rescue => e
@@ -123,7 +123,7 @@ AdaptorVMware.controllers :inodes, :priority => :low do
       diag[:virtual_machines] = "Unable to connect ("+e.to_s+")"
     ensure
       @inode.close_connection
-    end    
+    end
     @inode.close_connection
 
     begin
@@ -190,7 +190,7 @@ AdaptorVMware.controllers :inodes, :priority => :low do
                            rescue InvalidLogin => e
 
     rescue InvalidLogin => e
-      raise Exceptions::Forbidden, "Invalid Login" 
+      raise Exceptions::Forbidden, "Invalid Login"
     rescue => e
       logger.error(e.message)
       logger.error(e.backtrace)
