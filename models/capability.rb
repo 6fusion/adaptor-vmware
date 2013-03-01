@@ -14,6 +14,7 @@ class Capability < Base::Capability
   #   delete
   #   )
   SUPPORTED_CAPABILITIES = %w(
+    inode
     machines 
     machines_readings 
     machine 
