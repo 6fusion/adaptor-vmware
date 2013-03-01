@@ -22,7 +22,7 @@ gem 'torquebox-messaging', torquebox_version
 gem 'torquebox-rake-support', torquebox_version
 gem 'torquebox', torquebox_version
 gem 'padrino-rpm', git: 'https://github.com/6fusion/padrino-rpm.git'
-gem 'newrelic_rpm'
+gem 'newrelic_rpm', require: false
 
 group :development do
   gem 'trinidad'
