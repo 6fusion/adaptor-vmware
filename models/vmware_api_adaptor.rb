@@ -218,11 +218,15 @@ class VmwareApiAdaptor
         vm_properties_hash["maximum_memory"] = vm["config.hardware.memoryMB"] if vm["config.hardware.memoryMB"].present?
         vm_properties_hash["power_state"] = vm["runtime.powerState"].to_s if vm["runtime.powerState"].present?
         vm_properties_hash["cpu_speed"] = (vm_host[:hz].to_f / 1000000).to_s if vm_host[:hz].present?
+        vm_properties_hash["guest_agent"] = (vm["guest.toolsStatus"] == "toolsNotInstalled" ? false : true)
 
-        system_hash = {}
-        system_hash["architecture"] = (vm["guest.guestId"].index("64") ? "x64" : "x32") if vm["guest.guestId"].present?
-        system_hash["operating_system"] = vm["guest.guestFullName"] if vm["guest.guestFullName"].present?
-        vm_properties_hash["system"] = system_hash
+        system_array = {}
+        system_array["architecture"] = (vm["guest.guestId"].index("64") ? "x64" : "x32")
+        operating_system_hash = {}
+        operating_system_hash["name"] = vm["guest.guestFullName"] if vm["guest.guestFullName"]
+        operating_system_hash["distro"] = vm["guest.guestId"]
+        system_array["operating_system"] = operating_system_hash
+        vm_properties_hash["system"] = system_array
 
         vm_properties_hash["disks"] = []
         vm_properties_hash["nics"] = []
@@ -437,9 +441,8 @@ class VmwareApiAdaptor
             if infos.present?
               infos.each_with_index do |info, info_index|
                 metric_hash = {}
-                timestamp = info.get_timestamp.get_time.to_s.to_datetime.iso8601
-                metric_hash["timestamp"] = info.get_timestamp.get_time.to_s.to_datetime.iso8601
-
+                timestamp = info.get_timestamp.get_time.to_s.to_datetime.strftime("%Y-%m-%dT%H:%M:%SZ")
+                metric_hash["timestamp"] = timestamp
                 if values.present?
                   values.each do |value|
                     metric = performance_metrics.select { |e| e[:perf_metric_key] == value.get_id.get_counter_id }.first
