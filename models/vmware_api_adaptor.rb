@@ -277,15 +277,17 @@ class VmwareApiAdaptor
     when Vim::VirtualDiskFlatVer2BackingInfo
       disk_hash["split"] = backing.get_split if backing.get_split
       disk_hash["write_through"] = backing.get_write_through if backing.get_write_through
-      disk_hash["thin"] = backing.get_thin_provisioned if backing.get_thin_provisioned
+      disk_hash["thin"] = (backing.get_thin_provisioned ? true : false)
       disk_hash["file_name"] = backing.get_file_name if backing.get_file_name
     when Vim::VirtualDiskRawDiskMappingVer1BackingInfo
+      disk_hash["type"] = "Shared"
       disk_hash["compatability_mode"] = backing.get_compatibility_mode if backing.get_compatibility_mode
       disk_hash["device_name"] = backing.get_device_name if backing.get_device_name
       disk_hash["lun_uuid"] = backing.get_lun_uuid if backing.get_lun_uuid
       disk_hash["uuid"] = backing.get_lun_uuid if backing.get_lun_uuid
       # disk_hash["uuid"] = backing.getUuid if backing.getUuid
     when Vim::VirtualDiskRawDiskVer2BackingInfo
+      disk_hash["type"] = "Shared"
       disk_hash["device_name"] = backing.get_device_name if backing.get_device_name
       disk_hash["descriptive_file_name"] = backing.get_descriptor_file_name if backing.get_descriptor_file_name
     when Vim::VirtualDiskSparseVer2BackingInfo
