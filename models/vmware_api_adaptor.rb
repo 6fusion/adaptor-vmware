@@ -221,7 +221,7 @@ class VmwareApiAdaptor
         vm_properties_hash["guest_agent"] = (vm["guest.toolsStatus"] == "toolsNotInstalled" ? false : true)
 
         system_array = {}
-        system_array["architecture"] = (vm["guest.guestId"].index("64") ? "x64" : "x32")
+        system_array["architecture"] = (vm["guest.guestId"].to_s.include?("64") ? "x64" : "x32")
         operating_system_hash = {}
         operating_system_hash["name"] = vm["guest.guestFullName"] if vm["guest.guestFullName"]
         operating_system_hash["distro"] = vm["guest.guestId"]
@@ -264,6 +264,7 @@ class VmwareApiAdaptor
     disk_hash["unit_number"] = disk.get_unit_number # if disk.get_unit_number
     disk_hash["name"] = disk.get_device_info.get_label # if disk.get_device_info && disk.get_device_info.get_label
     disk_hash["key"] = disk.get_key # if disk.get_key
+    disk_hash["thin"] = false
 
     backing = disk.get_backing
 
