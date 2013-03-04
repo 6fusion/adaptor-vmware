@@ -1,4 +1,3 @@
-
 require 'java'
 Dir['lib/java/**/*.jar'].each do |jar|
   $CLASSPATH << jar
@@ -14,7 +13,7 @@ class INode < Base::INode
 
   def about
     # Connect to vCenter if the session is not already established
-    logger.info("INode.open_session")        
+    logger.info("INode.open_session")
     @vmware_adaptor = VMwareAdaptor.new("https://#{@host_ip_address}/sdk", @user, @password)
     @vmware_adaptor.gatherVirtualMachines
     @vmware_adaptor.getAboutInfo.to_hash
@@ -22,20 +21,20 @@ class INode < Base::INode
 
   def virtual_machines
     # Connect to vCenter if the session is not already established
-    logger.info("INode.open_session")        
+    logger.info("INode.open_session")
     @vmware_adaptor = VMwareAdaptor.new("https://#{@host_ip_address}/sdk", @user, @password)
     @vmware_adaptor.gatherVirtualMachines
     @vmware_adaptor.json
   end
 
-  def statistics_levels 
+  def statistics_levels
     # Connect to vCenter if the session is not already established
-    logger.info("INode.open_session")        
+    logger.info("INode.open_session")
     @vmware_adaptor = VMwareAdaptor.new("https://#{@host_ip_address}/sdk", @user, @password)
     @vmware_adaptor.gatherVirtualMachines
-    rList = []
+    rList   = []
     arrList = vmware_adaptor.getStatisticLevels
-    arrList.each do | statistics_level |
+    arrList.each do |statistics_level|
       rList << statistics_level.to_hash
     end
     rList
@@ -63,6 +62,26 @@ class INode < Base::INode
     logger.info("INode.delete(#{uuid})")
 
     super
+  end
+
+  def branch
+    if File.exists?('/var/6fusion/adaptor-vmware/current/VERSION')
+      File.read('/var/6fusion/adaptor-vmware/current/VERSION').chomp
+    else
+      `git branch --no-color 2> /dev/null`.chomp.split("\n").grep(/^[*]/).first[/(\S+)$/, 1]
+    end
+  end
+
+  def revision
+    if File.exists?('/var/6fusion/adaptor-vmware/current/REVISION')
+      File.read('/var/6fusion/adaptor-vmware/current/REVISION').chomp
+    else
+      `git rev-parse HEAD`.chomp
+    end
+  end
+
+  def release_version
+    "#{branch} (#{revision})"
   end
 
   def close_connection
