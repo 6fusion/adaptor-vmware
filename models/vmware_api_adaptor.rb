@@ -49,23 +49,8 @@ class VmwareApiAdaptor
   # @return [VIJava, VIJava::ServiceInstance]
   # @yield [VIJava, VIJava::ServiceInstance]
   def connect(_host, _user, _password)
-  	# TODO: retry logic, exception handling
   	disconnect
-  	retry_count = 0
-  	# begin
-  		retry_count += 1
-  		@connection = VIJava::ServiceInstance.new(URL.new("https://#{_host}/sdk"), _user, _password, true)
-  	# rescue java.rmi.RemoteException
-  	# 	java.rmi.RemoteException => exception
-  	# 	logger.error "Unable to connect to #{_host} with #{_user} try ##{retry_count}: #{exception}"
-  	# 	if retry_count < 5
-   #      sleep 1
-   #      retry
-   #    else
-   #      raise exception
-   #    end
-  	# end
-
+  	@connection = VIJava::ServiceInstance.new(URL.new("https://#{_host}/sdk"), _user, _password, true)
   	return @connection
   end
 

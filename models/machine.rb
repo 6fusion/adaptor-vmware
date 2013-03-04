@@ -58,12 +58,12 @@ class Machine < Base::Machine
   end
   add_method_tracer :create_from_ovf
 
-  def self.vmware_adaptor(inode)
+  def self.all(inode)
     begin
-      vmware_adaptor = inode.vmware_api_adaptor.connect("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
-      # vmware_adaptor.gatherVirtualMachines
-      # vmware_adaptor.vmMap.to_hash
+      inode.vmware_api_adaptor.virtual_machines
     rescue Vim::InvalidLogin => e
+      logger.error(e.message)
+      logger.error(e.backtrace)
       raise Exceptions::Forbidden, "Invalid Login"
     rescue => e
       logger.error(e.message)
@@ -72,10 +72,6 @@ class Machine < Base::Machine
     ensure
       inode.close_connection
     end
-  end
-
-  def self.all(inode)
-    inode.vmware_api_adaptor.virtual_machines
   end
 
   def self.all_with_readings(inode, _interval = 300, _since = 10.minutes.ago.utc, _until = 5.minutes.ago.utc)
