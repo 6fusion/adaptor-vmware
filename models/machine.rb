@@ -167,20 +167,20 @@ class Machine < Base::Machine
   end
   add_method_tracer :readings
 
-  # def start(inode)
-  #   logger.info("machine.start")
-  #   machine = inode.vmware_api_adaptor.start(uuid)
-  # end
+  def start(inode)
+    logger.info("machine.start")
+    machine = inode.vmware_api_adaptor.start(uuid)
+  end
 
-  # def stop(inode)
-  #   logger.info("machine.stop")
-  #   machine = inode.vmware_api_adaptor.stop(uuid)
-  # end
+  def stop(inode)
+    logger.info("machine.stop")
+    machine = inode.vmware_api_adaptor.stop(uuid)
+  end
 
-  # def restart(inode)
-  #   logger.info("machine.restart")
-  #   machine = inode.vmware_api_adaptor.restart(uuid)
-  # end
+  def restart(inode)
+    logger.info("machine.restart")
+    machine = inode.vmware_api_adaptor.restart(uuid)
+  end
 
   # def force_stop(inode)
   #   logger.info("machine.force_stop")

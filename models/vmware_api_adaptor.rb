@@ -152,6 +152,56 @@ class VmwareApiAdaptor
     return _hosts
 	end
 
+  def datastores
+    logger.info("vmware_api_adaptor.datastores")
+    datastores = []
+    self.hosts.each do |host|
+      hdsb = host[:host_mor].get_datastore_browser
+      hdsb.get_datastores.each do |ds|
+        # don't build a hash, or add it to the list of datastores if it's already there
+        if datastores.select {|d| d["moref_id"] == ds.get_mor.get_value }.empty?
+          ds_hash = {}
+          ds_hash["mor"] = ds
+          ds_hash["moref_id"] = ds.get_mor.get_value
+          ds_hash["name"] = ds.get_info.get_name if ds.get_info.get_name
+          ds_hash["max_file_size"] = ds.get_info.get_max_file_size if ds.get_info.get_max_file_size
+          ds_hash["free_space"] = ds.get_info.get_free_space if ds.get_info.get_free_space
+          ds_hash["url"] = ds.get_info.get_url if ds.get_info.get_url
+          ds_hash["media_files"] = virtual_disks(ds)
+          datastores << ds_hash
+        end
+      end
+    end
+
+    datastores
+  end
+
+  def virtual_disks(_datastore)
+    logger.info("vmware_api_adaptor.virtual_disks")
+    ds_browser = _datastore.get_browser
+    v_disk_filter = Vim::VmDiskFileQueryFilter.new();
+    v_disk_filter.set_controller_type(["VirtualIDEController"].to_java(:string))
+    search_spec = Vim::HostDatastoreBrowserSearchSpec.new()
+    search_spec.set_query([Vim::VmDiskFileQuery.new()])
+
+    media_files = []
+
+    temp_task = ds_browser.searchDatastoreSubFolders_Task("[#{_datastore.get_info.get_name}]", search_spec)
+    sleep(1) while ["queued", "running"].include?(temp_task.get_task_info.get_state.to_s)
+    results = temp_task.get_task_info.get_result.get_host_datastore_browser_search_results
+    results.each do |r|
+      if r.file.present?
+        r.file.each do |f|
+          media_files << {
+            "path" => f.get_path
+          }
+        end
+      end
+    end
+
+    return media_files
+  end
+
  	# --------------------------------------------------------
 	# Virtual Machines
 	# --------------------------------------------------------
@@ -344,25 +394,78 @@ class VmwareApiAdaptor
   end
 
   def start(_uuid)
-		logger.info("vmware_api_adaptor.start")
-  	machine = find_vm_by_uuid(_uuid)
-  	machine.power_on_vm_task(nil)
+    begin
+  		logger.info("vmware_api_adaptor.start")
+    	machine = find_vm_by_uuid(_uuid)
+      tasks = []
+      machine.map { |vm| tasks << vm["mor"].power_on_vm_task(nil) }
+      tasks.each do |t|
+        if t.present?
+          sleep(1) while ["queued", "running"].include?(t.get_task_info.get_state.to_s)
+          if t.get_task_info.get_state.to_s.include?("error")
+            raise Exceptions::Unrecoverable.new("Cannot Complete Requested Action: #{t.get_task_info.get_error.get_localized_message.to_s}")
+          end
+        end
+      end
+    rescue Java::RuntimeFault,
+      Java::RemoteException => e
+      logger.warn("Invalid #{e.get_localized_message.to_s}")
+      raise Exceptions::Unrecoverable.new("Cannot Complete Requested Action: #{e.class.to_s}")
+    rescue Vim::InvalidState,
+      Vim::TaskInProgress => e
+      logger.warn("Invalid #{e.class.to_s}")
+      raise Exceptions::MethodNotAllowed.new("Method Not Allowed: #{e.class.to_s}")
+    end
   end
 
   def stop(_uuid)
-  	logger.info("vmware_api_adaptor.stop")
-  machine = find_vm_by_uuid(_uuid)
-    machine.power_off_vm_task
+    begin
+    	logger.info("vmware_api_adaptor.stop")
+      machine = find_vm_by_uuid(_uuid)
+      tasks = []
+      machine.map { |vm| tasks << vm["mor"].power_off_vm_task }
+      tasks.each do |t|
+        if t.present?
+          sleep(1) while ["queued", "running"].include?(t.get_task_info.get_state.to_s)
+          if t.get_task_info.get_state.to_s.include?("error")
+            raise Exceptions::Unrecoverable.new("Cannot Complete Requested Action: #{t.get_task_info.get_error.get_localized_message.to_s}")
+          end
+        end
+      end
+    rescue Java::RuntimeFault,
+      Java::RemoteException => e
+      logger.warn("Invalid #{e.class.to_s}")
+      raise Exceptions::Unrecoverable.new("Cannot Complete Requested Action: #{e.class.to_s}")
+    rescue Vim::InvalidState,
+      Vim::TaskInProgress => e
+      logger.warn("Invalid #{e.class.to_s}")
+      raise Exceptions::MethodNotAllowed.new("Method Not Allowed: #{e.class.to_s}")
+    end
   end
 
   def restart(_uuid)
   	begin
 	  	logger.info("vmware_api_adaptor.restart")
 	    machine = find_vm_by_uuid(_uuid)
-	    machine.reboot_guest
-    rescue Java::ComVmwareVim25::ToolsUnavailable => e
-    	logger.warn("Invalid #{e.cause.shortDescription}")
-      raise Exceptions::MethodNotAllowed.new("Cannot Complete Requested Action: #{e.cause.shortDescription}")
+      tasks = []
+	    machine.map { |vm| tasks << vm["mor"].reboot_guest }
+      tasks.each do |t|
+        if t.present?
+          sleep(1) while ["queued", "running"].include?(t.get_task_info.get_state.to_s)
+          if t.get_task_info.get_state.to_s.include?("error")
+            raise Exceptions::Unrecoverable.new("Cannot Complete Requested Action: #{t.get_task_info.get_error.get_localized_message.to_s}")
+          end
+        end
+      end
+    rescue Java::RuntimeFault,
+      Java::RemoteException => e
+    	logger.warn("Invalid #{e.class.to_s}")
+      raise Exceptions::Unrecoverable.new("Cannot Complete Requested Action: #{e.class.to_s}")
+    rescue Vim::InvalidState,
+      Vim::ToolsUnavailable,
+      Vim::TaskInProgress => e
+      logger.warn("Invalid #{e.class.to_s}")
+      raise Exceptions::MethodNotAllowed.new("Method Not Allowed: #{e.class.to_s}")
     end
   end
 
