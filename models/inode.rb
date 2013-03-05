@@ -89,4 +89,11 @@ class INode < Base::INode
   def close_connection
     vmware_api_adaptor.disconnect if vmware_api_adaptor
   end
+
+   # used by #save to serialize iNode configurations
+  # @param [Hash] options -- ignored
+  # @return [String] JSON encoded string
+  def to_json(options={ })
+    Rabl::Renderer.json(self, 'inodes/create')
+  end
 end
