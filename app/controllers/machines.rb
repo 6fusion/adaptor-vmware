@@ -1,11 +1,11 @@
-AdaptorVMware.controllers :machines, :map => "/inodes/:inode_uuid" do
-  include ::NewRelic::Agent::MethodTracer
-  add_method_tracer :render
+AdaptorVMware.controllers :machines, :parent => :inodes do
+  # include ::NewRelic::Agent::MethodTracer
+  # add_method_tracer :render
   before do
     logger.info('machines#before')
     logger.debug(route.as_options[:__name__])
     content_type 'application/json'
-    @inode = INode.find_by_uuid(params[:inode_uuid])
+    @inode = INode.find_by_uuid(params[:inode_id])
   end
 
   # Creates
@@ -18,7 +18,7 @@ AdaptorVMware.controllers :machines, :map => "/inodes/:inode_uuid" do
   # Reads
   get :index do
     logger.info('GET - machines#index')
-    @machines = Machine.vm_inventory(@inode).map {|_, vm| Machine.new(vm)}
+    @machines = Machine.all(@inode).map { |vm| Machine.new(vm) }
     render 'machines/index'
   end
 
@@ -31,7 +31,7 @@ AdaptorVMware.controllers :machines, :map => "/inodes/:inode_uuid" do
 
     params[:per_page] ||= 5
     logger.info("params "+_since.to_s+" "+_until.to_s)
-    @machines = Machine.all_with_readings(@inode,_interval,_since,_until)
+    @machines = Machine.all_with_readings(@inode,_interval,_since,_until).map { |vm| Machine.new(vm) }
     render 'machines/readings'
 
   end
@@ -58,8 +58,8 @@ AdaptorVMware.controllers :machines, :map => "/inodes/:inode_uuid" do
   put :show, :map => 'machines/:uuid/start' do
     logger.info('PUT - machines.uuid#start')
 
-    @inode.open_session
     @machine = Machine.find_by_uuid(@inode, params[:uuid])
+    logger.info @machine.inspect
     @machine.start(@inode) if @machine.present?
 
     render 'machines/show'

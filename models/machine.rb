@@ -1,12 +1,11 @@
 require 'java'
-Dir['lib/java/**/*.jar'].each do |jar|
-  $CLASSPATH << jar
-  require jar
-end
-$CLASSPATH << "#{PADRINO_ROOT}/lib/java"
-java_import "VMwareInventory"
-
-java_import "com.vmware.vim25.InvalidLogin"
+# Dir['lib/java/**/*.jar'].each do |jar|
+#   $CLASSPATH << jar
+#   require jar
+# end
+# $CLASSPATH << "#{PADRINO_ROOT}/lib/java"
+# java_import "com.sixfusion.VMwareAdaptor"
+# java_import "com.vmware.vim25.InvalidLogin"
 
 
 class Time
@@ -22,13 +21,11 @@ end
 class Machine < Base::Machine
   include TorqueBox::Messaging::Backgroundable
 
-  include ::NewRelic::Agent::MethodTracer
+  # include ::NewRelic::Agent::MethodTracer
 
   attr_accessor :external_vm_id,
                 :external_host_id,
                 :stats
-
-
 
   KB = 1024
   MB = 1024**2
@@ -37,126 +34,113 @@ class Machine < Base::Machine
 
   # Used to cache Host CPU hz to avoid making repetitive VMWare SOAP calls
   @@hz_cache = {}
-  
+
+  def initialize(args)
+    self.stats = args["stats"] if args["stats"]
+    super
+  end
+
   def create_from_ovf(inode, ovf)
     logger.info("Creating Machine(s) from OVF")
 
     begin
-      vm_inventory = VMwareInventory.new("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
+      vmware_adaptor = inode.connect("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
       #do something like deploy an OVF!
     rescue InvalidLogin => e
-      raise Exceptions::Forbidden, "Invalid Login" 
+      raise Exceptions::Forbidden, "Invalid Login"
     rescue => e
       logger.error(e.message)
       logger.error(e.backtrace)
       raise Exceptions::Unrecoverable, e.to_s
     ensure
-      inode.close_vm_inventory(vm_inventory)
+      inode.close_connection
     end
   end
   add_method_tracer :create_from_ovf
 
-  def self.vm_inventory(inode)
+  def self.all(inode)
     begin
-      vm_inventory = VMwareInventory.new("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
-      vm_inventory.gatherVirtualMachines
-      vm_inventory.vmMap.to_hash
-    rescue InvalidLogin => e
-      raise Exceptions::Forbidden, "Invalid Login" 
+      inode.vmware_api_adaptor.virtual_machines
+    rescue Vim::InvalidLogin => e
+      logger.error(e.message)
+      logger.error(e.backtrace)
+      raise Exceptions::Forbidden, "Invalid Login"
     rescue => e
       logger.error(e.message)
       logger.error(e.backtrace)
       raise Exceptions::Unrecoverable, e.to_s
     ensure
-      inode.close_vm_inventory(vm_inventory)
+      inode.close_connection
     end
   end
 
-  def self.all(inode)
-    self.vm_inventory(inode)
-  end
-
-  def self.all_with_readings(inode, _interval = 300,  _since = 10.minutes.ago.utc, _until = 5.minutes.ago.utc)
-
+  def self.all_with_readings(inode, _interval = 300, _since = 10.minutes.ago.utc, _until = 5.minutes.ago.utc)
     begin
       # Retrieve all machines and virtual machine references
-
-      vm_inventory = VMwareInventory.new("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
-      startTime = _since.floor(5.minutes).utc.strftime('%Y-%m-%dT%H:%M:%S')+"Z"
-      endTime = _until.round(5.minutes).utc.strftime('%Y-%m-%dT%H:%M:%S')+"Z"
-      vm_inventory.readings( startTime.to_java, endTime.to_java)
-      # DEBUG
-      # vm_inventory.printVMs()
-
-      machines = vm_inventory.vmMap.to_hash.map {|_, vm| Machine.new(vm)}
-
-      # Returns update machine array
+      start_time = _since.floor(5.minutes).utc
+      end_time = _until.round(5.minutes).utc
+      adaptor = inode.vmware_api_adaptor
+      machines = adaptor.readings(adaptor.virtual_machines, start_time, end_time)
       machines
-
     rescue InvalidLogin => e
-      raise Exceptions::Forbidden, "Invalid Login" 
+      raise Exceptions::Forbidden, "Invalid Login"
     rescue => e
       logger.error(e.message)
       logger.error(e.backtrace)
       raise Exceptions::Unrecoverable, e.to_s
     ensure
-      inode.close_vm_inventory(vm_inventory)
+      inode.close_connection
     end
   end
 
   def self.find_by_uuid(inode, uuid)
     begin
-      vm_inventory = VMwareInventory.new("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
-      props = vm_inventory.findByUuid(uuid)
-      unless props.nil?
-        self.new(props.to_hash)
+      vm = inode.vmware_api_adaptor.find_vm_by_uuid(uuid)
+      unless vm.nil? || vm.first.nil?
+        Machine.new(vm.first)
       else
-        raise Exceptions::NotFound 
-      end 
+        raise Exceptions::NotFound
+      end
     rescue InvalidLogin => e
-      raise Exceptions::Forbidden, "Invalid Login" 
+      raise Exceptions::Forbidden, "Invalid Login"
     rescue => e
       logger.error(e.message)
       logger.error(e.backtrace)
       raise Exceptions::Unrecoverable, e.to_s
     ensure
-      inode.close_vm_inventory(vm_inventory)
+      inode.close_connection
     end
   end
- 
 
-  def self.find_by_uuid_with_readings(inode, uuid, _interval = 300, _since = 10.minutes.ago.utc, _until =  5.minutes.ago.utc)
+
+  def self.find_by_uuid_with_readings(inode, uuid, _interval = 300, _since = 10.minutes.ago.utc, _until = 5.minutes.ago.utc)
     begin
-      vm_inventory = VMwareInventory.new("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
-
-      startTime = _since.floor(5.minutes).utc.strftime('%Y-%m-%dT%H:%M:%S')+"Z"
-      endTime = _until.round(5.minutes).utc.strftime('%Y-%m-%dT%H:%M:%S')+"Z"
-      props = vm_inventory.findByUuidWithReadings(uuid.to_java, startTime.to_java, endTime.to_java)
-      unless props.nil?
-        vm = self.new(props.to_hash)
+      start_time = _since.floor(5.minutes).utc
+      end_time = _until.round(5.minutes).utc
+      adaptor = inode.vmware_api_adaptor
+      vm = adaptor.readings(adaptor.find_vm_by_uuid(uuid), start_time, end_time)
+      unless vm.nil? || vm.first.nil?
+        Machine.new(vm.first)
       else
-        raise Exceptions::NotFound 
-      end 
-      vm       
+        raise Exceptions::NotFound
+      end
     rescue InvalidLogin => e
-      raise Exceptions::Forbidden, "Invalid Login" 
+      raise Exceptions::Forbidden, "Invalid Login"
     rescue => e
       logger.error(e.message)
       logger.error(e.backtrace)
       raise Exceptions::Unrecoverable, e.to_s
     ensure
-      inode.close_vm_inventory(vm_inventory)
+      inode.close_connection
     end
   end
 
   def readings(_interval = 300, _since = 10.minutes.ago.utc, _until = 5.minutes.ago.utc)
     begin
-
-    
       result = []
       # timestamps.keys.each do |timestamp|
-      if !@stats.nil? 
-        @stats.keys.each do | timestamp |  
+      if !@stats.nil?
+        @stats.keys.each do | timestamp |
             metrics = @stats[timestamp]
             # Note: cpu.usage.average unit of measure is hundreths of a percent so 1023 is really 10.23% or .1023
             # you could assert that metric["cpu.usage.average"].to_f /10000) * @cpu_speed * @cpu_count = metrics["cpu.usagemhz.average"]
@@ -168,7 +152,7 @@ class Machine < Base::Machine
                                            :memory_bytes => memory_bytes,
                                            :date_time    => timestamp }
             )
-         
+
         end
       end
       #       logger.debug("CPU Metric Usage="+(metric_readings[cpu_metric_usage][i].to_f / (100**2)).to_s)
@@ -185,57 +169,18 @@ class Machine < Base::Machine
 
   # def start(inode)
   #   logger.info("machine.start")
-
-  #   begin
-  #     vm.PowerOnVM_Task.wait_for_completion
-  #     @power_state = "starting"
-
-  #   rescue RbVmomi::Fault => e
-  #     logger.error(e.message)
-  #     raise Exceptionss::Forbidden.new(e.message)
-
-  #   rescue => e
-  #     logger.error(e.message)
-  #     raise Exceptionss::Unrecoverable
-  #   end
+  #   machine = inode.vmware_api_adaptor.start(uuid)
   # end
-  # add_method_tracer :start
 
   # def stop(inode)
   #   logger.info("machine.stop")
-
-  #   begin
-  #     vm.ShutdownGuest
-  #     @power_state = "stopping"
-
-  #   rescue RbVmomi::Fault => e
-  #     logger.error(e.message)
-  #     raise Exceptionss::Forbidden.new(e.message)
-
-  #   rescue => e
-  #     logger.error(e.message)
-  #     raise Exceptionss::Unrecoverable
-  #   end
+  #   machine = inode.vmware_api_adaptor.stop(uuid)
   # end
-  # add_method_tracer :stop
 
   # def restart(inode)
   #   logger.info("machine.restart")
-
-  #   begin
-  #     vm.RebootGuest
-  #     @power_state = "restarting"
-
-  #   rescue RbVmomi::Fault => e
-  #     logger.error(e.message)
-  #     raise Exceptionss::Forbidden.new(e.message)
-
-  #   rescue => e
-  #     logger.error(e.message)
-  #     raise Exceptionss::Unrecoverable
-  #   end
+  #   machine = inode.vmware_api_adaptor.restart(uuid)
   # end
-  # add_method_tracer :restart
 
   # def force_stop(inode)
   #   logger.info("machine.force_stop")
@@ -313,14 +258,14 @@ class Machine < Base::Machine
        @disks.each do |disk|
          disk.stats = stats
        end
-     end      
+     end
   end
   add_method_tracer :disks=
 
 
   private
 
- 
+
 
   # Helper Method for converting machine power states.
   def self.convert_power_state(tools_status, power_status)
@@ -330,17 +275,17 @@ class Machine < Base::Machine
       status = "#{tools_status}|#{power_status}"
 
       case status
-        when "toolsOk|poweredOn" 
+        when "toolsOk|poweredOn"
           "started"
-        when "toolsOld|poweredOn" 
+        when "toolsOld|poweredOn"
           "started"
-        when "toolsNotInstalled|poweredOn" 
+        when "toolsNotInstalled|poweredOn"
           "started"
-        when "toolsNotRunning|poweredOff" 
+        when "toolsNotRunning|poweredOff"
           "stopped"
-        when "toolsOld|poweredOff" 
+        when "toolsOld|poweredOff"
           "stopped"
-        when "toolsNotInstalled|poweredOff" 
+        when "toolsNotInstalled|poweredOff"
           "stopped"
         when "toolsNotRunning|poweredOn"
           "started"
@@ -355,7 +300,7 @@ class Machine < Base::Machine
 
   class << self
     include ::NewRelic::Agent::MethodTracer
-    add_method_tracer :vm_inventory
+    add_method_tracer :vmware_adaptor
     add_method_tracer :all
     add_method_tracer :all_with_readings
     add_method_tracer :find_by_uuid

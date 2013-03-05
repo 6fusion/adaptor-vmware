@@ -1,4 +1,5 @@
 PADRINO_ENV = 'test' unless defined?(PADRINO_ENV)
+require "test/unit"
 require File.expand_path(File.dirname(__FILE__) + "/../config/boot")
 
 RSpec.configure do |conf|

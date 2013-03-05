@@ -1,58 +1,45 @@
-
-require 'java'
-Dir['lib/java/**/*.jar'].each do |jar|
-  $CLASSPATH << jar
-  require jar
-end
-$CLASSPATH << "#{PADRINO_ROOT}/lib/java"
-java_import "VMwareInventory"
-java_import "java.util.ArrayList"
-java_import "com.vmware.vim25.InvalidLogin"
+# require 'java'
+# Dir['lib/java/**/*.jar'].each do |jar|
+#   $CLASSPATH << jar
+#   logger.info("#{jar}")
+#   require jar
+# end
+# $CLASSPATH << "#{PADRINO_ROOT}/lib/java"
 
 class INode < Base::INode
-  attr_reader :uuid, :session, :host_ip_address, :user, :password
+  attr_accessor :vmware_api_adaptor
+  attr_reader :uuid, :session, :host_ip_address, :user, :password, :vmware_adaptor
 
-  def about
-    begin
-      # Connect to vCenter if the session is not already established
-      logger.info("INode.open_session")        
-      vm_inventory = VMwareInventory.new("https://#{@host_ip_address}/sdk", @user, @password)
-      vm_inventory.gatherVirtualMachines
-      vm_inventory.getAboutInfo.to_hash
-    rescue InvalidLogin => e
-      raise Exceptions::Forbidden, "Invalid Login" 
-    rescue => e
-      logger.error(e.message)
-      logger.error(e.backtrace)
-      raise Exceptions::Unrecoverable, e.to_s
-    ensure
-      unless vm_inventory.nil?
-        self.close_vm_inventory(vm_inventory)
-      end
-    end
+  def initialize(attributes)
+    super
+    self.vmware_api_adaptor = VmwareApiAdaptor.new(self)
   end
 
-  def statistics_levels 
-    begin
-      # Connect to vCenter if the session is not already established
-      logger.info("INode.open_session")        
-      vm_inventory = VMwareInventory.new("https://#{@host_ip_address}/sdk", @user, @password)
-      vm_inventory.gatherVirtualMachines
-      rList = []
-      arrList = vm_inventory.getStatisticLevels
-      arrList.each do | statistics_level |
-        rList << statistics_level.to_hash
-      end
-      rList
-    rescue InvalidLogin => e
-      raise Exceptions::Forbidden, "Invalid Login" 
-    rescue => e
-      logger.error(e.message)
-      logger.error(e.backtrace)
-      raise Exceptions::Unrecoverable, e.to_s
-    ensure
-      self.close_vm_inventory(vm_inventory)
-    end
+  def connection
+    self.hypervisor.connection
+  end
+
+  def capabilities
+    Capability.all(uuid)
+  end
+
+  def hypervisor
+    self.vmware_api_adaptor
+  end
+
+  def about
+    logger.info("inode.about")
+    vmware_api_adaptor.get_about_info
+  end
+
+  def virtual_machines
+    logger.info("inode.virtual_machines")
+    vmware_api_adaptor.virtual_machines
+  end
+
+  def statistics_levels
+    logger.info("INode.statistics_levels")
+    vmware_api_adaptor.get_statistic_levels
   end
 
   def self.find_by_uuid(uuid)
@@ -79,9 +66,34 @@ class INode < Base::INode
     super
   end
 
-  def close_vm_inventory(vm_inventory)
-    if vm_inventory
-      vm_inventory.close
+  def branch
+    if File.exists?('/var/6fusion/adaptor-vmware/current/VERSION')
+      File.read('/var/6fusion/adaptor-vmware/current/VERSION').chomp
+    else
+      `git branch --no-color 2> /dev/null`.chomp.split("\n").grep(/^[*]/).first[/(\S+)$/, 1]
     end
+  end
+
+  def revision
+    if File.exists?('/var/6fusion/adaptor-vmware/current/REVISION')
+      File.read('/var/6fusion/adaptor-vmware/current/REVISION').chomp
+    else
+      `git rev-parse HEAD`.chomp
+    end
+  end
+
+  def release_version
+    "#{branch} (#{revision})"
+  end
+
+  def close_connection
+    vmware_api_adaptor.disconnect if vmware_api_adaptor
+  end
+
+   # used by #save to serialize iNode configurations
+  # @param [Hash] options -- ignored
+  # @return [String] JSON encoded string
+  def to_json(options={ })
+    Rabl::Renderer.json(self, 'inodes/create')
   end
 end

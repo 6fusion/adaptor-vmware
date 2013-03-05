@@ -1,4 +1,4 @@
-AdaptorVMware.controllers :hosts, :map => "/inodes/:inode_uuid" do
+AdaptorVMware.controllers :hosts, :parent => :inodes do
   before do
     logger.info('hosts#before')
     content_type 'application/json'
