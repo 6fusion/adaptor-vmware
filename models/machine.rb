@@ -182,41 +182,15 @@ class Machine < Base::Machine
     machine = inode.vmware_api_adaptor.restart(uuid)
   end
 
-  # def force_stop(inode)
-  #   logger.info("machine.force_stop")
+  def force_restart(inode)
+    logger.info("machine.start")
+    machine = inode.vmware_api_adaptor.force_restart(uuid)
+  end
 
-  #   begin
-  #     vm.PowerOffVM_Task.wait_for_completion
-  #     @power_state = "stopping"
-
-  #   rescue RbVmomi::Fault => e
-  #     logger.error(e.message)
-  #     raise Exceptionss::Forbidden.new(e.message)
-
-  #   rescue => e
-  #     logger.error(e.message)
-  #     raise Exceptionss::Unrecoverable
-  #   end
-  # end
-  # add_method_tracer :force_stop
-
-  # def force_restart(inode)
-  #   logger.info("machine.force_restart")
-
-  #   begin
-  #     vm.ResetVM_Task.wait_for_completion
-  #     @power_state = "restarting"
-
-  #   rescue RbVmomi::Fault => e
-  #     logger.error(e.message)
-  #     raise Exceptionss::Forbidden.new(e.message)
-
-  #   rescue => e
-  #     logger.error(e.message)
-  #     raise Exceptionss::Unrecoverable
-  #   end
-  # end
-  # add_method_tracer :force_restart
+  def force_stop(inode)
+    logger.info("machine.stop")
+    machine = inode.vmware_api_adaptor.force_stop(uuid)
+  end
 
   # def save(inode)
   #   logger.info("machine.save")
@@ -264,9 +238,6 @@ class Machine < Base::Machine
 
 
   private
-
-
-
   # Helper Method for converting machine power states.
   def self.convert_power_state(tools_status, power_status)
     logger.info('machine.convert_power_state')

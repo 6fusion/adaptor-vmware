@@ -420,6 +420,31 @@ class VmwareApiAdaptor
 
   def stop(_uuid)
     begin
+      logger.info("vmware_api_adaptor.stop")
+      machine = find_vm_by_uuid(_uuid)
+      tasks = []
+      machine.map { |vm| tasks << vm["mor"].shutdown_guest }
+      tasks.each do |t|
+        if t.present?
+          sleep(1) while ["queued", "running"].include?(t.get_task_info.get_state.to_s)
+          if t.get_task_info.get_state.to_s.include?("error")
+            raise Exceptions::Unrecoverable.new("Cannot Complete Requested Action: #{t.get_task_info.get_error.get_localized_message.to_s}")
+          end
+        end
+      end
+    rescue Java::RuntimeFault,
+      Java::RemoteException => e
+      logger.warn("Invalid #{e.class.to_s}")
+      raise Exceptions::Unrecoverable.new("Cannot Complete Requested Action: #{e.class.to_s}")
+    rescue Vim::InvalidState,
+      Vim::TaskInProgress => e
+      logger.warn("Invalid #{e.class.to_s}")
+      raise Exceptions::MethodNotAllowed.new("Method Not Allowed: #{e.class.to_s}")
+    end
+  end
+
+  def force_stop(_uuid)
+    begin
     	logger.info("vmware_api_adaptor.stop")
       machine = find_vm_by_uuid(_uuid)
       tasks = []
@@ -460,6 +485,32 @@ class VmwareApiAdaptor
     rescue Java::RuntimeFault,
       Java::RemoteException => e
     	logger.warn("Invalid #{e.class.to_s}")
+      raise Exceptions::Unrecoverable.new("Cannot Complete Requested Action: #{e.class.to_s}")
+    rescue Vim::InvalidState,
+      Vim::ToolsUnavailable,
+      Vim::TaskInProgress => e
+      logger.warn("Invalid #{e.class.to_s}")
+      raise Exceptions::MethodNotAllowed.new("Method Not Allowed: #{e.class.to_s}")
+    end
+  end
+
+  def force_restart(_uuid)
+    begin
+      logger.info("vmware_api_adaptor.restart")
+      machine = find_vm_by_uuid(_uuid)
+      tasks = []
+      machine.map { |vm| tasks << vm["mor"].reset_vm_task }
+      tasks.each do |t|
+        if t.present?
+          sleep(1) while ["queued", "running"].include?(t.get_task_info.get_state.to_s)
+          if t.get_task_info.get_state.to_s.include?("error")
+            raise Exceptions::Unrecoverable.new("Cannot Complete Requested Action: #{t.get_task_info.get_error.get_localized_message.to_s}")
+          end
+        end
+      end
+    rescue Java::RuntimeFault,
+      Java::RemoteException => e
+      logger.warn("Invalid #{e.class.to_s}")
       raise Exceptions::Unrecoverable.new("Cannot Complete Requested Action: #{e.class.to_s}")
     rescue Vim::InvalidState,
       Vim::ToolsUnavailable,
