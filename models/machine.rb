@@ -21,8 +21,6 @@ end
 class Machine < Base::Machine
   include TorqueBox::Messaging::Backgroundable
 
-  # include ::NewRelic::Agent::MethodTracer
-
   attr_accessor :external_vm_id,
                 :external_host_id,
                 :stats
@@ -56,7 +54,6 @@ class Machine < Base::Machine
       inode.close_connection
     end
   end
-  add_method_tracer :create_from_ovf
 
   def self.all(inode)
     begin
@@ -165,7 +162,7 @@ class Machine < Base::Machine
       raise Exceptions::Unrecoverable, e.to_s
     end
   end
-  add_method_tracer :readings
+
 
   # def start(inode)
   #   logger.info("machine.start")
@@ -198,7 +195,7 @@ class Machine < Base::Machine
   #     raise Exceptionss::Unrecoverable
   #   end
   # end
-  # add_method_tracer :force_stop
+
 
   # def force_restart(inode)
   #   logger.info("machine.force_restart")
@@ -222,7 +219,7 @@ class Machine < Base::Machine
   #   logger.info("machine.save")
   #   raise Exceptionss::NotImplemented
   # end
-  # add_method_tracer :save
+
 
   # def delete(inode)
   #   logger.info("machine.delete")
@@ -240,7 +237,7 @@ class Machine < Base::Machine
   #     raise Exceptionss::Unrecoverable
   #   end
   # end
-  # add_method_tracer :delete
+
 
   def nics=(_nics)
     @nics = _nics.map {|nic| MachineNic.new(nic)}
@@ -250,7 +247,6 @@ class Machine < Base::Machine
       end
     end
   end
-  add_method_tracer :nics=
 
   def disks=(_disks)
     @disks = _disks.map {|disk| MachineDisk.new(disk)}
@@ -260,7 +256,6 @@ class Machine < Base::Machine
        end
      end
   end
-  add_method_tracer :disks=
 
 
   private
@@ -297,15 +292,4 @@ class Machine < Base::Machine
       raise Exceptions::Unrecoverable, e.message
     end
   end
-
-  class << self
-    include ::NewRelic::Agent::MethodTracer
-    add_method_tracer :vmware_adaptor
-    add_method_tracer :all
-    add_method_tracer :all_with_readings
-    add_method_tracer :find_by_uuid
-    add_method_tracer :find_by_uuid_with_readings
-  end
-
-
 end

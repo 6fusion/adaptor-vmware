@@ -94,8 +94,6 @@ GEM
     json (1.5.0-java)
     json-jruby (1.5.0-java)
       json (= 1.5.0)
-    kaminari (0.11.0)
-      kaminari
     macaddr (1.6.1)
       systemu (~> 2.5.0)
     mail (2.5.3)
@@ -147,11 +145,8 @@ GEM
     tilt (1.3.4)
     tinder (1.8.0)
       activesupport (>= 2.3, < 4)
-      activesupport (>= 2.3, < 4)
       eventmachine (~> 0.12)
       faraday (>= 0.6, < 0.8)
-      faraday (>= 0.6, < 0.8)
-      faraday_middleware (>= 0.6, < 0.8)
       faraday_middleware (>= 0.6, < 0.8)
       hashie (~> 1.0)
       mime-types (~> 1.16)
@@ -221,9 +216,7 @@ DEPENDENCIES
   haml
   jruby-rack
   json-jruby
-  kaminari
   mocha
-  newrelic_rpm
   padrino!
   padrino-rpm!
   rabl

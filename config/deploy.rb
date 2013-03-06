@@ -5,7 +5,6 @@ require 'capistrano-helpers/version'
 require 'bundler/capistrano'
 require 'open-uri'
 require 'rest_client'
-require 'new_relic/recipes'
 
 default_run_options[:pty] = true
 
@@ -49,7 +48,6 @@ before "verify:rules", "build:get_tag"
 before "deploy", "verify:rules"
 
 after "deploy:cleanup", "alert:hipchat"
-# after "deploy:cleanup", "newrelic:notice_deployment"
 
 after("deploy") do
   # Setup data directory
@@ -79,9 +77,6 @@ after("deploy") do
 
   # Deploy the application
   run "#{sudo} torquebox deploy #{current_path} --name #{application} --env #{deploy_env} --context-path=#{context_path}"
-
-  # Setup New Relic
-  run "if [ -f #{shared_path}/newrelic.yml ]; then #{sudo} ln -sfn #{shared_path}/newrelic.yml #{current_path}/config; fi"
 
   deploy.cleanup
 end
