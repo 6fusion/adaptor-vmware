@@ -49,7 +49,7 @@ before "verify:rules", "build:get_tag"
 before "deploy", "verify:rules"
 
 after "deploy:cleanup", "alert:hipchat"
-after "deploy:cleanup", "newrelic:notice_deployment"
+# after "deploy:cleanup", "newrelic:notice_deployment"
 
 after("deploy") do
   # Setup data directory
