@@ -76,9 +76,6 @@ after("deploy") do
   run "#{sudo} mkdir -p #{current_path}/tmp"
   run "#{sudo} chmod 0755 #{current_path}/tmp"
   run "#{sudo} chown -R torquebox:torquebox #{current_path}/tmp"
-  
-  # compile any java resources
-  run "cd #{current_path} && #{sudo} rake"
 
   # Deploy the application
   run "#{sudo} torquebox deploy #{current_path} --name #{application} --env #{deploy_env} --context-path=#{context_path}"
