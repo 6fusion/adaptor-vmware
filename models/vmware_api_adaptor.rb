@@ -561,9 +561,20 @@ class VmwareApiAdaptor
         temp_perf_query_spec.set_format("normal");
         temp_perf_query_spec.set_interval_id(300);
         temp_perf_query_spec.set_metric_id(perf_metric_ids)
-        temp_perf_query_spec.set_start_time(_start_time)
-        temp_perf_query_spec.set_end_time(_end_time)
+        temp_perf_query_spec.set_start_time(_start_time.utc)
+        temp_perf_query_spec.set_end_time(_end_time.utc)
         query_spec_list << temp_perf_query_spec
+
+        # add empty readings here to avoid having to interate over the array again
+        vm["stats"] = {}
+        ((_start_time.utc + 5.minutes).._end_time.utc).step(5.minutes) do |ts|
+          vm["stats"][ts.strftime("%Y-%m-%dT%H:%M:%SZ")] = {
+            "virtualDisk.read.average.*" => 0,
+            "virtualDisk.write.average.*" => 0,
+            "net.received.average.*" => 0,
+            "net.transmitted.average.*" => 0
+          }
+        end
       end
 
 
@@ -579,11 +590,10 @@ class VmwareApiAdaptor
             values = pemb.get_value
 
             entity = _vms.select { |e| e["external_vm_id"] == pemb.get_entity.get_value }.first
-            entity["stats"] = {}
             if infos.present?
               infos.each_with_index do |info, info_index|
                 metric_hash = {}
-                timestamp = info.get_timestamp.get_time.to_s.to_datetime.strftime("%Y-%m-%dT%H:%M:%SZ")
+                timestamp = info.get_timestamp.get_time.to_s.to_datetime.utc.strftime("%Y-%m-%dT%H:%M:%SZ")
                 metric_hash["timestamp"] = timestamp
                 if values.present?
                   values.each do |value|
