@@ -140,7 +140,7 @@ class VmwareApiAdaptor
       prop_record = host_properties.select { |e| e["name"] == h.name }
       if prop_record.present?
         _hosts << {
-          :host_mor => h,
+          :mor => h,
           :host_id => h.get_mor.get_value,
           :name => prop_record.first["name"],
           :hz => prop_record.first["hardware.cpuInfo.hz"],
@@ -156,7 +156,7 @@ class VmwareApiAdaptor
     logger.info("vmware_api_adaptor.datastores")
     datastores = []
     self.hosts.each do |host|
-      hdsb = host[:host_mor].get_datastore_browser
+      hdsb = host[:mor].get_datastore_browser
       hdsb.get_datastores.each do |ds|
         # don't build a hash, or add it to the list of datastores if it's already there
         if datastores.select {|d| d["moref_id"] == ds.get_mor.get_value }.empty?
@@ -200,6 +200,27 @@ class VmwareApiAdaptor
     end
 
     return media_files
+  end
+
+  def networks
+    logger.info("vmware_api_adaptor.networks")
+    networks = []
+    self.hosts.each do |host|
+      host[:mor].get_networks.each do |network|
+        # don't build a hash, or add it to the list of networks if it's already there
+        if networks.select {|d| d["moref_id"] == network.get_mor.get_value }.empty?
+          network_hash = {}
+          network_hash["mor"] = network
+          network_hash["moref_id"] = network.get_mor.get_value
+          network_hash["name"] = network.get_name if network.get_name
+          network_hash["is_accessible"] = network.get_summary.is_accessible if network.get_summary.is_accessible
+          network_hash["ip_pool_name"] = network.get_summary.get_ip_pool_name if network.get_summary.get_ip_pool_name
+          networks << network_hash
+        end
+      end
+    end
+
+    networks
   end
 
  	# --------------------------------------------------------
