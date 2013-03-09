@@ -21,8 +21,6 @@ end
 class Machine < Base::Machine
   include TorqueBox::Messaging::Backgroundable
 
-  # include ::NewRelic::Agent::MethodTracer
-
   attr_accessor :external_vm_id,
                 :external_host_id,
                 :stats
@@ -56,7 +54,6 @@ class Machine < Base::Machine
       inode.close_connection
     end
   end
-  add_method_tracer :create_from_ovf
 
   def self.all(inode)
     begin
@@ -165,38 +162,67 @@ class Machine < Base::Machine
       raise Exceptions::Unrecoverable, e.to_s
     end
   end
-  add_method_tracer :readings
 
-  def start(inode)
-    logger.info("machine.start")
-    machine = inode.vmware_api_adaptor.start(uuid)
-  end
 
-  def stop(inode)
-    logger.info("machine.stop")
-    machine = inode.vmware_api_adaptor.stop(uuid)
-  end
+  # def start(inode)
+  #   logger.info("machine.start")
+  #   machine = inode.vmware_api_adaptor.start(uuid)
+  # end
 
-  def restart(inode)
-    logger.info("machine.restart")
-    machine = inode.vmware_api_adaptor.restart(uuid)
-  end
+  #def stop(inode)
+  #  logger.info("machine.stop")
+  #  machine = inode.vmware_api_adaptor.stop(uuid)
+  #end
+  #
+  #def restart(inode)
+  #  logger.info("machine.restart")
+  #  machine = inode.vmware_api_adaptor.restart(uuid)
+  #end
+  #
+  #def force_restart(inode)
+  #  logger.info("machine.start")
+  #  machine = inode.vmware_api_adaptor.force_restart(uuid)
+  #end
+  #
+  #def force_stop(inode)
+  #  logger.info("machine.stop")
+  #  machine = inode.vmware_api_adaptor.force_stop(uuid)
+  #end
 
-  def force_restart(inode)
-    logger.info("machine.start")
-    machine = inode.vmware_api_adaptor.force_restart(uuid)
-  end
+  #   rescue RbVmomi::Fault => e
+  #     logger.error(e.message)
+  #     raise Exceptionss::Forbidden.new(e.message)
 
-  def force_stop(inode)
-    logger.info("machine.stop")
-    machine = inode.vmware_api_adaptor.force_stop(uuid)
-  end
+  #   rescue => e
+  #     logger.error(e.message)
+  #     raise Exceptionss::Unrecoverable
+  #   end
+  # end
+
+
+  # def force_restart(inode)
+  #   logger.info("machine.force_restart")
+
+  #   begin
+  #     vm.ResetVM_Task.wait_for_completion
+  #     @power_state = "restarting"
+
+  #   rescue RbVmomi::Fault => e
+  #     logger.error(e.message)
+  #     raise Exceptionss::Forbidden.new(e.message)
+
+  #   rescue => e
+  #     logger.error(e.message)
+  #     raise Exceptionss::Unrecoverable
+  #   end
+  # end
+  # add_method_tracer :force_restart
 
   # def save(inode)
   #   logger.info("machine.save")
   #   raise Exceptionss::NotImplemented
   # end
-  # add_method_tracer :save
+
 
   # def delete(inode)
   #   logger.info("machine.delete")
@@ -214,7 +240,7 @@ class Machine < Base::Machine
   #     raise Exceptionss::Unrecoverable
   #   end
   # end
-  # add_method_tracer :delete
+
 
   def nics=(_nics)
     @nics = _nics.map {|nic| MachineNic.new(nic)}
@@ -224,7 +250,6 @@ class Machine < Base::Machine
       end
     end
   end
-  add_method_tracer :nics=
 
   def disks=(_disks)
     @disks = _disks.map {|disk| MachineDisk.new(disk)}
@@ -234,7 +259,6 @@ class Machine < Base::Machine
        end
      end
   end
-  add_method_tracer :disks=
 
 
   private
@@ -268,15 +292,4 @@ class Machine < Base::Machine
       raise Exceptions::Unrecoverable, e.message
     end
   end
-
-  class << self
-    include ::NewRelic::Agent::MethodTracer
-    add_method_tracer :vmware_adaptor
-    add_method_tracer :all
-    add_method_tracer :all_with_readings
-    add_method_tracer :find_by_uuid
-    add_method_tracer :find_by_uuid_with_readings
-  end
-
-
 end
