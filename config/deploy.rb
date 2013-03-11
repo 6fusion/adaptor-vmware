@@ -29,7 +29,7 @@ set :deploy_via, :remote_cache
 set :deploy_env, lambda { fetch(:stage) }
 set :rails_env, lambda { fetch(:stage) }
 set :keep_releases, 2
-set :tail_logs_location, "#{shared_path}/log/#{application}.log"
+set :tail_logs_location, "/var/log/torquebox/torquebox.log"
 set :context_path, ""
 set :hipchat_alert, true
 set :use_default_branch, ENV['USE_DEFAULT_BRANCH'] || false
