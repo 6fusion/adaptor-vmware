@@ -1,3 +1,4 @@
+require 'colorize'
 require 'capistrano/ext/multistage'
 require 'capistrano_colors'
 require 'capistrano-helpers/specs'
@@ -16,9 +17,9 @@ set :bundle_without, [:development, :test, :automation, :assets]
 # set :bundle_dir, fetch(:shared_path)+"/bundle"
 # set :bundle_flags, "--deployment --quiet"
 
-set :application, "adaptor-vmware"
-set :user, "deploy"
-set :group, "deploy"
+set :application, `git remote -v`[/([\w-]+)\.git\s\(fetch\)/,1]
+set :user, 'deploy'
+set :group, 'deploy'
 
 set :ssh_options, { forward_agent: true }
 set :scm, "git"
@@ -27,28 +28,29 @@ set :repository, "git@github.com:6fusion/#{application}.git"
 set :branch, ENV['TAG'] || ENV['BRANCH'] || `git branch --no-color 2> /dev/null`.chomp.split("\n").grep(/^[*]/).first[/(\S+)$/, 1]
 set :deploy_to, "/var/6fusion/#{application}"
 set :deploy_via, :remote_cache
-set :deploy_env, lambda { fetch(:stage) }
 set :rails_env, lambda { fetch(:stage) }
 set :keep_releases, 2
 set :tail_logs_location, "#{shared_path}/log/#{application}.log"
 set :context_path, ""
-set :hipchat_alert, true
-set :use_default_branch, ENV['USE_DEFAULT_BRANCH'] || false
+set :hipchat_alert, ENV['HIPCHAT_ALERT'] || true
 set :password, ENV['PASSWORD'] if ENV['PASSWORD']
+set :tag, `git branch --no-color 2> /dev/null`.chomp.split("\n").grep(/^[*]/).first[/(\S+)$/, 1]
+set :current_branch, nil
+set :current_version, nil
 
 # Adaptor-VMware Specifics
 set :ssh_port, 22
 set :copy_exclude do
   %w{Capfile Vagrantfile README.* spec config/deploy.rb
      config/deploy .rvmrc .rspec data .git .gitignore **/test.* .yardopts} +
-    (stages - [deploy_env]).map { |e| "**/#{e}.*" }
+    (stages - [rails_env]).map { |e| "**/#{e}.*" }
 end
 
 # Additional Deployment Actions
-before "verify:rules", "build:get_tag"
 before "deploy", "verify:rules"
 
-after "deploy:cleanup", "alert:hipchat"
+after "verify:rules", "hipchat:start"
+after "deploy:cleanup", "hipchat:finish"
 after "deploy:cleanup", "newrelic:notice_deployment"
 
 after("deploy") do
@@ -76,12 +78,12 @@ after("deploy") do
   run "#{sudo} mkdir -p #{current_path}/tmp"
   run "#{sudo} chmod 0755 #{current_path}/tmp"
   run "#{sudo} chown -R torquebox:torquebox #{current_path}/tmp"
-  
-  # compile any java resources
-  run "cd #{current_path} && #{sudo} rake"
+
+  # Add the commit SHA to the VERSION file
+  deploy.update_version
 
   # Deploy the application
-  run "#{sudo} torquebox deploy #{current_path} --name #{application} --env #{deploy_env} --context-path=#{context_path}"
+  torquebox.deploy
 
   # Setup New Relic
   run "if [ -f #{shared_path}/newrelic.yml ]; then #{sudo} ln -sfn #{shared_path}/newrelic.yml #{current_path}/config; fi"
@@ -95,72 +97,82 @@ before("deploy:restart") do
 end
 
 after("deploy:rollback") do
-  run "#{sudo} torquebox undeploy #{current_path} --name #{application}"
+  torquebox.undeploy
+end
+
+namespace :deploy do
+  task :update_version do
+    puts "*** executing \"git log origin/#{tag} | head -1\"".yellow
+    latest_commit_sha = `git log origin/#{tag} | head -1`.gsub("commit ", "")
+
+    run "#{sudo} sed -i -e '$a\\' #{release_path}/VERSION && #{sudo} echo -n \"#{latest_commit_sha}\" >> #{release_path}/VERSION"
+  end
 end
 
 namespace :verify do
+  task :branch, roles: :app do
+    current_branch = capture("#{sudo} cat #{deploy_to}/current/VERSION || true").split("\r\n").reject(&:empty?).first
+    puts "*** '#{current_branch}' branch is currently deployed to #{rails_env}.".light_blue
+
+    current_branch
+  end
+
+  task :version, roles: :app do
+    current_version = capture("#{sudo} cat #{deploy_to}/current/VERSION || true").split("\r\n").reject(&:empty?).last
+    puts "*** '#{current_version}' commit is currently deployed to #{rails_env}.".light_blue
+
+    current_version
+  end
+
   task :rules, roles: :app do
+    puts "*** Verifying you are allowed to deploy this branch to this environment.".light_blue
+
     next if stage == :development
 
     if tag == "master"
-      puts "Skipping verification since you are deploying master."
+      puts "*** Skipping verification since you are deploying master.".light_blue
       next
     end
 
-    deployed_branch = capture("#{sudo} cat #{deploy_to}/current/VERSION || true").split("\r\n").last
+    deployed_branch = verify.branch
+    deployed_version = verify.version
 
     next if deployed_branch.nil? || deployed_branch.empty? || deployed_branch.include?('No such file or directory')
 
-    puts "'#{deployed_branch}' branch is currently deployed to #{rails_env}."
-
     if deployed_branch == tag
-      puts "Skipping verification since you are deploying the same branch."
+      puts "*** Skipping verification since you are deploying the same branch.".light_blue
       next
     end
 
     if deployed_branch == "master"
-      puts "Skipping verification since master is currently deployed."
+      puts "*** Skipping verification since master is currently deployed.".light_blue
       next
     end
 
-    puts "Updating local commit logs to check the status of the found commit."
+    puts "*** Updating local commit logs to check the status of the found commit.".light_blue
     `git fetch origin`
 
-    puts "Looking at master branch to determine if commit exists."
-    branches = `git branch -r --contains #{deployed_branch}`.split(/\r\n|\n/).map { |branch| branch.strip! }
+    puts "*** Looking at master branch to determine if commit exists.".light_blue
+    branches = `git branch -r --contains #{deployed_version}`.split(/\r\n|\n/).map { |branch| branch.strip! }
 
     unless branches.include?('origin/master') || branches.include?("origin/#{tag}")
-      action_requested = Capistrano::CLI.ui.ask "If you continue deploying this branch you will be overwriting someone else's work.  Would you like to [c]ontinue, [s]top, or [r]eset the environment back to master? [stop]: "
+      action_requested = Capistrano::CLI.ui.ask "*** If you continue deploying this branch you will be overwriting someone else's work.  Would you like to [c]ontinue, [s]top, or [r]eset the environment back to master? [stop]: ".red
 
       case action_requested.to_s
       when "c"
-        puts "Overriding default rules and deploying your branch, you evil evil coder.  You were warned!"
+        puts "*** Overriding default rules and deploying your branch, you evil evil coder.  You were warned!".red
         next
       when "r"
-        puts "Reseting the environment to master."
+        puts "*** Reseting the environment to master.".light_blue
         set :tag, "master"
       else
-        puts "Aborting deploy..."
+        puts "*** Aborting deploy...".red
         abort = true
       end
     end
 
-    abort "Since #{deployed_branch} is currently deployed to #{rails_env}.  Please either merge #{deployed_branch} to master OR re-deploy either #{deployed_branch} or master branch to this environment." unless branches.include?('origin/master') || branches.include?("origin/#{tag}") if abort
-    puts "All rules have passed, continuing with deployment."
-  end
-end
-
-namespace :build do
-  task :get_tag, roles: :builder do
-    default_tag = `git branch --no-color 2> /dev/null`.chomp.split("\n").grep(/^[*]/).first[/(\S+)$/, 1]
-
-    unless use_default_branch
-      branch_tag = Capistrano::CLI.ui.ask "Branch/Tag to deploy (make sure to push the branch/tag to origin first) [#{default_tag}]: "
-    end
-
-    branch_tag = default_tag if branch_tag.to_s == ''
-
-    set :tag, branch_tag
+    abort "*** Since #{deployed_branch} is currently deployed to #{rails_env}.  Please either merge #{deployed_branch} to master OR re-deploy either #{deployed_branch} or master branch to this environment.".red unless branches.include?('origin/master') || branches.include?("origin/#{tag}") if abort
+    puts "*** All rules have passed, continuing with deployment.".light_blue
   end
 end
 
@@ -169,11 +181,11 @@ namespace :logs do
   task :tail, roles: :app do
     run "tail -f #{tail_logs_location}" do |channel, stream, data|
       data.split("\n").each do |line|
-        puts "[#{channel[:host]}] #{line}"
+        puts "*** [#{channel[:host]}] #{line}".light_blue
       end
       break if stream == :err
     end
-    puts
+    puts.light_blue
   end
 
   desc 'truncate logs'
@@ -210,7 +222,7 @@ namespace :torquebox do
 
   desc 'deploy application'
   task :deploy, roles: :app do
-    run "#{sudo} torquebox deploy #{current_path} --name #{application} --env #{deploy_env}"
+    run "#{sudo} torquebox deploy #{current_path} --name #{application} --env #{rails_env} --context-path=#{context_path}"
     sleep 2
     run "#{sudo} test ! -f /opt/torquebox/jboss/standalone/deployments/#{application}-knob.yml.failed"
   end
@@ -227,14 +239,26 @@ namespace :torquebox do
   end
 end
 
-namespace :alert do
+namespace :hipchat do
+  desc 'Alert Hipchat development room of deployment starting'
+  task :start, roles: :app do
+    if hipchat_alert
+      hipchat_token = "06e70aeee31facbcbedafa466f5a90"
+      hipchat_url   = URI.escape("https://api.hipchat.com/v1/rooms/message?format=json&auth_token=#{hipchat_token}")
+      message       = "@#{ENV['USER']} is deploying #{branch} of #{application} to #{stage}"
+      RestClient.post(hipchat_url, { room_id: "#{stage}", from: "DeployBot", color: "green", message_format: "text", message: message })
+      RestClient.post(hipchat_url, { room_id: "Deployments", from: "DeployBot", color: "green", message_format: "text", message: message })
+    end
+  end
+
   desc 'Alert Hipchat development room of successful deploy'
-  task :hipchat, roles: :app do
+  task :finish, roles: :app do
     if hipchat_alert
       hipchat_token = "06e70aeee31facbcbedafa466f5a90"
       hipchat_url   = URI.escape("https://api.hipchat.com/v1/rooms/message?format=json&auth_token=#{hipchat_token}")
       message       = "@#{ENV['USER']} deployed #{branch} of #{application} to #{stage}"
-      RestClient.post(hipchat_url, { room_id: "59147", from: "DeployBot", color: "green", message_format: "text", message: message })
+      RestClient.post(hipchat_url, { room_id: "#{stage}", from: "DeployBot", color: "green", message_format: "text", message: message })
+      RestClient.post(hipchat_url, { room_id: "Deployments", from: "DeployBot", color: "green", message_format: "text", message: message })
     end
   end
 end
@@ -259,4 +283,3 @@ end
 task :configure, roles: :app do
   system "ssh configure@#{find_servers_for_task(self).first} -p #{ssh_port}"
 end
-
