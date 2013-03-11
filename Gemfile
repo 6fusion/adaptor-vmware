@@ -22,8 +22,9 @@ gem 'torquebox-rake-support', torquebox_version
 gem 'torquebox', torquebox_version
 gem 'padrino-rpm', git: 'https://github.com/6fusion/padrino-rpm.git'
 
-group :development do
+group :development, :test do
   gem 'trinidad'
+  gem 'colorize'
   gem 'capistrano'
   gem 'capistrano-ext'
   gem 'capistrano_colors'
