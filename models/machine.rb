@@ -23,7 +23,9 @@ class Machine < Base::Machine
 
   attr_accessor :external_vm_id,
                 :external_host_id,
-                :stats
+                :name,
+                :stats,
+                :description
 
   KB = 1024
   MB = 1024**2
@@ -38,21 +40,108 @@ class Machine < Base::Machine
     super
   end
 
-  def create_from_ovf(inode, ovf)
-    logger.info("Creating Machine(s) from OVF")
+  def self.from_ovf(xml)
+    ovf = Ovfparse::OVF.from_xml(xml)
+    ovf_disks = ovf.disks
+    ovf.virtual_systems.map do |vm|
+      machine = Machine.new({
+        virtual_name:   vm.name,
+        description:    vm.description,
+        cpu_count:      vm.cpus,
+        maximum_memory: vm.memory,
+        disks:          vm.disks,
+        #nics:           vm.network_cards,
+        optical_drives: vm.optical_drives,
+        other_configs:  vm.other_configurations
+      })
+      # map vm disk to a file defined in the ovf
+      machine.disks.each do |disk|
+        ovf_disk = ovf_disks.find { |d| d["name"] == File.basename(disk.HostResource) }
+        disk.location = ovf_disk['location']
+        disk.size = ovf_disk['size']
+      end
 
+      machine
+    end
+  end
+
+  def create(inode, options={ })
     begin
-      vmware_adaptor = inode.connect("https://#{inode.host_ip_address}/sdk", inode.user, inode.password)
-      #do something like deploy an OVF!
-    rescue InvalidLogin => e
-      raise Exceptions::Forbidden, "Invalid Login"
-    rescue => e
-      logger.error(e.message)
-      logger.error(e.backtrace)
-      raise Exceptions::Unrecoverable, e.to_s
+      logger.info("machine.create")
+      adaptor = inode.vmware_api_adaptor
+      host = adaptor.hosts.first
+      machine_specs = Vim::OvfCreateImportSpecParams.new()
+      machine_specs.set_host_system(host[:mor].get_mor)
+      machine_specs.set_locale("US")
+      machine_specs.set_entity_name(@virtual_name)
+      machine_specs.set_deployment_option("")
+      network_mapping = Vim::OvfNetworkMapping.new()
+      network = adaptor.networks.find { |n| n["name"] == "VINET02" } # network mapping
+      network_mapping.set_name("VM Network") # nic/network card name
+      network_mapping.set_network(network["mor"].get_mor)
+      machine_specs.set_network_mapping([network_mapping])
+      machine_specs.set_property_mapping(nil)
+
+      rp = host[:mor].get_parent.get_resource_pool
+      datastore = host[:mor].get_datastores.first
+      ovf_manager = adaptor.connection.get_ovf_manager
+      ovf_import_result = ovf_manager.create_import_spec(options["xml"].to_java(:string), rp, datastore, machine_specs)
+
+      http_nfc_lease = rp.import_vapp(ovf_import_result.get_import_spec, adaptor.virtual_machines.first["mor"].get_parent, host[:mor])
+      begin
+        sleep(0.01) while !["ready", "error"].include?(http_nfc_lease.get_state.to_s)
+        if http_nfc_lease.get_state.to_s == "ready"
+          logger.info("HttpNfcLeaseState: ready")
+          hnli = http_nfc_lease.get_info
+          printHttpNfcLeaseInfo(hnli)
+
+          # leaseUpdater = new LeaseProgressUpdater(httpNfcLease, 5000);
+          # leaseUpdater.start();
+
+          deviceUrls = hnli.get_device_url
+
+          # long bytesAlreadyWritten = 0;
+          deviceUrls.each do |deviceUrl|
+            ovf_import_result.getFileItem.each do |ovfFileItem|
+              device_key = deviceUrl.getImportKey
+              if device_key == ovfFileItem.getDeviceId()
+                logger.info("Import key==OvfFileItem device id: " + device_key)
+                # String absoluteFile = new File(ovfLocal).getParent() + File.separator + ovfFileItem.getPath();
+                # String urlToPost = deviceUrl.getUrl().replace("*", hostip);
+                # uploadVmdkFile(ovfFileItem.isCreate(), absoluteFile, urlToPost, bytesAlreadyWritten, totalBytes);
+                # bytesAlreadyWritten += ovfFileItem.getSize();
+                # logger.info("Completed uploading the VMDK file:" + absoluteFile)
+              end
+            end
+          end
+          # leaseUpdater.interrupt();
+
+          adaptor.find_vm_by_mor(hnli.get_entity)
+        end
+      ensure
+        logger.info("removing lease")
+        http_nfc_lease.httpNfcLeaseProgress(100)
+        http_nfc_lease.httpNfcLeaseComplete()
+      end
+    rescue Vim::InvalidRequest,
+      Vim::SystemError => e
+      logger.error("#{e.class} - Message: \"#{e.get_localized_message.to_s}\"")
     ensure
       inode.close_connection
     end
+  end
+
+  def printHttpNfcLeaseInfo(_info)
+    logger.info("================ HttpNfcLeaseInfo ================")
+    _info.getDeviceUrl.each do |durl|
+      logger.info("Device URL Import Key: " + durl.getImportKey())
+      logger.info("Device URL Key: " + durl.getKey())
+      logger.info("Device URL : " + durl.getUrl())
+      logger.info("Updated device URL: " + durl.getUrl())
+    end
+    logger.info("Lease Timeout: " + _info.getLeaseTimeout.to_s)
+    logger.info("Total Disk capacity: " + _info.getTotalDiskCapacityInKB.to_s)
+    logger.info("==================================================")
   end
 
   def self.all(inode)

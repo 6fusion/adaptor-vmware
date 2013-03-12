@@ -152,7 +152,11 @@ class VmwareApiAdaptor
     return _hosts
 	end
 
-  def datastores
+  # --------------------------------------------------------
+  # Datastores
+  # --------------------------------------------------------
+
+  def datastores(_get_disks=false)
     logger.info("vmware_api_adaptor.datastores")
     datastores = []
     self.hosts.each do |host|
@@ -163,11 +167,17 @@ class VmwareApiAdaptor
           ds_hash = {}
           ds_hash["mor"] = ds
           ds_hash["moref_id"] = ds.get_mor.get_value
-          ds_hash["name"] = ds.get_info.get_name if ds.get_info.get_name
+          ds_hash["name"] = ds.get_info.get_name
+          ds_hash["type"] = ds.get_summary.get_type
           ds_hash["max_file_size"] = ds.get_info.get_max_file_size if ds.get_info.get_max_file_size
           ds_hash["free_space"] = ds.get_info.get_free_space if ds.get_info.get_free_space
           ds_hash["url"] = ds.get_info.get_url if ds.get_info.get_url
-          ds_hash["media_files"] = virtual_disks(ds)
+          ds_hash["media_files"] = virtual_disks(ds) if _get_disks
+          # Get NFS/NAS info if it exists
+          if ds.get_info.instance_of?(Vim::NasDatastoreInfo)
+            ds_hash["remote_path"] = ds.get_info.nas.get_remote_path
+            ds_hash["remote_host"] = ds.get_info.nas.get_remote_host
+          end
           datastores << ds_hash
         end
       end
@@ -176,22 +186,34 @@ class VmwareApiAdaptor
     datastores
   end
 
+  # this is really slow for a lot of disks, needs to be updated
   def virtual_disks(_datastore)
     logger.info("vmware_api_adaptor.virtual_disks")
     ds_browser = _datastore.get_browser
-    v_disk_filter = Vim::VmDiskFileQueryFilter.new();
+    v_disk_filter = Vim::VmDiskFileQueryFilter.new()
     v_disk_filter.set_controller_type(["VirtualIDEController"].to_java(:string))
+    #file_query_flags = Vim::FileQueryFlags.new()
+    #file_query_flags.set_file_type(true)
+    #file_query_flags.set_file_size(true)
+    #file_query_flags.set_modification(true)
     search_spec = Vim::HostDatastoreBrowserSearchSpec.new()
+    #search_spec.set_details(file_query_flags)
+    #search_spec.set_sort_folders_first(true)
+    #search_spec.set_match_pattern(["*.vmdk"].to_java(:string)) #
     search_spec.set_query([Vim::VmDiskFileQuery.new()])
 
     media_files = []
 
+    logger.info "task start"
     temp_task = ds_browser.searchDatastoreSubFolders_Task("[#{_datastore.get_info.get_name}]", search_spec)
-    sleep(1) while ["queued", "running"].include?(temp_task.get_task_info.get_state.to_s)
+    sleep(0.01) while ["queued", "running"].include?(temp_task.get_task_info.get_state.to_s)
+    logger.info "task done"
     results = temp_task.get_task_info.get_result.get_host_datastore_browser_search_results
     results.each do |r|
+      logger.info "\tinspecting result"
       if r.file.present?
         r.file.each do |f|
+          logger.info "\t\tinspecting file"
           media_files << {
             "path" => f.get_path
           }
@@ -201,6 +223,10 @@ class VmwareApiAdaptor
 
     return media_files
   end
+
+  # --------------------------------------------------------
+  # Networks
+  # --------------------------------------------------------
 
   def networks
     logger.info("vmware_api_adaptor.networks")
@@ -410,6 +436,12 @@ class VmwareApiAdaptor
 	def find_vm_by_uuid(_uuid)
     logger.info("vmware_api_adaptor.find_vm_by_uuid");
     v = [self.connection.get_search_index.find_by_uuid(nil, _uuid, true, false)]
+    vm = gather_properties(v)
+    return vm
+  end
+
+  def find_vm_by_mor(_mor)
+    v = [VIJavaUtil::MorUtil.createExactManagedEntity(self.connection.get_server_connection, _mor)]
     vm = gather_properties(v)
     return vm
   end

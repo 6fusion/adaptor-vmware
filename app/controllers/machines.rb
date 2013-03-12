@@ -11,8 +11,13 @@ AdaptorVMware.controllers :machines, :parent => :inodes do
   # Creates
   post :index do
     logger.info('POST - machines#index')
-    @machines = Machine.create_from_ovf(@inode, params[:ovf])
-    render 'machines/show'
+    vms = Machine.from_ovf(params[:ovf])
+    params['options'] ||= {}
+    params['options']['xml'] = params[:ovf]
+
+    @machines = vms.map { |machine| machine.create(@inode, params['options']) }
+    # render 'machines/index'
+    render :json => @machines
   end
 
   # Reads

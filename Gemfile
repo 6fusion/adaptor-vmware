@@ -14,6 +14,7 @@ gem 'uuid'
 gem 'json-jruby', require: 'json'
 gem 'jruby-rack'
 gem 'rack'
+gem 'ovfparse', github: '6fusion/ovfparse', branch: 'master'
 
 torquebox_version = "2.3.0"
 gem 'torquebox-cache', torquebox_version
