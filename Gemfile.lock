@@ -82,6 +82,7 @@ GEM
     diff-lcs (1.2.1)
     edn (1.0.0)
       parslet (~> 1.4.0)
+    eventmachine (0.12.10)
     eventmachine (0.12.10-java)
     faraday (0.7.6)
       addressable (~> 2.2)
@@ -94,12 +95,14 @@ GEM
       tilt
     hashie (1.2.0)
     highline (1.6.15)
+    http_parser.rb (0.5.3)
     http_parser.rb (0.5.3-java)
     http_router (0.10.2)
       rack (>= 1.0.0)
       url_mount (~> 0.2.1)
     i18n (0.6.4)
     jruby-rack (1.1.13.1)
+    json (1.5.0)
     json (1.5.0-java)
     json-jruby (1.5.0-java)
       json (= 1.5.0)
@@ -113,7 +116,6 @@ GEM
     mime-types (1.21)
     mocha (0.13.3)
       metaclass (~> 0.0.1)
-<<<<<<< HEAD
     multi_json (1.6.1)
     multipart-post (1.2.0)
     net-scp (1.1.0)
@@ -124,19 +126,7 @@ GEM
     net-ssh-gateway (1.2.0)
       net-ssh (>= 2.6.5)
     newrelic_rpm (3.5.8.72)
-=======
-    multi_json (1.5.0)
-    multipart-post (1.1.5)
-    net-scp (1.0.4)
-      net-ssh (>= 1.99.1)
-    net-sftp (2.0.5)
-      net-ssh (>= 2.0.9)
-    net-ssh (2.6.2)
-    net-ssh-gateway (1.1.0)
-      net-ssh (>= 1.99.1)
-    newrelic_rpm (3.5.5.38)
     nokogiri (1.5.6-java)
->>>>>>> Started work on vm creation functionality. Refs #1250
     parslet (1.4.0)
       blankslate (~> 2.0)
     polyglot (0.3.3)
@@ -241,11 +231,7 @@ DEPENDENCIES
   jruby-rack
   json-jruby
   mocha
-<<<<<<< HEAD
-=======
-  newrelic_rpm
   ovfparse!
->>>>>>> Started work on vm creation functionality. Refs #1250
   padrino!
   padrino-rpm!
   rabl
