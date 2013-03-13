@@ -253,65 +253,30 @@ class Machine < Base::Machine
   end
 
 
-  # def start(inode)
-  #   logger.info("machine.start")
-  #   machine = inode.vmware_api_adaptor.start(uuid)
-  # end
+  def start(inode)
+    logger.info("machine.start")
+    machine = inode.vmware_api_adaptor.start(uuid)
+  end
 
-  #def stop(inode)
-  #  logger.info("machine.stop")
-  #  machine = inode.vmware_api_adaptor.stop(uuid)
-  #end
-  #
-  #def restart(inode)
-  #  logger.info("machine.restart")
-  #  machine = inode.vmware_api_adaptor.restart(uuid)
-  #end
-  #
-  #def force_restart(inode)
-  #  logger.info("machine.start")
-  #  machine = inode.vmware_api_adaptor.force_restart(uuid)
-  #end
-  #
-  #def force_stop(inode)
-  #  logger.info("machine.stop")
-  #  machine = inode.vmware_api_adaptor.force_stop(uuid)
-  #end
+  def stop(inode)
+   logger.info("machine.stop")
+   machine = inode.vmware_api_adaptor.stop(uuid)
+  end
 
-  #   rescue RbVmomi::Fault => e
-  #     logger.error(e.message)
-  #     raise Exceptionss::Forbidden.new(e.message)
+  def restart(inode)
+   logger.info("machine.restart")
+   machine = inode.vmware_api_adaptor.restart(uuid)
+  end
 
-  #   rescue => e
-  #     logger.error(e.message)
-  #     raise Exceptionss::Unrecoverable
-  #   end
-  # end
+  def force_restart(inode)
+   logger.info("machine.start")
+   machine = inode.vmware_api_adaptor.force_restart(uuid)
+  end
 
-
-  # def force_restart(inode)
-  #   logger.info("machine.force_restart")
-
-  #   begin
-  #     vm.ResetVM_Task.wait_for_completion
-  #     @power_state = "restarting"
-
-  #   rescue RbVmomi::Fault => e
-  #     logger.error(e.message)
-  #     raise Exceptionss::Forbidden.new(e.message)
-
-  #   rescue => e
-  #     logger.error(e.message)
-  #     raise Exceptionss::Unrecoverable
-  #   end
-  # end
-  # add_method_tracer :force_restart
-
-  # def save(inode)
-  #   logger.info("machine.save")
-  #   raise Exceptionss::NotImplemented
-  # end
-
+  def force_stop(inode)
+   logger.info("machine.stop")
+   machine = inode.vmware_api_adaptor.force_stop(uuid)
+  end
 
   # def delete(inode)
   #   logger.info("machine.delete")
