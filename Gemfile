@@ -23,14 +23,17 @@ gem 'torquebox-rake-support', torquebox_version
 gem 'torquebox', torquebox_version
 gem 'padrino-rpm', git: 'https://github.com/6fusion/padrino-rpm.git'
 
-group :development, :test do
-  gem 'trinidad'
+group :deploy do
   gem 'colorize'
   gem 'capistrano'
   gem 'capistrano-ext'
   gem 'capistrano_colors'
   gem 'capistrano-helpers'
   gem 'rest-client'
+end
+
+group :development, :test do
+  gem 'trinidad'
 end
 
 group :test do

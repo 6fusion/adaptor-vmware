@@ -12,7 +12,7 @@ default_run_options[:pty] = true
 
 set :stages, Dir['config/deploy/*.rb'].map { |f| File.basename(f, '.rb') }
 set :default_stage, "development"
-set :bundle_without, [:development, :test, :automation, :assets]
+set :bundle_without, [:development, :test, :automation, :assets, :deploy]
 # set :bundle_cmd, "jruby -S bundle"
 # set :bundle_dir, fetch(:shared_path)+"/bundle"
 # set :bundle_flags, "--deployment --quiet"
