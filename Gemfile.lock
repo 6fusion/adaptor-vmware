@@ -1,19 +1,4 @@
 GIT
-  remote: git://github.com/6fusion/ovfparse.git
-  revision: 235824461ae7689324e470729e1815c5746a96ae
-  branch: master
-  specs:
-    ovfparse (0.10.beta1)
-      nokogiri (>= 1.4.1)
-
-GIT
-  remote: https://github.com/6fusion/padrino-rpm.git
-  revision: 493501e45c7b41c2192546fd012d1d0b734b1992
-  specs:
-    padrino-rpm (0.6.1)
-      newrelic_rpm (~> 3.5.3)
-
-GIT
   remote: https://github.com/aussiegeek/rubyzip.git
   revision: 66f0c0fafe13b5bfdd87da7f5da79093e5dd5f91
   specs:
@@ -82,7 +67,6 @@ GEM
     diff-lcs (1.2.1)
     edn (1.0.0)
       parslet (~> 1.4.0)
-    eventmachine (0.12.10)
     eventmachine (0.12.10-java)
     faraday (0.7.6)
       addressable (~> 2.2)
@@ -95,14 +79,12 @@ GEM
       tilt
     hashie (1.2.0)
     highline (1.6.15)
-    http_parser.rb (0.5.3)
     http_parser.rb (0.5.3-java)
     http_router (0.10.2)
       rack (>= 1.0.0)
       url_mount (~> 0.2.1)
     i18n (0.6.4)
     jruby-rack (1.1.13.1)
-    json (1.5.0)
     json (1.5.0-java)
     json-jruby (1.5.0-java)
       json (= 1.5.0)
@@ -125,8 +107,6 @@ GEM
     net-ssh (2.6.6)
     net-ssh-gateway (1.2.0)
       net-ssh (>= 2.6.5)
-    newrelic_rpm (3.5.8.72)
-    nokogiri (1.5.6-java)
     parslet (1.4.0)
       blankslate (~> 2.0)
     polyglot (0.3.3)
@@ -231,9 +211,7 @@ DEPENDENCIES
   jruby-rack
   json-jruby
   mocha
-  ovfparse!
   padrino!
-  padrino-rpm!
   rabl
   rack
   rack-test
