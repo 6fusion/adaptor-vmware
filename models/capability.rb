@@ -15,6 +15,7 @@ class Capability < Base::Capability
   #   )
   SUPPORTED_CAPABILITIES = %w(
     inode
+    historical_readings
     machines 
     machines_readings 
     machine 
@@ -26,5 +27,13 @@ class Capability < Base::Capability
     SUPPORTED_CAPABILITIES.map do |capability|
       Capability.new(:name => capability)
     end
+  end
+
+  def ==(other)
+    other.to_s.eql?(name)
+  end
+
+  def to_s
+    return name
   end
 end
