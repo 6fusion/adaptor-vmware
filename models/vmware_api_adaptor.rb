@@ -434,13 +434,14 @@ class VmwareApiAdaptor
   end
 
 	def find_vm_by_uuid(_uuid)
-    logger.info("vmware_api_adaptor.find_vm_by_uuid");
+    logger.info("vmware_api_adaptor.find_vm_by_uuid")
     v = [self.connection.get_search_index.find_by_uuid(nil, _uuid, true, false)]
     vm = gather_properties(v)
     return vm
   end
 
   def find_vm_by_mor(_mor)
+    logger.info("vmware_api_adaptor.find_vm_by_mor")
     v = [VIJavaUtil::MorUtil.createExactManagedEntity(self.connection.get_server_connection, _mor)]
     vm = gather_properties(v)
     return vm

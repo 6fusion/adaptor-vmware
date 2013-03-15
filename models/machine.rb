@@ -34,7 +34,7 @@ class Machine < Base::Machine
     super
   end
 
-  def create(inode, _account_id, _media_store_location, _ovf_file_name, _virtual_machine_uuid, _networks_mapping)
+  def self.create(inode, _account_id, _media_store_location, _ovf_file_name, _virtual_machine_uuid, _networks_mapping)
     begin
       logger.info("machine.create")
       adaptor = inode.vmware_api_adaptor
@@ -148,7 +148,7 @@ class Machine < Base::Machine
                   logger.info "clean url: #{device_post_url}"
                   logger.info "ovf file path: #{ovf_file_item.get_path}"
                   device_filename = "#{ovf_file_item.get_path}"
-                  # /Users/alexgandy/Desktop/dsl/
+
                   source_full_path = File.join(media_store_mount_path, device_filename)
 
                   upload_command = "#{CURLBIN} --data-binary '@#{source_full_path}' -Ss -X #{method} --insecure -H 'Content-Type: application/x-vnd.vmware-streamVmdk' '#{URI::escape(device_post_url)}'"
@@ -166,7 +166,13 @@ class Machine < Base::Machine
               end
             end
 
-            return adaptor.find_vm_by_mor(hnli.get_entity)
+            inode_virtual_machine = adaptor.find_vm_by_mor(hnli.get_entity).first
+            logger.info("virtual machine: #{inode_virtual_machine.inspect}")
+
+            virtual_machine = Machine.new(inode_virtual_machine)
+            logger.info("6fusion virtual machine model: #{virtual_machine.inspect}")
+
+            return virtual_machine
           end
         ensure
           logger.info("removing lease")
@@ -377,7 +383,7 @@ class Machine < Base::Machine
   end
 
   private
-  def log_available_methods(_object, _regex=nil, _execute_it=false)
+  def self.log_available_methods(_object, _regex=nil, _execute_it=false)
     logger.info("_object class type: #{_object.get_class}")
 
     methods = _object.methods
@@ -420,7 +426,7 @@ class Machine < Base::Machine
     end
   end
 
-  def mount(_mount_path, _local_mount_path="/mnt/media_store_location")
+  def self.mount(_mount_path, _local_mount_path="/mnt/media_store_location")
     logger.info("mounting #{_mount_path} -> #{_local_mount_path}")
     mount_cmd = "sudo mount -t nfs #{_mount_path} #{_local_mount_path}" # -o sync 2>&1
     logger.info mount_cmd
@@ -429,7 +435,7 @@ class Machine < Base::Machine
     return _local_mount_path
   end
 
-  def unmount(_local_mount_path)
+  def self.unmount(_local_mount_path)
     logger.info("unmounting #{_local_mount_path}")
     Kernel.system("sudo umount #{_local_mount_path}")
   end
