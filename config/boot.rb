@@ -12,10 +12,10 @@ Bundler.require(:default, PADRINO_ENV)
 # ## Enable devel logging
 #
 # Padrino::Logger::Config[:development][:log_static] = true
-Padrino::Logger::Config[PADRINO_ENV.to_sym][:stream] = File.new(Padrino.root('log', "adaptor-vmware.log"), 'a+')
-#Padrino::Logger::Config.default = { :log_level => :debug, :stream => :stdout }
-#Padrino::Logger::Config[:test][:log_level]  = :info
-#Padrino::Logger::Config[:test][:stream]  = :to_file
+# Padrino::Logger::Config[PADRINO_ENV.to_sym][:stream] = File.new(Padrino.root('log', "adaptor-vmware.log"), 'a+')
+Padrino::Logger::Config.default = { :log_level => :debug, :stream => :stdout }
+# Padrino::Logger::Config[:test][:log_level]  = :info
+# Padrino::Logger::Config[:test][:stream]  = :to_file
 #
 ## Configure your I18n
 #
