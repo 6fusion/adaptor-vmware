@@ -22,6 +22,9 @@ gem 'torquebox-messaging', torquebox_version
 gem 'torquebox-rake-support', torquebox_version
 gem 'torquebox', torquebox_version
 
+gem 'padrino-rpm', github: '6fusion/padrino-rpm'
+gem 'newrelic_rpm', require: false
+
 group :deploy do
   gem 'colorize'
   gem 'capistrano'

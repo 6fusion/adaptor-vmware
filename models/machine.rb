@@ -78,6 +78,8 @@ class Machine < Base::Machine
         parse_params.set_deployment_option("")
         ovf_parse_result = ovf_manager.parseDescriptor(ovf_xml, parse_params)
 
+        # TODO: disk mappings for thin/thick
+        # TODO: resize memory
         # create import spec
         machine_specs = Vim::OvfCreateImportSpecParams.new()
         machine_specs.set_host_system(host.get_mor)
