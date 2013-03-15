@@ -38,9 +38,9 @@ class Machine < Base::Machine
     begin
       logger.info("machine.create")
       adaptor = inode.vmware_api_adaptor
-      host = adaptor.hosts.first
-      resource_pool = host[:mor].get_parent.get_resource_pool
-      datastore = host[:mor].get_datastores.first
+      host = adaptor.hosts.first[:mor]
+      resource_pool = host.get_parent.get_resource_pool
+      datastore = host.get_datastores.first
       ovf_manager = adaptor.connection.get_ovf_manager
 
       # mount
@@ -64,7 +64,7 @@ class Machine < Base::Machine
 
         # create import spec
         machine_specs = Vim::OvfCreateImportSpecParams.new()
-        machine_specs.set_host_system(host[:mor].get_mor)
+        machine_specs.set_host_system(host.get_mor)
         machine_specs.set_locale("US")
         machine_specs.set_entity_name(_virtual_machine_uuid)
         machine_specs.set_deployment_option("")
@@ -92,11 +92,20 @@ class Machine < Base::Machine
         end if ovf_import_result.get_warning.present?
 
         # create account folder for virtual machine; if it doesn't exist
-        # TODO: figure out how to do this
-        vm_account_folder = adaptor.virtual_machines.first["mor"].get_parent #.create_folder(account_folder)
+        vm_account_folder = nil
+        vm_account_folder_name = "Account#{_account_id.to_s}"
+        root_folder = adaptor.root_folder.get_child_entity.first.get_vm_folder
+
+        # figure out if something already exists with the name
+        vm_account_folder = root_folder.get_child_entity.find { |child_entity| child_entity.name == vm_account_folder_name }
+        raise "An item with the name of the folder already exists but it's not a folder!" if vm_account_folder.present? && vm_account_folder.get_class.to_s != "com.vmware.vim25.mo.Folder"
+
+        logger.info "create vm account folder unless it exists: #{!vm_account_folder.nil?}"
+        vm_account_folder = root_folder.create_folder(vm_account_folder_name) if vm_account_folder.nil?
+        logger.info("first: _object class type: #{vm_account_folder.get_class}")
 
         # lease management
-        http_nfc_lease = resource_pool.import_vapp(ovf_import_result.get_import_spec, vm_account_folder, host[:mor])
+        http_nfc_lease = resource_pool.import_vapp(ovf_import_result.get_import_spec, vm_account_folder, host)
         begin
           sleep(0.01) while !["ready", "error"].include?(http_nfc_lease.get_state.to_s)
           if http_nfc_lease.get_state.to_s == "ready"
@@ -121,7 +130,7 @@ class Machine < Base::Machine
                   # file upload(s)
                   method = ovf_file_item.create ? "PUT" : "POST"
                   logger.info "url: #{device_url.url}"
-                  device_post_url = device_url.url.gsub("*", host[:mor].config.network.vnic[0].spec.ip.ipAddress)
+                  device_post_url = device_url.url.gsub("*", host.config.network.vnic[0].spec.ip.ipAddress)
                   logger.info "clean url: #{device_post_url}"
                   logger.info "ovf file path: #{ovf_file_item.get_path}"
                   device_filename = "#{ovf_file_item.get_path}"
@@ -355,12 +364,14 @@ class Machine < Base::Machine
 
   private
   def log_available_methods(_object, _regex=nil, _execute_it=false)
+    logger.info("_object class type: #{_object.get_class}")
+
     methods = _object.methods
     methods = methods.grep(_regex) if _regex.present?
 
     methods.each do |method|
       logger.info "Method: #{method}"
-      logger.info "*** Result: #{nic.send(method)}" if _execute_it
+      logger.info "*** Result: #{_object.send(method)}" if _execute_it
     end
   end
 
