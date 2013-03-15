@@ -15,10 +15,10 @@ class Machine < Base::Machine
   include TorqueBox::Messaging::Backgroundable
 
   attr_accessor :external_vm_id,
-                :external_host_id,
-                :name,
-                :stats,
-                :description
+    :external_host_id,
+    :name,
+    :stats,
+    :description
 
   CURLBIN = ENV['CURL'] || "curl"
   KB = 1024
@@ -34,7 +34,7 @@ class Machine < Base::Machine
     super
   end
 
-  def create(inode, _account_id, _media_store_path, _ovf_file_name, _virtual_machine_uuid)
+  def create(inode, _account_id, _media_store_location, _ovf_file_name, _virtual_machine_uuid, _networks_mapping)
     begin
       logger.info("machine.create")
       adaptor = inode.vmware_api_adaptor
@@ -44,16 +44,16 @@ class Machine < Base::Machine
       ovf_manager = adaptor.connection.get_ovf_manager
 
       # mount
-      source_file_path = ""
+      media_store_mount_path = ""
       begin
         # mount source file path
         account_folder = "Account#{_account_id.to_s}/"
-        logger.info "full mount path: #{_media_store_path}"
-        source_file_path = mount(_media_store_path)
+        logger.info "full mount location: #{_media_store_location}"
+        media_store_mount_path = mount(_media_store_location)
 
         # get ovf xml
         ovf_file_name = _ovf_file_name
-        source_ovf_file_path = File.join(source_file_path, ovf_file_name)
+        source_ovf_file_path = File.join(media_store_mount_path, ovf_file_name)
         ovf_xml = IO.read(source_ovf_file_path)
 
         # parse ovf
@@ -129,7 +129,7 @@ class Machine < Base::Machine
                   logger.info "ovf file path: #{ovf_file_item.get_path}"
                   device_filename = "#{ovf_file_item.get_path}"
                   # /Users/alexgandy/Desktop/dsl/
-                  source_full_path = File.join(source_file_path, device_filename)
+                  source_full_path = File.join(media_store_mount_path, device_filename)
 
                   upload_command = "#{CURLBIN} --data-binary '@#{source_full_path}' -Ss -X #{method} --insecure -H 'Content-Type: application/x-vnd.vmware-streamVmdk' '#{URI::escape(device_post_url)}'"
                   logger.info(upload_command)
@@ -153,13 +153,11 @@ class Machine < Base::Machine
           http_nfc_lease.httpNfcLeaseProgress(100)
           http_nfc_lease.httpNfcLeaseComplete()
         end
-
-      # clean up
       ensure
-        unmount(source_file_path) if source_file_path.present?
+        # clean up
+        unmount(media_store_mount_path) if media_store_mount_path.present?
       end
-    rescue Vim::InvalidRequest,
-      Vim::SystemError => e
+    rescue Vim::InvalidRequest, Vim::SystemError => e
       logger.error("#{e.class} - Message: \"#{e.get_localized_message.to_s}\"")
     ensure
       inode.close_connection
@@ -262,24 +260,25 @@ class Machine < Base::Machine
       # timestamps.keys.each do |timestamp|
       if !@stats.nil?
         @stats.keys.each do | timestamp |
-            metrics = @stats[timestamp]
-            # Note: cpu.usage.average unit of measure is hundreths of a percent so 1023 is really 10.23% or .1023
-            # you could assert that metric["cpu.usage.average"].to_f /10000) * @cpu_speed * @cpu_count = metrics["cpu.usagemhz.average"]
-            cpu_usage = metrics["cpu.usage.average"].nil? ? 0 : metrics["cpu.usage.average"] == -1 ? 0 : (metrics["cpu.usage.average"].to_f / 10000)
-            memory_bytes = metrics["mem.consumed.average"].nil? ? 0 : metrics["mem.consumed.average"] == -1 ? 0 : metrics["mem.consumed.average"] * 1024
-            result << MachineReading.new({
-                                           :interval     => _interval,
-                                           :cpu_usage    => cpu_usage,
-                                           :memory_bytes => memory_bytes,
-                                           :date_time    => timestamp }
-            )
+          metrics = @stats[timestamp]
+          # Note: cpu.usage.average unit of measure is hundreths of a percent so 1023 is really 10.23% or .1023
+          # you could assert that metric["cpu.usage.average"].to_f /10000) * @cpu_speed * @cpu_count = metrics["cpu.usagemhz.average"]
+          cpu_usage = metrics["cpu.usage.average"].nil? ? 0 : metrics["cpu.usage.average"] == -1 ? 0 : (metrics["cpu.usage.average"].to_f / 10000)
+          memory_bytes = metrics["mem.consumed.average"].nil? ? 0 : metrics["mem.consumed.average"] == -1 ? 0 : metrics["mem.consumed.average"] * 1024
+          result << MachineReading.new({
+                                         :interval     => _interval,
+                                         :cpu_usage    => cpu_usage,
+                                         :memory_bytes => memory_bytes,
+                                         :date_time    => timestamp
+                                       })
 
         end
       end
+
       #       logger.debug("CPU Metric Usage="+(metric_readings[cpu_metric_usage][i].to_f / (100**2)).to_s)
       #       logger.debug("cpu.usagemhz.average="+metric_readings[cpu_metric_usagemhz][i].to_s)
-      result
 
+      result
     rescue => e
       logger.error(e.message)
       logger.error(e.backtrace)
@@ -294,23 +293,23 @@ class Machine < Base::Machine
   end
 
   def stop(inode)
-   logger.info("machine.stop")
-   machine = inode.vmware_api_adaptor.stop(uuid)
+    logger.info("machine.stop")
+    machine = inode.vmware_api_adaptor.stop(uuid)
   end
 
   def restart(inode)
-   logger.info("machine.restart")
-   machine = inode.vmware_api_adaptor.restart(uuid)
+    logger.info("machine.restart")
+    machine = inode.vmware_api_adaptor.restart(uuid)
   end
 
   def force_restart(inode)
-   logger.info("machine.start")
-   machine = inode.vmware_api_adaptor.force_restart(uuid)
+    logger.info("machine.start")
+    machine = inode.vmware_api_adaptor.force_restart(uuid)
   end
 
   def force_stop(inode)
-   logger.info("machine.stop")
-   machine = inode.vmware_api_adaptor.force_stop(uuid)
+    logger.info("machine.stop")
+    machine = inode.vmware_api_adaptor.force_stop(uuid)
   end
 
   # def delete(inode)
@@ -351,10 +350,10 @@ class Machine < Base::Machine
   def disks=(_disks)
     @disks = _disks.map {|disk| MachineDisk.new(disk)}
     if @disks.nil?.eql?(false)
-       @disks.each do |disk|
-         disk.stats = stats
-       end
-     end
+      @disks.each do |disk|
+        disk.stats = stats
+      end
+    end
   end
 
   private
@@ -366,22 +365,22 @@ class Machine < Base::Machine
       status = "#{tools_status}|#{power_status}"
 
       case status
-        when "toolsOk|poweredOn"
-          "started"
-        when "toolsOld|poweredOn"
-          "started"
-        when "toolsNotInstalled|poweredOn"
-          "started"
-        when "toolsNotRunning|poweredOff"
-          "stopped"
-        when "toolsOld|poweredOff"
-          "stopped"
-        when "toolsNotInstalled|poweredOff"
-          "stopped"
-        when "toolsNotRunning|poweredOn"
-          "started"
-        else
-          "Unknown"
+      when "toolsOk|poweredOn"
+        "started"
+      when "toolsOld|poweredOn"
+        "started"
+      when "toolsNotInstalled|poweredOn"
+        "started"
+      when "toolsNotRunning|poweredOff"
+        "stopped"
+      when "toolsOld|poweredOff"
+        "stopped"
+      when "toolsNotInstalled|poweredOff"
+        "stopped"
+      when "toolsNotRunning|poweredOn"
+        "started"
+      else
+        "Unknown"
       end
     rescue => e
       logger.error(e.message)
@@ -389,13 +388,13 @@ class Machine < Base::Machine
     end
   end
 
-  def mount(_mount_path, _local_mount_path="/mnt/upload_location")
-      logger.info("mounting #{_mount_path} -> #{_local_mount_path}")
-      mount_cmd = "sudo mount -t nfs #{_mount_path} #{_local_mount_path}" # -o sync 2>&1
-      logger.info mount_cmd
-      Kernel.system("#{mount_cmd}")
-      logger.info("mounted: #{_local_mount_path}")
-      return _local_mount_path
+  def mount(_mount_path, _local_mount_path="/mnt/media_store_location")
+    logger.info("mounting #{_mount_path} -> #{_local_mount_path}")
+    mount_cmd = "sudo mount -t nfs #{_mount_path} #{_local_mount_path}" # -o sync 2>&1
+    logger.info mount_cmd
+    Kernel.system("#{mount_cmd}")
+    logger.info("mounted: #{_local_mount_path}")
+    return _local_mount_path
   end
 
   def unmount(_local_mount_path)
