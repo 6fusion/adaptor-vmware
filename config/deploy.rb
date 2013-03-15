@@ -30,7 +30,7 @@ set :deploy_to, "/var/6fusion/#{application}"
 set :deploy_via, :remote_cache
 set :rails_env, lambda { fetch(:stage) }
 set :keep_releases, 2
-set :tail_logs_location, "#{shared_path}/log/#{application}.log"
+set :tail_logs_location, "/var/log/torquebox/torquebox.log"
 set :context_path, ""
 set :hipchat_alert, ENV['HIPCHAT_ALERT'] || true
 set :password, ENV['PASSWORD'] if ENV['PASSWORD']

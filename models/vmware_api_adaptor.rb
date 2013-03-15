@@ -225,6 +225,27 @@ class VmwareApiAdaptor
   end
 
   # --------------------------------------------------------
+  # Tasks
+  # --------------------------------------------------------
+
+  def tasks
+    all_tasks = []
+    task_manager = self.connection.get_task_manager
+    task_manager.get_recent_tasks.each do |task|
+      task_info = task.get_task_info
+      all_tasks << {
+        :state => task_info.get_state.to_s,
+        :description_id => task_info.get_description_id,
+        :description => task_info.get_description,
+        :entity_mor => task_info.get_entity,
+        :entity_name => task_info.get_entity_name
+      }
+    end
+
+    all_tasks
+  end
+
+  # --------------------------------------------------------
   # Networks
   # --------------------------------------------------------
 
@@ -278,6 +299,10 @@ class VmwareApiAdaptor
     return virtual_machines
 	end
 
+  BLOCKING_TASKS = %w(
+    ResourcePool.ImportVAppLRO
+  )
+
 	def gather_properties(vms)
 		logger.info("vmware_api_adaptor.gather_properties")
     _hosts = self.hosts
@@ -285,7 +310,7 @@ class VmwareApiAdaptor
 
     virtual_machines_with_properties = []
     vms_with_properties.each do |vm|
-      unless vm["config.template"]
+      unless vm["config.template"] || tasks.find { |t| BLOCKING_TASKS.include?(t[:description_id]) && t[:entity_name] == vm["name"] && ["running", "queued"].include?(t[:state]) }
         vm_managed_object = vms.select { |e| e.config.uuid == vm["config.uuid"] }.first
         vm_host = _hosts.select { |e| e[:host_id] == vm["runtime.host"].get_value }.first
         vm_properties_hash = {}
