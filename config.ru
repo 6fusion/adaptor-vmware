@@ -6,4 +6,7 @@
 
 require File.expand_path("../config/boot.rb", __FILE__)
 
+require 'rack/post-body-to-params'
+use Rack::PostBodyToParams
+
 run Padrino.application

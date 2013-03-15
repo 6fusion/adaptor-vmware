@@ -43,6 +43,22 @@ class Machine < Base::Machine
       datastore = host.get_datastores.first
       ovf_manager = adaptor.connection.get_ovf_manager
 
+      # create account folder for virtual machine; if it doesn't exist
+      vm_account_folder = nil
+      vm_account_folder_name = "Account#{_account_id.to_s}"
+      root_folder = adaptor.root_folder.get_child_entity.first.get_vm_folder
+
+      # figure out if something already exists with the name
+      vm_account_folder = root_folder.get_child_entity.find { |child_entity| child_entity.name == vm_account_folder_name }
+      raise "An item with the name of the folder already exists but it's not a folder!" if vm_account_folder.present? && vm_account_folder.get_class.to_s != "com.vmware.vim25.mo.Folder"
+
+      logger.info "create vm account folder unless it exists: #{!vm_account_folder.nil?}"
+      vm_account_folder = root_folder.create_folder(vm_account_folder_name) if vm_account_folder.nil?
+
+      # check if the vm already exists
+      virtual_machine = vm_account_folder.get_child_entity.find { |child_entity| child_entity.name == _virtual_machine_uuid }
+      raise "Virtual machine already exists: #{virtual_machine.inspect}" if virtual_machine.present?
+
       # mount
       media_store_mount_path = ""
       begin
@@ -71,12 +87,22 @@ class Machine < Base::Machine
         machine_specs.set_property_mapping(nil)
 
         # nic mapping
-        ovf_parse_result.get_network.each do |nic|
-          network_mapping = Vim::OvfNetworkMapping.new()
-          network = adaptor.networks.find { |n| n["name"] == "VINET02" } # network mapping
-          network_mapping.set_name(nic.get_name) # nic/network card name
-          network_mapping.set_network(network["mor"].get_mor)
-          machine_specs.set_network_mapping([network_mapping])
+        _networks_mapping.each do |network_mapping|
+          nic_name = network_mapping["nic_name"]
+          logger.info("looking for nic: #{nic_name}")
+
+          network_name = network_mapping["network_name"]
+          logger.info("looking for network_name: #{network_name}")
+
+          ovf_nic = ovf_parse_result.get_network.find { |nic| nic.get_name == nic_name }
+          inode_network = adaptor.networks.find { |inode_network| inode_network["name"] == network_name }
+
+          if ovf_nic.present? && inode_network.present?
+            network_mapping = Vim::OvfNetworkMapping.new()
+            network_mapping.set_name(ovf_nic.get_name) # nic name
+            network_mapping.set_network(inode_network["mor"].get_mor) # inode network
+            machine_specs.set_network_mapping([network_mapping])
+          end
         end
 
         # import
@@ -90,19 +116,6 @@ class Machine < Base::Machine
         ovf_import_result.get_warning.each do |warning|
           logger.warn(warning.get_localized_message)
         end if ovf_import_result.get_warning.present?
-
-        # create account folder for virtual machine; if it doesn't exist
-        vm_account_folder = nil
-        vm_account_folder_name = "Account#{_account_id.to_s}"
-        root_folder = adaptor.root_folder.get_child_entity.first.get_vm_folder
-
-        # figure out if something already exists with the name
-        vm_account_folder = root_folder.get_child_entity.find { |child_entity| child_entity.name == vm_account_folder_name }
-        raise "An item with the name of the folder already exists but it's not a folder!" if vm_account_folder.present? && vm_account_folder.get_class.to_s != "com.vmware.vim25.mo.Folder"
-
-        logger.info "create vm account folder unless it exists: #{!vm_account_folder.nil?}"
-        vm_account_folder = root_folder.create_folder(vm_account_folder_name) if vm_account_folder.nil?
-        logger.info("first: _object class type: #{vm_account_folder.get_class}")
 
         # lease management
         http_nfc_lease = resource_pool.import_vapp(ovf_import_result.get_import_spec, vm_account_folder, host)

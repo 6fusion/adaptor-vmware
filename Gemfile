@@ -14,7 +14,7 @@ gem 'uuid'
 gem 'json-jruby', require: 'json'
 gem 'jruby-rack'
 gem 'rack'
-gem 'rest-client'
+gem 'rack-post-body-to-params'
 
 torquebox_version = "2.3.0"
 gem 'torquebox-cache', torquebox_version
@@ -28,6 +28,7 @@ group :deploy do
   gem 'capistrano-ext'
   gem 'capistrano_colors'
   gem 'capistrano-helpers'
+  gem 'rest-client'
 end
 
 group :development, :test do
