@@ -340,10 +340,10 @@ class Machine < Base::Machine
     machine = inode.vmware_api_adaptor.force_stop(uuid)
   end
 
-  # def delete(inode)
-  #  logger.info("machine.delete")
-  #  machine = inode.vmware_api_adaptor.destroy(uuid)
-  # end
+  def delete(inode)
+   logger.info("machine.delete")
+   machine = inode.vmware_api_adaptor.destroy(uuid)
+  end
 
   # def update_nic(vd)
   #   if(vd instanceof VirtualEthernetCard && (vd.getDeviceInfo().getLabel().equalsIgnoreCase("Network Adapter 1"))){

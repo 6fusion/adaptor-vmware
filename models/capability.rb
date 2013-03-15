@@ -26,6 +26,7 @@ class Capability < Base::Capability
     force_stop
     force_restart
     diagnostics
+    delete
     )
   def self.all(inode)
     logger.info('Capability.all')
