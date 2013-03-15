@@ -59,17 +59,10 @@ class Machine < Base::Machine
       virtual_machine = vm_account_folder.get_child_entity.find { |child_entity| child_entity.name == _virtual_machine_uuid }
       raise "Virtual machine already exists: #{virtual_machine.inspect}" if virtual_machine.present?
 
-      # mount
-      media_store_mount_path = ""
       begin
-        # mount source file path
-        account_folder = "Account#{_account_id.to_s}/"
-        logger.info "full mount location: #{_media_store_location}"
-        media_store_mount_path = mount(_media_store_location)
-
         # get ovf xml
         ovf_file_name = _ovf_file_name
-        source_ovf_file_path = File.join(media_store_mount_path, ovf_file_name)
+        source_ovf_file_path = File.join(_media_store_location, ovf_file_name)
         ovf_xml = IO.read(source_ovf_file_path)
 
         # parse ovf
@@ -151,7 +144,7 @@ class Machine < Base::Machine
                   logger.info "ovf file path: #{ovf_file_item.get_path}"
                   device_filename = "#{ovf_file_item.get_path}"
 
-                  source_full_path = File.join(media_store_mount_path, device_filename)
+                  source_full_path = File.join(_media_store_location, device_filename)
 
                   upload_command = "#{CURLBIN} --data-binary '@#{source_full_path}' -Ss -X #{method} --insecure -H 'Content-Type: application/x-vnd.vmware-streamVmdk' '#{URI::escape(device_post_url)}'"
                   logger.info(upload_command)
@@ -182,8 +175,6 @@ class Machine < Base::Machine
           http_nfc_lease.httpNfcLeaseComplete()
         end
       ensure
-        # clean up
-        unmount(media_store_mount_path) if media_store_mount_path.present?
       end
     rescue Vim::InvalidRequest, Vim::SystemError => e
       logger.error("#{e.class} - Message: \"#{e.get_localized_message.to_s}\"")
@@ -428,6 +419,7 @@ class Machine < Base::Machine
     end
   end
 
+  # TODO: Move this to media store model when it's built
   def self.mount(_mount_path, _local_mount_path="/mnt/media_store_location")
     logger.info("mounting #{_mount_path} -> #{_local_mount_path}")
     mount_cmd = "sudo mount -t nfs #{_mount_path} #{_local_mount_path}" # -o sync 2>&1
