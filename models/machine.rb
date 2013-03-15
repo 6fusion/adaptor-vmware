@@ -111,6 +111,7 @@ class Machine < Base::Machine
         # TODO: handle errors and warnings
         ovf_import_result.get_error.each do |error|
           logger.error(error.get_localized_message)
+          raise error.get_localized_message
         end if ovf_import_result.get_error.present?
 
         ovf_import_result.get_warning.each do |warning|
