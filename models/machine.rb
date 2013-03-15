@@ -72,9 +72,6 @@ class Machine < Base::Machine
 
         # nic mapping
         ovf_parse_result.get_network.each do |nic|
-          # nic.methods.grep(/get\_/).each do |cmd|
-          #   logger.info "#{cmd} : #{nic.send(cmd)}"
-          # end
           network_mapping = Vim::OvfNetworkMapping.new()
           network = adaptor.networks.find { |n| n["name"] == "VINET02" } # network mapping
           network_mapping.set_name(nic.get_name) # nic/network card name
@@ -357,6 +354,16 @@ class Machine < Base::Machine
   end
 
   private
+  def log_available_methods(_object, _regex=nil, _execute_it=false)
+    methods = _object.methods
+    methods = methods.grep(_regex) if _regex.present?
+
+    methods.each do |method|
+      logger.info "Method: #{method}"
+      logger.info "*** Result: #{nic.send(method)}" if _execute_it
+    end
+  end
+
   # Helper Method for converting machine power states.
   def self.convert_power_state(tools_status, power_status)
     logger.info('machine.convert_power_state')
