@@ -418,19 +418,4 @@ class Machine < Base::Machine
       raise Exceptions::Unrecoverable, e.message
     end
   end
-
-  # TODO: Move this to media store model when it's built
-  def self.mount(_mount_path, _local_mount_path="/mnt/media_store_location")
-    logger.info("mounting #{_mount_path} -> #{_local_mount_path}")
-    mount_cmd = "sudo mount -t nfs #{_mount_path} #{_local_mount_path}" # -o sync 2>&1
-    logger.info mount_cmd
-    Kernel.system("#{mount_cmd}")
-    logger.info("mounted: #{_local_mount_path}")
-    return _local_mount_path
-  end
-
-  def self.unmount(_local_mount_path)
-    logger.info("unmounting #{_local_mount_path}")
-    Kernel.system("sudo umount #{_local_mount_path}")
-  end
 end
