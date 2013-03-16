@@ -34,7 +34,7 @@ class Machine < Base::Machine
     super
   end
 
-  def self.create(inode, _account_id, _media_store_location, _ovf_file_name, _virtual_machine_uuid, _networks_mapping)
+  def self.create(inode, _account_id, _media_store_location, _ovf_file_name, _virtual_machine_uuid, _network_maps)
     begin
       logger.info("machine.create")
       adaptor = inode.vmware_api_adaptor
@@ -82,7 +82,7 @@ class Machine < Base::Machine
         machine_specs.set_property_mapping(nil)
 
         # nic mapping
-        _networks_mapping.each do |network_mapping|
+        _network_maps.each do |network_mapping|
           nic_name = network_mapping["nic_name"]
           logger.info("looking for nic: #{nic_name}")
 
