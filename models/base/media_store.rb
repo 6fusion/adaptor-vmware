@@ -10,7 +10,11 @@ class Base::MediaStore < Main
     logger.info("created local mount path: #{_local_mount_path}")
 
     logger.info("mounting #{_remote_mount_path} -> #{_local_mount_path}")
-    mount_cmd = "sudo mount -t nfs #{_remote_mount_path} #{_local_mount_path}" # -o sync 2>&1
+    mount_cmd = "sudo mount -t nfs #{_remote_mount_path} #{_local_mount_path} -o tcp"
+
+    # TODO: Setup /etc/fstab to automount the media store on reboots
+    # format: {NFSServer}:{/remote/path/2/export} {/mnt/nfs} nfs {NFS-Options} 0 0
+    # example: nfsserver.nixcraft.in:/data/sales /mnt/sales nfs defaults 0 0
 
     logger.info("#{mount_cmd}")
     Kernel.system("#{mount_cmd}")
