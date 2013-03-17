@@ -161,7 +161,7 @@ class Machine < Base::Machine
               end
             end
 
-            inode_virtual_machine = adaptor.find_vm_by_mor(hnli.get_entity, true).find { |virtual_machine| virtual_machine[:name] == _virtual_machine_uuid }
+            inode_virtual_machine = adaptor.find_vm_by_mor(hnli.get_entity, true).find { |virtual_machine| virtual_machine["name"] == _virtual_machine_uuid }
             logger.info("virtual machine: #{inode_virtual_machine.inspect}")
 
             virtual_machine = Machine.new(inode_virtual_machine)
