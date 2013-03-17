@@ -303,7 +303,7 @@ class VmwareApiAdaptor
     ResourcePool.ImportVAppLRO
   )
 
-  def gather_properties(vms, _include_deploying)
+  def gather_properties(vms, _include_deploying=false)
     logger.info("vmware_api_adaptor.gather_properties")
     _hosts = self.hosts
     vms_with_properties = VIJavaUtil::PropertyCollectorUtil.retrieve_properties(vms, "VirtualMachine", VM_PROPERTIES.to_java(:string))
