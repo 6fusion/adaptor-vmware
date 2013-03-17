@@ -303,14 +303,15 @@ class VmwareApiAdaptor
     ResourcePool.ImportVAppLRO
   )
 
-  def gather_properties(vms)
+  def gather_properties(vms, _include_deploying)
     logger.info("vmware_api_adaptor.gather_properties")
     _hosts = self.hosts
     vms_with_properties = VIJavaUtil::PropertyCollectorUtil.retrieve_properties(vms, "VirtualMachine", VM_PROPERTIES.to_java(:string))
 
     virtual_machines_with_properties = []
     vms_with_properties.each do |vm|
-      unless vm["config.template"] || tasks.find { |t| BLOCKING_TASKS.include?(t[:description_id]) && t[:entity_name] == vm["name"] && ["running", "queued"].include?(t[:state]) }
+      exclude_deploying = !_include_deploying && tasks.find { |t| BLOCKING_TASKS.include?(t[:description_id]) && t[:entity_name] == vm["name"] && ["running", "queued"].include?(t[:state]).present?
+      unless vm["config.template"] || exclude_deploying }
         vm_managed_object = vms.select { |e| e.config.uuid == vm["config.uuid"] }.first
         vm_host = _hosts.select { |e| e[:host_id] == vm["runtime.host"].get_value }.first
         vm_properties_hash = {}
@@ -458,10 +459,10 @@ class VmwareApiAdaptor
     return nic_hash
   end
 
-  def find_vm_by_uuid(_uuid)
+  def find_vm_by_uuid(_uuid, _include_deploying=false)
     logger.info("vmware_api_adaptor.find_vm_by_uuid")
     v = [self.connection.get_search_index.find_by_uuid(nil, _uuid, true, false)]
-    vm = gather_properties(v)
+    vm = gather_properties(v, _include_deploying)
     return vm
   end
 
