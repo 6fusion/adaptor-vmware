@@ -310,8 +310,8 @@ class VmwareApiAdaptor
 
     virtual_machines_with_properties = []
     vms_with_properties.each do |vm|
-      exclude_deploying = !_include_deploying && tasks.find { |t| BLOCKING_TASKS.include?(t[:description_id]) && t[:entity_name] == vm["name"] && ["running", "queued"].include?(t[:state]).present?
-      unless vm["config.template"] || exclude_deploying }
+      exclude_deploying = !_include_deploying && tasks.find { |t| BLOCKING_TASKS.include?(t[:description_id]) && t[:entity_name] == vm["name"] && ["running", "queued"].include?(t[:state]) }.present?
+      unless vm["config.template"] || exclude_deploying
         vm_managed_object = vms.select { |e| e.config.uuid == vm["config.uuid"] }.first
         vm_host = _hosts.select { |e| e[:host_id] == vm["runtime.host"].get_value }.first
         vm_properties_hash = {}
