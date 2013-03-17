@@ -21,24 +21,24 @@ module Vim
 end
 
 class VmwareApiAdaptor
-	attr_accessor :inode
+  attr_accessor :inode
   KB = 1024.0
   MB = 1024.0**2
   GB = 1024.0**3
 
-	def initialize(inode)
-		self.inode = inode
-	end
+  def initialize(inode)
+    self.inode = inode
+  end
 
-	# --------------------------------------------------------
-	# Connection management
-	# --------------------------------------------------------
+  # --------------------------------------------------------
+  # Connection management
+  # --------------------------------------------------------
 
-	def connection
-		@connection ||= self.connect(inode.host_ip_address, inode.user, inode.password)
-	end
+  def connection
+    @connection ||= self.connect(inode.host_ip_address, inode.user, inode.password)
+  end
 
-	def connected?
+  def connected?
     @connection.present?
   end
 
@@ -49,22 +49,22 @@ class VmwareApiAdaptor
   # @return [VIJava, VIJava::ServiceInstance]
   # @yield [VIJava, VIJava::ServiceInstance]
   def connect(_host, _user, _password)
-  	disconnect
-  	@connection = VIJava::ServiceInstance.new(URL.new("https://#{_host}/sdk"), _user, _password, true)
-  	return @connection
+    disconnect
+    @connection = VIJava::ServiceInstance.new(URL.new("https://#{_host}/sdk"), _user, _password, true)
+    return @connection
   end
 
-	def disconnect
-		if connected?
-			logger.info "Disconnecting..."
-			@connection.get_server_connection.logout
-		end
-		@connection = nil
-	end
+  def disconnect
+    if connected?
+      logger.info "Disconnecting..."
+      @connection.get_server_connection.logout
+    end
+    @connection = nil
+  end
 
-	def root_folder
-		self.connection.get_root_folder
-	end
+  def root_folder
+    self.connection.get_root_folder
+  end
 
   def get_about_info
     logger.info("vmware_api_adaptor.get_about_info")
@@ -116,9 +116,9 @@ class VmwareApiAdaptor
     return stats
   end
 
-	# --------------------------------------------------------
-	# Hosts
-	# --------------------------------------------------------
+  # --------------------------------------------------------
+  # Hosts
+  # --------------------------------------------------------
 
   HOST_PROPERTIES = %w(
     name
@@ -126,9 +126,9 @@ class VmwareApiAdaptor
     hardware.memorySize
   )
 
-	def hosts
-		logger.info("vmware_api_adaptor.hosts");
-		host_managed_objects = VIJava::InventoryNavigator.new(self.root_folder).search_managed_entities("HostSystem");
+  def hosts
+    logger.info("vmware_api_adaptor.hosts");
+    host_managed_objects = VIJava::InventoryNavigator.new(self.root_folder).search_managed_entities("HostSystem");
     host_properties = VIJavaUtil::PropertyCollectorUtil.retrieve_properties(host_managed_objects, "HostSystem", HOST_PROPERTIES.to_java(:string))
 
     # logger.info "\n\n"
@@ -150,7 +150,7 @@ class VmwareApiAdaptor
     end
 
     return _hosts
-	end
+  end
 
   # --------------------------------------------------------
   # Datastores
@@ -270,43 +270,43 @@ class VmwareApiAdaptor
     networks
   end
 
- 	# --------------------------------------------------------
-	# Virtual Machines
-	# --------------------------------------------------------
+  # --------------------------------------------------------
+  # Virtual Machines
+  # --------------------------------------------------------
 
-	VM_PROPERTIES = %w(
+  VM_PROPERTIES = %w(
     name
-	  config.hardware.device
-	  guest.toolsStatus
-	  guest.guestId
+    config.hardware.device
+    guest.toolsStatus
+    guest.guestId
     guest.guestFullName
-	  guest.net
-	  config.uuid
-	  config.template
-	  layoutEx.disk
-	  layoutEx.file
-	  runtime.powerState
-	  runtime.host
-	  config.hardware.memoryMB
-	  config.hardware.numCPU
-	)
+    guest.net
+    config.uuid
+    config.template
+    layoutEx.disk
+    layoutEx.file
+    runtime.powerState
+    runtime.host
+    config.hardware.memoryMB
+    config.hardware.numCPU
+  )
 
-	def virtual_machines()
-		logger.info("vmware_api_adaptor#virtual_machines");
+  def virtual_machines()
+    logger.info("vmware_api_adaptor#virtual_machines");
     vms = VIJava::InventoryNavigator.new(self.root_folder).search_managed_entities("VirtualMachine");
     virtual_machines = gather_properties(vms)
 
     return virtual_machines
-	end
+  end
 
   BLOCKING_TASKS = %w(
     ResourcePool.ImportVAppLRO
   )
 
-	def gather_properties(vms)
-		logger.info("vmware_api_adaptor.gather_properties")
+  def gather_properties(vms)
+    logger.info("vmware_api_adaptor.gather_properties")
     _hosts = self.hosts
-		vms_with_properties = VIJavaUtil::PropertyCollectorUtil.retrieve_properties(vms, "VirtualMachine", VM_PROPERTIES.to_java(:string))
+    vms_with_properties = VIJavaUtil::PropertyCollectorUtil.retrieve_properties(vms, "VirtualMachine", VM_PROPERTIES.to_java(:string))
 
     virtual_machines_with_properties = []
     vms_with_properties.each do |vm|
@@ -341,7 +341,7 @@ class VmwareApiAdaptor
           case vd
           when Vim::VirtualDisk
             vm_properties_hash["disks"] << get_disk(vd, vm)
-          #when Vim::VirtualPCNet32, Vim::VirtualE1000, Vim::VirtualVmxnet
+            #when Vim::VirtualPCNet32, Vim::VirtualE1000, Vim::VirtualVmxnet
           when Vim::VirtualEthernetCard
             vm_properties_hash["nics"] << get_nic(vd, vm)
           end
@@ -352,7 +352,7 @@ class VmwareApiAdaptor
     end
 
     return virtual_machines_with_properties
-	end
+  end
 
   DISK_TYPES_WITH_UUID = [
     Vim::VirtualDiskFlatVer2BackingInfo,
@@ -458,7 +458,7 @@ class VmwareApiAdaptor
     return nic_hash
   end
 
-	def find_vm_by_uuid(_uuid)
+  def find_vm_by_uuid(_uuid)
     logger.info("vmware_api_adaptor.find_vm_by_uuid")
     v = [self.connection.get_search_index.find_by_uuid(nil, _uuid, true, false)]
     vm = gather_properties(v)
@@ -474,8 +474,8 @@ class VmwareApiAdaptor
 
   def start(_uuid)
     begin
-  		logger.info("vmware_api_adaptor.start")
-    	machine = find_vm_by_uuid(_uuid)
+      logger.info("vmware_api_adaptor.start")
+      machine = find_vm_by_uuid(_uuid)
       tasks = []
       machine.map { |vm| tasks << vm["mor"].power_on_vm_task(nil) }
       tasks.each do |t|
@@ -487,11 +487,11 @@ class VmwareApiAdaptor
         end
       end
     rescue Java::RuntimeFault,
-      Java::RemoteException => e
+        Java::RemoteException => e
       logger.warn("Invalid #{e.get_localized_message.to_s}")
       raise Exceptions::Unrecoverable.new("Cannot Complete Requested Action: #{e.class.to_s}")
     rescue Vim::InvalidState,
-      Vim::TaskInProgress => e
+        Vim::TaskInProgress => e
       logger.warn("Invalid #{e.class.to_s}")
       raise Exceptions::MethodNotAllowed.new("Method Not Allowed: #{e.class.to_s}")
     end
@@ -512,11 +512,11 @@ class VmwareApiAdaptor
         end
       end
     rescue Java::RuntimeFault,
-      Java::RemoteException => e
+        Java::RemoteException => e
       logger.warn("Invalid #{e.class.to_s}")
       raise Exceptions::Unrecoverable.new("Cannot Complete Requested Action: #{e.class.to_s}")
     rescue Vim::InvalidState,
-      Vim::TaskInProgress => e
+        Vim::TaskInProgress => e
       logger.warn("Invalid #{e.class.to_s}")
       raise Exceptions::MethodNotAllowed.new("Method Not Allowed: #{e.class.to_s}")
     end
@@ -524,7 +524,7 @@ class VmwareApiAdaptor
 
   def force_stop(_uuid)
     begin
-    	logger.info("vmware_api_adaptor.stop")
+      logger.info("vmware_api_adaptor.stop")
       machine = find_vm_by_uuid(_uuid)
       tasks = []
       machine.map { |vm| tasks << vm["mor"].power_off_vm_task }
@@ -537,22 +537,22 @@ class VmwareApiAdaptor
         end
       end
     rescue Java::RuntimeFault,
-      Java::RemoteException => e
+        Java::RemoteException => e
       logger.warn("Invalid #{e.class.to_s}")
       raise Exceptions::Unrecoverable.new("Cannot Complete Requested Action: #{e.class.to_s}")
     rescue Vim::InvalidState,
-      Vim::TaskInProgress => e
+        Vim::TaskInProgress => e
       logger.warn("Invalid #{e.class.to_s}")
       raise Exceptions::MethodNotAllowed.new("Method Not Allowed: #{e.class.to_s}")
     end
   end
 
   def restart(_uuid)
-  	begin
-	  	logger.info("vmware_api_adaptor.restart")
-	    machine = find_vm_by_uuid(_uuid)
+    begin
+      logger.info("vmware_api_adaptor.restart")
+      machine = find_vm_by_uuid(_uuid)
       tasks = []
-	    machine.map { |vm| tasks << vm["mor"].reboot_guest }
+      machine.map { |vm| tasks << vm["mor"].reboot_guest }
       tasks.each do |t|
         if t.present?
           sleep(1) while ["queued", "running"].include?(t.get_task_info.get_state.to_s)
@@ -562,12 +562,12 @@ class VmwareApiAdaptor
         end
       end
     rescue Java::RuntimeFault,
-      Java::RemoteException => e
-    	logger.warn("Invalid #{e.class.to_s}")
+        Java::RemoteException => e
+      logger.warn("Invalid #{e.class.to_s}")
       raise Exceptions::Unrecoverable.new("Cannot Complete Requested Action: #{e.class.to_s}")
     rescue Vim::InvalidState,
-      Vim::ToolsUnavailable,
-      Vim::TaskInProgress => e
+        Vim::ToolsUnavailable,
+        Vim::TaskInProgress => e
       logger.warn("Invalid #{e.class.to_s}")
       raise Exceptions::MethodNotAllowed.new("Method Not Allowed: #{e.class.to_s}")
     end
@@ -588,12 +588,12 @@ class VmwareApiAdaptor
         end
       end
     rescue Java::RuntimeFault,
-      Java::RemoteException => e
+        Java::RemoteException => e
       logger.warn("Invalid #{e.class.to_s}")
       raise Exceptions::Unrecoverable.new("Cannot Complete Requested Action: #{e.class.to_s}")
     rescue Vim::InvalidState,
-      Vim::ToolsUnavailable,
-      Vim::TaskInProgress => e
+        Vim::ToolsUnavailable,
+        Vim::TaskInProgress => e
       logger.warn("Invalid #{e.class.to_s}")
       raise Exceptions::MethodNotAllowed.new("Method Not Allowed: #{e.class.to_s}")
     end
@@ -614,11 +614,11 @@ class VmwareApiAdaptor
         end
       end
     rescue Java::RuntimeFault,
-      Java::RemoteException => e
+        Java::RemoteException => e
       logger.warn("Invalid #{e.class.to_s}")
       raise Exceptions::Unrecoverable.new("Cannot Complete Requested Action: #{e.class.to_s}")
     rescue Vim::InvalidState,
-      Vim::TaskInProgress => e
+        Vim::TaskInProgress => e
       logger.warn("Invalid #{e.class.to_s}")
       raise Exceptions::MethodNotAllowed.new("Method Not Allowed: #{e.class.to_s}")
     end
