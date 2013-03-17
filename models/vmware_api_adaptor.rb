@@ -466,10 +466,10 @@ class VmwareApiAdaptor
     return vm
   end
 
-  def find_vm_by_mor(_mor)
+  def find_vm_by_mor(_mor, _include_deploying=false)
     logger.info("vmware_api_adaptor.find_vm_by_mor")
     v = [VIJavaUtil::MorUtil.createExactManagedEntity(self.connection.get_server_connection, _mor)]
-    vm = gather_properties(v)
+    vm = gather_properties(v, _include_deploying)
     return vm
   end
 
