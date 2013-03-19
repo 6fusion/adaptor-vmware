@@ -9,13 +9,20 @@ class Base::MediaStore < Main
     Kernel.system("sudo mkdir -p #{_local_mount_path}")
     logger.info("created local mount path: #{_local_mount_path}")
 
+    logger.info("backing up /etc/fstab to /etc/fstab.bkp.#{Time.now.strftime("%Y-%m-%dT%H_%M_%S")}")
+    backup_cmd = "sudo cp /etc/fstab /etc/fstab.bkp.#{Time.now.strftime("%Y-%m-%dT%H_%M_%S")}"
+    logger.info("backup_cmd: #{backup_cmd}")
+    Kernel.system(backup_cmd)
+    logger.info("/etc/fstab backed up")
+
+    logger.info("adding mount to /etc/fstab to it will persist on reboot")
+    automount_cmd = "sudo echo #{_remote_mount_path} #{_local_mount_path} nfs ro,auto,user,noexec,sync 0 0 >> /etc/fstab"
+    logger.info("automount_cmd: #{automount_cmd}")
+    Kernel.system(automount_cmd)
+    logger.info("mount added to /etc/fstab for persistence")
+
     logger.info("mounting #{_remote_mount_path} -> #{_local_mount_path}")
     mount_cmd = "sudo mount -t nfs #{_remote_mount_path} #{_local_mount_path} -o tcp"
-
-    # TODO: Setup /etc/fstab to automount the media store on reboots
-    # format: {NFSServer}:{/remote/path/2/export} {/mnt/nfs} nfs {NFS-Options} 0 0
-    # example: nfsserver.nixcraft.in:/data/sales /mnt/sales nfs defaults 0 0
-
     logger.info("#{mount_cmd}")
     Kernel.system("#{mount_cmd}")
     logger.info("mounted: #{_local_mount_path}")
