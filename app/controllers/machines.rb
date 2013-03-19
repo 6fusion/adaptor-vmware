@@ -12,7 +12,7 @@ AdaptorVMware.controllers :machines, :parent => :inodes do
   post :index do
     logger.info('POST - machines#index')
     options = params["options"]
-    @machine = Machine.create(@inode, options["account_id"], options["media_store_location"], options["ovf_file_name"], options["virtual_machine_uuid"], options["network_maps"])
+    @machine = Machine.create(@inode, options["account_id"], options["media_store_location"], options["ovf_file_name"], options["virtual_machine_uuid"], options["network_maps"], options["disk_maps"])
 
     render 'machines/show'
   end

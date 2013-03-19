@@ -34,7 +34,7 @@ class Machine < Base::Machine
     super
   end
 
-  def self.create(inode, _account_id, _media_store_location, _ovf_file_name, _virtual_machine_uuid, _network_maps)
+  def self.create(inode, _account_id, _media_store_location, _ovf_file_name, _virtual_machine_uuid, _network_maps, _disk_maps)
     begin
       logger.info("machine.create")
       adaptor = inode.vmware_api_adaptor
@@ -72,7 +72,12 @@ class Machine < Base::Machine
         ovf_parse_result = ovf_manager.parseDescriptor(ovf_xml, parse_params)
 
         # TODO: disk mappings for thin/thick
+        # _disk_maps.each do |disk_mapping|
+
+        # end
+
         # TODO: resize memory
+
         # create import spec
         machine_specs = Vim::OvfCreateImportSpecParams.new()
         machine_specs.set_host_system(host.get_mor)
