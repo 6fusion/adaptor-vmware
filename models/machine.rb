@@ -166,13 +166,7 @@ class Machine < Base::Machine
               end
             end
 
-            inode_virtual_machine = adaptor.find_vm_by_mor(hnli.get_entity, true).find { |virtual_machine| virtual_machine["name"] == _virtual_machine_uuid }
-            logger.info("virtual machine: #{inode_virtual_machine.inspect}")
-
-            virtual_machine = Machine.new(inode_virtual_machine)
-            logger.info("6fusion virtual machine model: #{virtual_machine.inspect}")
-
-            return virtual_machine
+            return Machine.new(adaptor.find_vm_by_mor(hnli.get_entity, true))
           end
         ensure
           logger.info("removing lease")
@@ -239,8 +233,9 @@ class Machine < Base::Machine
   def self.find_by_uuid(inode, uuid)
     begin
       vm = inode.vmware_api_adaptor.find_vm_by_uuid(uuid)
-      unless vm.nil? || vm.first.nil?
-        Machine.new(vm.first)
+
+      unless vm.nil?
+        Machine.new(vm)
       else
         raise Exceptions::NotFound
       end
@@ -262,8 +257,9 @@ class Machine < Base::Machine
       end_time = _until.round(5.minutes).utc
       adaptor = inode.vmware_api_adaptor
       vm = adaptor.readings(adaptor.find_vm_by_uuid(uuid), start_time, end_time)
-      unless vm.nil? || vm.first.nil?
-        Machine.new(vm.first)
+
+      unless vm.nil?
+        Machine.new(vm)
       else
         raise Exceptions::NotFound
       end
@@ -311,34 +307,34 @@ class Machine < Base::Machine
   end
 
 
-  def start(inode)
+  def self.start(inode, _virtual_machine_uuid)
     logger.info("machine.start")
-    machine = inode.vmware_api_adaptor.start(uuid)
+    machine = Machine.new(inode.vmware_api_adaptor.start(_virtual_machine_uuid))
   end
 
-  def stop(inode)
+  def self.stop(inode, _virtual_machine_uuid)
     logger.info("machine.stop")
-    machine = inode.vmware_api_adaptor.stop(uuid)
+    machine = Machine.new(inode.vmware_api_adaptor.stop(_virtual_machine_uuid))
   end
 
-  def restart(inode)
+  def self.restart(inode, _virtual_machine_uuid)
     logger.info("machine.restart")
-    machine = inode.vmware_api_adaptor.restart(uuid)
+    machine = Machine.new(inode.vmware_api_adaptor.restart(_virtual_machine_uuid))
   end
 
-  def force_restart(inode)
+  def self.force_restart(inode, _virtual_machine_uuid)
     logger.info("machine.start")
-    machine = inode.vmware_api_adaptor.force_restart(uuid)
+    machine = Machine.new(inode.vmware_api_adaptor.force_restart(_virtual_machine_uuid))
   end
 
-  def force_stop(inode)
+  def self.force_stop(inode, _virtual_machine_uuid)
     logger.info("machine.stop")
-    machine = inode.vmware_api_adaptor.force_stop(uuid)
+    machine = Machine.new(inode.vmware_api_adaptor.force_stop(_virtual_machine_uuid))
   end
 
-  def delete(inode)
+  def self.delete(inode, _virtual_machine_uuid)
    logger.info("machine.delete")
-   machine = inode.vmware_api_adaptor.destroy(uuid)
+   inode.vmware_api_adaptor.destroy(_virtual_machine_uuid)
   end
 
   # def update_nic(vd)

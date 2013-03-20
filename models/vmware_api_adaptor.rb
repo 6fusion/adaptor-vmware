@@ -321,7 +321,7 @@ class VmwareApiAdaptor
         vm_properties_hash["external_vm_id"] = vm_mor_id if vm_mor_id.present?
         vm_properties_hash["external_host_id"] =  vm["runtime.host"].get_value if vm["runtime.host"].get_value.present?
         vm_properties_hash["uuid"] = vm["config.uuid"] if vm["config.uuid"].present?
-        vm_properties_hash["name"] = vm["name"] if vm["name"].present?
+        vm_properties_hash["virtual_name"] = vm["name"] if vm["name"].present?
         vm_properties_hash["cpu_count"] = vm["config.hardware.numCPU"] if vm["config.hardware.numCPU"].present?
         vm_properties_hash["maximum_memory"] = vm["config.hardware.memoryMB"] if vm["config.hardware.memoryMB"].present?
         vm_properties_hash["power_state"] = vm["runtime.powerState"].to_s if vm["runtime.powerState"].present?
@@ -456,6 +456,7 @@ class VmwareApiAdaptor
         end
       end
     end
+
     return nic_hash
   end
 
@@ -463,14 +464,16 @@ class VmwareApiAdaptor
     logger.info("vmware_api_adaptor.find_vm_by_uuid")
     v = [self.connection.get_search_index.find_by_uuid(nil, _uuid, true, false)]
     vm = gather_properties(v, _include_deploying)
-    return vm
+
+    return vm.first
   end
 
   def find_vm_by_mor(_mor, _include_deploying=false)
     logger.info("vmware_api_adaptor.find_vm_by_mor")
     v = [VIJavaUtil::MorUtil.createExactManagedEntity(self.connection.get_server_connection, _mor)]
     vm = gather_properties(v, _include_deploying)
-    return vm
+
+    return vm.first
   end
 
   def start(_uuid)
@@ -478,15 +481,18 @@ class VmwareApiAdaptor
       logger.info("vmware_api_adaptor.start")
       machine = find_vm_by_uuid(_uuid)
       tasks = []
-      machine.map { |vm| tasks << vm["mor"].power_on_vm_task(nil) }
-      tasks.each do |t|
-        if t.present?
-          sleep(1) while ["queued", "running"].include?(t.get_task_info.get_state.to_s)
-          if t.get_task_info.get_state.to_s.include?("error")
-            raise Exceptions::Unrecoverable.new("Cannot Complete Requested Action: #{t.get_task_info.get_error.get_localized_message.to_s}")
-          end
+
+      task = machine["mor"].power_on_vm_task(nil)
+
+      if task.present?
+        sleep(1) while ["queued", "running"].include?(task.get_task_info.get_state.to_s)
+        if task.get_task_info.get_state.to_s.include?("error")
+          raise Exceptions::Unrecoverable.new("Cannot Complete Requested Action: #{task.get_task_info.get_error.get_localized_message.to_s}")
         end
       end
+
+      machine["power_state"] = "poweredOn"
+      machine
     rescue Java::RuntimeFault,
         Java::RemoteException => e
       logger.warn("Invalid #{e.get_localized_message.to_s}")
@@ -503,15 +509,18 @@ class VmwareApiAdaptor
       logger.info("vmware_api_adaptor.stop")
       machine = find_vm_by_uuid(_uuid)
       tasks = []
-      machine.map { |vm| tasks << vm["mor"].shutdown_guest }
-      tasks.each do |t|
-        if t.present?
-          sleep(1) while ["queued", "running"].include?(t.get_task_info.get_state.to_s)
-          if t.get_task_info.get_state.to_s.include?("error")
-            raise Exceptions::Unrecoverable.new("Cannot Complete Requested Action: #{t.get_task_info.get_error.get_localized_message.to_s}")
-          end
+
+      task = machine["mor"].shutdown_guest
+
+      if task.present?
+        sleep(1) while ["queued", "running"].include?(task.get_task_info.get_state.to_s)
+        if task.get_task_info.get_state.to_s.include?("error")
+          raise Exceptions::Unrecoverable.new("Cannot Complete Requested Action: #{task.get_task_info.get_error.get_localized_message.to_s}")
         end
       end
+
+      machine["power_state"] = "poweredOff"
+      machine
     rescue Java::RuntimeFault,
         Java::RemoteException => e
       logger.warn("Invalid #{e.class.to_s}")
@@ -520,6 +529,9 @@ class VmwareApiAdaptor
         Vim::TaskInProgress => e
       logger.warn("Invalid #{e.class.to_s}")
       raise Exceptions::MethodNotAllowed.new("Method Not Allowed: #{e.class.to_s}")
+    rescue Java::ComVmwareVim25::ToolsUnavailable => e
+      logger.error("VMware Tools Unavailable")
+      raise Exceptions::MethodNotAllowed.new("Method Not Allowed: VMware Tools Unavailable")
     end
   end
 
@@ -528,15 +540,17 @@ class VmwareApiAdaptor
       logger.info("vmware_api_adaptor.stop")
       machine = find_vm_by_uuid(_uuid)
       tasks = []
-      machine.map { |vm| tasks << vm["mor"].power_off_vm_task }
-      tasks.each do |t|
-        if t.present?
-          sleep(1) while ["queued", "running"].include?(t.get_task_info.get_state.to_s)
-          if t.get_task_info.get_state.to_s.include?("error")
-            raise Exceptions::Unrecoverable.new("Cannot Complete Requested Action: #{t.get_task_info.get_error.get_localized_message.to_s}")
-          end
+
+      task = machine["mor"].power_off_vm_task
+
+      if task.present?
+        sleep(1) while ["queued", "running"].include?(task.get_task_info.get_state.to_s)
+        if task.get_task_info.get_state.to_s.include?("error")
+          raise Exceptions::Unrecoverable.new("Cannot Complete Requested Action: #{task.get_task_info.get_error.get_localized_message.to_s}")
         end
       end
+
+      find_vm_by_uuid(_uuid)
     rescue Java::RuntimeFault,
         Java::RemoteException => e
       logger.warn("Invalid #{e.class.to_s}")
@@ -546,6 +560,9 @@ class VmwareApiAdaptor
       logger.warn("Invalid #{e.class.to_s}")
       raise Exceptions::MethodNotAllowed.new("Method Not Allowed: #{e.class.to_s}")
     end
+
+    machine["power_state"] = "poweredOff"
+    machine
   end
 
   def restart(_uuid)
@@ -553,24 +570,29 @@ class VmwareApiAdaptor
       logger.info("vmware_api_adaptor.restart")
       machine = find_vm_by_uuid(_uuid)
       tasks = []
-      machine.map { |vm| tasks << vm["mor"].reboot_guest }
-      tasks.each do |t|
-        if t.present?
-          sleep(1) while ["queued", "running"].include?(t.get_task_info.get_state.to_s)
-          if t.get_task_info.get_state.to_s.include?("error")
-            raise Exceptions::Unrecoverable.new("Cannot Complete Requested Action: #{t.get_task_info.get_error.get_localized_message.to_s}")
-          end
+
+      task = machine["mor"].reboot_guest
+
+      if task.present?
+        sleep(1) while ["queued", "running"].include?(task.get_task_info.get_state.to_s)
+        if task.get_task_info.get_state.to_s.include?("error")
+          raise Exceptions::Unrecoverable.new("Cannot Complete Requested Action: #{task.get_task_info.get_error.get_localized_message.to_s}")
         end
       end
+
+      machine["power_state"] = "poweredOn"
+      machine
     rescue Java::RuntimeFault,
         Java::RemoteException => e
       logger.warn("Invalid #{e.class.to_s}")
       raise Exceptions::Unrecoverable.new("Cannot Complete Requested Action: #{e.class.to_s}")
     rescue Vim::InvalidState,
-        Vim::ToolsUnavailable,
         Vim::TaskInProgress => e
       logger.warn("Invalid #{e.class.to_s}")
       raise Exceptions::MethodNotAllowed.new("Method Not Allowed: #{e.class.to_s}")
+    rescue Java::ComVmwareVim25::ToolsUnavailable => e
+      logger.error("VMware Tools Unavailable")
+      raise Exceptions::MethodNotAllowed.new("Method Not Allowed: VMware Tools Unavailable")
     end
   end
 
@@ -579,15 +601,18 @@ class VmwareApiAdaptor
       logger.info("vmware_api_adaptor.restart")
       machine = find_vm_by_uuid(_uuid)
       tasks = []
-      machine.map { |vm| tasks << vm["mor"].reset_vm_task }
-      tasks.each do |t|
-        if t.present?
-          sleep(1) while ["queued", "running"].include?(t.get_task_info.get_state.to_s)
-          if t.get_task_info.get_state.to_s.include?("error")
-            raise Exceptions::Unrecoverable.new("Cannot Complete Requested Action: #{t.get_task_info.get_error.get_localized_message.to_s}")
-          end
+
+      task = machine["mor"].reset_vm_task
+
+      if task.present?
+        sleep(1) while ["queued", "running"].include?(task.get_task_info.get_state.to_s)
+        if task.get_task_info.get_state.to_s.include?("error")
+          raise Exceptions::Unrecoverable.new("Cannot Complete Requested Action: #{task.get_task_info.get_error.get_localized_message.to_s}")
         end
       end
+
+      machine["power_state"] = "poweredOn"
+      machine
     rescue Java::RuntimeFault,
         Java::RemoteException => e
       logger.warn("Invalid #{e.class.to_s}")
@@ -605,13 +630,13 @@ class VmwareApiAdaptor
       logger.info("vmware_api_adaptor.destroy")
       machine = find_vm_by_uuid(_uuid)
       tasks = []
-      machine.map { |vm| tasks << vm["mor"].destroy_task }
-      tasks.each do |t|
-        if t.present?
-          sleep(1) while ["queued", "running"].include?(t.get_task_info.get_state.to_s)
-          if t.get_task_info.get_state.to_s.include?("error")
-            raise Exceptions::Unrecoverable.new("Cannot Complete Requested Action: #{t.get_task_info.get_error.get_localized_message.to_s}")
-          end
+
+      task = machine["mor"].destroy_task
+
+      if task.present?
+        sleep(1) while ["queued", "running"].include?(task.get_task_info.get_state.to_s)
+        if task.get_task_info.get_state.to_s.include?("error")
+          raise Exceptions::Unrecoverable.new("Cannot Complete Requested Action: #{task.get_task_info.get_error.get_localized_message.to_s}")
         end
       end
     rescue Java::RuntimeFault,

@@ -21,6 +21,7 @@ AdaptorVMware.controllers :machines, :parent => :inodes do
   get :index do
     logger.info('GET - machines#index')
     @machines = Machine.all(@inode).map { |vm| Machine.new(vm) }
+
     render 'machines/index'
   end
 
@@ -32,15 +33,17 @@ AdaptorVMware.controllers :machines, :parent => :inodes do
     _until    = params[:until].blank? ? 5.minutes.ago.utc : Time.iso8601(params[:until])
 
     params[:per_page] ||= 5
+
     logger.info("params "+_since.to_s+" "+_until.to_s)
     @machines = Machine.all_with_readings(@inode,_interval,_since,_until).map { |vm| Machine.new(vm) }
-    render 'machines/readings'
 
+    render 'machines/readings'
   end
 
   get :show, :map => "machines/:uuid" do
     logger.info('GET - machines.uuid#show')
     @machine = Machine.find_by_uuid(@inode, params[:uuid])
+
     render 'machines/show'
   end
 
@@ -59,46 +62,35 @@ AdaptorVMware.controllers :machines, :parent => :inodes do
   # Updates
   put :show, :map => 'machines/:uuid/start' do
     logger.info('PUT - machines.uuid#start')
-
-    @machine = Machine.find_by_uuid(@inode, params[:uuid])
-    logger.info @machine.inspect
-    @machine.start(@inode) if @machine.present?
+    @machine = Machine.start(@inode, params[:uuid])
 
     render 'machines/show'
   end
 
   put :show, :map => 'machines/:uuid/stop' do
     logger.info('PUT - machines.uuid#stop')
-
-    @machine = Machine.find_by_uuid(@inode, params[:uuid])
-    @machine.stop(@inode) if @machine.present?
+    @machine = Machine.stop(@inode, params[:uuid])
 
     render 'machines/show'
   end
 
   put :show, :map => 'machines/:uuid/restart' do
     logger.info('PUT - machines.uuid#restart')
-
-    @machine = Machine.find_by_uuid(@inode, params[:uuid])
-    @machine.restart(@inode) if @machine.present?
+    @machine = Machine.restart(@inode, params[:uuid])
 
     render 'machines/show'
   end
 
   put :show, :map => 'machines/:uuid/force_stop' do
     logger.info('PUT - machines.uuid#force_stop')
-
-    @machine = Machine.find_by_uuid(@inode, params[:uuid])
-    @machine.force_stop(@inode) if @machine.present?
+    @machine = Machine.force_stop(@inode, params[:uuid])
 
     render 'machines/show'
   end
 
   put :show, :map => 'machines/:uuid/force_restart' do
     logger.info('PUT - machines.uuid#force_restart')
-
-    @machine = Machine.find_by_uuid(@inode, params[:uuid])
-    @machine.force_restart(@inode) if @machine.present?
+    @machine = Machine.force_restart(@inode, params[:uuid])
 
     render 'machines/show'
   end
@@ -106,10 +98,9 @@ AdaptorVMware.controllers :machines, :parent => :inodes do
   # Deletes
   delete :delete, :map => "machines/:uuid" do
     logger.info('DELETE - machines.uuid#delete')
+    @machine = Machine.delete(@inode, params[:uuid])
 
-    @machine = Machine.find_by_uuid(@inode, params[:uuid])
-    @machine.delete(@inode)
-
-    render 'machines/show'
+    status 204
+    render 'machines/delete'
   end
 end
