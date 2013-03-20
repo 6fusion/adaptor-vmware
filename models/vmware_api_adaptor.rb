@@ -321,7 +321,7 @@ class VmwareApiAdaptor
         vm_properties_hash["external_vm_id"] = vm_mor_id if vm_mor_id.present?
         vm_properties_hash["external_host_id"] =  vm["runtime.host"].get_value if vm["runtime.host"].get_value.present?
         vm_properties_hash["uuid"] = vm["config.uuid"] if vm["config.uuid"].present?
-        vm_properties_hash["virtual_name"] = vm["name"] if vm["name"].present?
+        vm_properties_hash["name"] = vm["name"] if vm["name"].present?
         vm_properties_hash["cpu_count"] = vm["config.hardware.numCPU"] if vm["config.hardware.numCPU"].present?
         vm_properties_hash["maximum_memory"] = vm["config.hardware.memoryMB"] if vm["config.hardware.memoryMB"].present?
         vm_properties_hash["power_state"] = vm["runtime.powerState"].to_s if vm["runtime.powerState"].present?
