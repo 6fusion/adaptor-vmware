@@ -246,7 +246,7 @@ namespace :hipchat do
       hipchat_token = "06e70aeee31facbcbedafa466f5a90"
       hipchat_url   = URI.escape("https://api.hipchat.com/v1/rooms/message?format=json&auth_token=#{hipchat_token}")
       message       = "@#{ENV['USER']} is deploying #{branch} of #{application} to #{stage}"
-      RestClient.post(hipchat_url, { room_id: "#{stage}", from: "DeployBot", color: "green", message_format: "text", message: message })
+      # RestClient.post(hipchat_url, { room_id: "#{stage}", from: "DeployBot", color: "green", message_format: "text", message: message })
       RestClient.post(hipchat_url, { room_id: "Deployments", from: "DeployBot", color: "green", message_format: "text", message: message })
     end
   end
@@ -257,7 +257,7 @@ namespace :hipchat do
       hipchat_token = "06e70aeee31facbcbedafa466f5a90"
       hipchat_url   = URI.escape("https://api.hipchat.com/v1/rooms/message?format=json&auth_token=#{hipchat_token}")
       message       = "@#{ENV['USER']} deployed #{branch} of #{application} to #{stage}"
-      RestClient.post(hipchat_url, { room_id: "#{stage}", from: "DeployBot", color: "green", message_format: "text", message: message })
+      # RestClient.post(hipchat_url, { room_id: "#{stage}", from: "DeployBot", color: "green", message_format: "text", message: message })
       RestClient.post(hipchat_url, { room_id: "Deployments", from: "DeployBot", color: "green", message_format: "text", message: message })
     end
   end
