@@ -20,7 +20,6 @@ gem 'torquebox-cache', torquebox_version
 gem 'torquebox-messaging', torquebox_version
 gem 'torquebox-rake-support', torquebox_version
 gem 'torquebox', torquebox_version
-gem 'padrino-rpm', git: 'https://github.com/6fusion/padrino-rpm.git'
 
 group :deploy do
   gem 'colorize'
