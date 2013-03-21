@@ -15,11 +15,12 @@ class Capability < Base::Capability
   #   )
   SUPPORTED_CAPABILITIES = %w(
     inode
-    historical_readings
     machines 
     machines_readings 
+    machines_readings_historical 
     machine 
     machine_readings
+    machine_readings_historical
     diagnostics 
     )
   def self.all(inode)
