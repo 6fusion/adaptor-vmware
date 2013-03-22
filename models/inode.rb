@@ -74,16 +74,8 @@ class INode < Base::INode
     end
   end
 
-  def revision
-    if File.exists?('/var/6fusion/adaptor-vmware/current/REVISION')
-      File.read('/var/6fusion/adaptor-vmware/current/REVISION').chomp
-    else
-      `git rev-parse HEAD`.chomp
-    end
-  end
-
   def release_version
-    "#{branch} (#{revision})"
+    branch.gsub("\n"," ")
   end
 
   def close_connection
