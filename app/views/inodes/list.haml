@@ -13,4 +13,4 @@
         %h1 Cloud Resource Meter
         - @inodes.each do |i|
           %h3
-            %a(href="inodes/#{i[:uuid]}" content-type="text/html") #{i[:host_ip_address]}
+            %a(href="#{i[:uuid]}" content-type="text/html") #{i[:host_ip_address]}
