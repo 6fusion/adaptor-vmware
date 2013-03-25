@@ -42,4 +42,12 @@ describe "/inodes/:inode" do
       last_response.should be_ok
     end
   end
+
+  describe 'DELETE /inodes/:inode' do
+    it "should be successful" do
+      inode.should_receive(:delete).and_return(true)
+      delete '/inodes/inode_id'
+      last_response.should be_empty
+    end
+  end
 end

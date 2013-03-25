@@ -71,7 +71,7 @@ AdaptorVMware.controllers :inodes, :priority => :low do
   end
 
   # Deletes
-  delete :index do
+  delete :index, "/inodes/:uuid" do
     logger.info('DELETE - inodes#index')
 
     uuid = params.delete('uuid')
