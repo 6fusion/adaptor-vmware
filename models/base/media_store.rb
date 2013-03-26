@@ -28,7 +28,7 @@ class Base::MediaStore < Main
     logger.info("mounted: #{_local_mount_path}")
 
     logger.info("creating engine room auth token file for #{_engine_room[:uuid]}")
-    token_cmd = "sudo mkdir -p #{_local_mount_path}/engine-room-tokens && sudo echo -n #{_engine_room[:token]} > #{_local_mount_path}/engine-room-tokens/#{_media_store_id}.token"
+    token_cmd = "sudo mkdir -p #{_local_mount_path}/engine-room-tokens && sudo echo -n '#{_engine_room[:token]}' > #{_local_mount_path}/engine-room-tokens/#{_media_store_id}.token"
     Kernel.system(token_cmd)
     logger.info("engine room auth token created")
 
