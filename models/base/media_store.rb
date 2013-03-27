@@ -16,7 +16,7 @@ class Base::MediaStore < Main
     logger.info("/etc/fstab backed up")
 
     logger.info("adding mount to /etc/fstab to it will persist on reboot")
-    automount_cmd = "sudo echo #{_remote_mount_path} #{_local_mount_path} nfs ro,auto,user,noexec,sync 0 0 >> /etc/fstab"
+    automount_cmd = "sudo echo #{_remote_mount_path} #{_local_mount_path} nfs auto,user,noexec,sync 0 0 >> /etc/fstab"
     logger.info("automount_cmd: #{automount_cmd}")
     Kernel.system(automount_cmd)
     logger.info("mount added to /etc/fstab for persistence")
