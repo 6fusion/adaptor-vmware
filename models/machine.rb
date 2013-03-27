@@ -34,7 +34,7 @@ class Machine < Base::Machine
     super
   end
 
-  def self.create(inode, _account_id, _media_store_location, _ovf_file_name, _virtual_machine_uuid, _network_maps, _disk_maps)
+  def self.create(inode, _account_id, _media_store_location, _ovf_file_path, _virtual_machine_uuid, _network_maps, _disk_maps)
     begin
       logger.info("machine.create")
       adaptor = inode.vmware_api_adaptor
@@ -61,8 +61,7 @@ class Machine < Base::Machine
 
       begin
         # get ovf xml
-        ovf_file_name = _ovf_file_name
-        source_ovf_file_path = File.join(_media_store_location, ovf_file_name)
+        source_ovf_file_path = File.join(_media_store_location, _ovf_file_path)
         ovf_xml = IO.read(source_ovf_file_path)
 
         # parse ovf
