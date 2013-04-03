@@ -323,7 +323,7 @@ class VmwareApiAdaptor
         vm_properties_hash["uuid"] = vm["config.uuid"] if vm["config.uuid"].present?
         vm_properties_hash["name"] = vm["name"] if vm["name"].present?
         vm_properties_hash["cpu_count"] = vm["config.hardware.numCPU"] if vm["config.hardware.numCPU"].present?
-        vm_properties_hash["maximum_memory"] = vm["config.hardware.memoryMB"] if vm["config.hardware.memoryMB"].present?
+        vm_properties_hash["maximum_memory"] = (vm["config.hardware.memoryMB"].to_f * MB) if vm["config.hardware.memoryMB"].present?
         vm_properties_hash["power_state"] = vm["runtime.powerState"].to_s if vm["runtime.powerState"].present?
         vm_properties_hash["cpu_speed"] = (vm_host[:hz].to_f / 1000000).to_s if vm_host[:hz].present?
         vm_properties_hash["guest_agent"] = (vm["guest.toolsStatus"].to_s == "toolsOk" || vm["guest.toolsStatus"].to_s == "toolsOld" ? true : false)
