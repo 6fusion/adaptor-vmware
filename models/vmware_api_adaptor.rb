@@ -317,6 +317,7 @@ class VmwareApiAdaptor
         vm_properties_hash = {}
 
         vm_mor_id = vm_managed_object.get_mor.get_value.to_s
+        account_id_match = vm_managed_object.get_parent.get_name.match(/Account(\d*)/)
         vm_properties_hash["mor"] = vm_managed_object
         vm_properties_hash["external_vm_id"] = vm_mor_id if vm_mor_id.present?
         vm_properties_hash["external_host_id"] =  vm["runtime.host"].get_value if vm["runtime.host"].get_value.present?
@@ -327,6 +328,7 @@ class VmwareApiAdaptor
         vm_properties_hash["power_state"] = vm["runtime.powerState"].to_s if vm["runtime.powerState"].present?
         vm_properties_hash["cpu_speed"] = (vm_host[:hz].to_f / 1000000).to_s if vm_host[:hz].present?
         vm_properties_hash["guest_agent"] = (vm["guest.toolsStatus"].to_s == "toolsOk" || vm["guest.toolsStatus"].to_s == "toolsOld" ? true : false)
+        vm_properties_hash["account_id"] = account_id_match.present? ? account_id_match[1] : ""
 
         system_array = {}
         system_array["architecture"] = (vm["guest.guestId"].to_s.include?("64") ? "x64" : "x32")
@@ -747,5 +749,4 @@ class VmwareApiAdaptor
     end
     return nil
   end
-
 end

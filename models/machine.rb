@@ -18,7 +18,8 @@ class Machine < Base::Machine
     :external_host_id,
     :name,
     :stats,
-    :description
+    :description,
+    :account_id
 
   CURLBIN = ENV['CURL'] || "curl"
   KB = 1024

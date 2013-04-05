@@ -11,7 +11,8 @@ attributes :uuid,
            :hostname,
            :data_center_uuid,
            :description,
-           :host_uuid
+           :host_uuid,
+           :account_id
 attribute :name => :virtual_name
 
 child :disks => :disks do
