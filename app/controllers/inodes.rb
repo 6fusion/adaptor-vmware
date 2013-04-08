@@ -127,6 +127,19 @@ AdaptorVMware.controllers :inodes, :priority => :low do
     @inode.close_connection
 
     begin
+      diag[:sessions] = @inode.vmware_api_adaptor.get_session_info.to_yaml
+    rescue InvalidLogin => e
+      diag[:sessions] = "Invalid Login"
+    rescue => e
+      logger.error(e.message)
+      logger.error(e.backtrace)
+      diag[:sessions] = "Unable to connect ("+e.to_s+")"
+    ensure
+      @inode.close_connection
+    end
+    @inode.close_connection
+
+    begin
       logger.info("DIAGNOSTICS.ZIP - #{PADRINO_ROOT}/tmp/diagnostics")
       t = Tempfile.new("diagnostics", "#{PADRINO_ROOT}/tmp")
       diag_file = Tempfile.new("vcenter_diagnostics", "#{PADRINO_ROOT}/tmp")
