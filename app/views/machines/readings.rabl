@@ -12,7 +12,8 @@ attributes :uuid,
            :hostname,
            :data_center_uuid,
            :description,
-           :host_uuid
+           :host_uuid,
+           :account_id
 attribute :name => :virtual_name
 
 _interval = params[:interval].blank? ? 300 : params[:interval]
