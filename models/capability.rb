@@ -29,6 +29,7 @@ class Capability < Base::Capability
     delete
     media_store_add_mount
     media_store_delete_mount
+    parse_ovf
     )
   def self.all(inode)
     logger.info('Capability.all')
