@@ -8,7 +8,7 @@ AdaptorVMware.controllers :media, :parent => :inodes do
   end
 
   get :index do
-    logger.info('POST - media#index')
+    logger.info('GET - media#index')
     @medium = Medium.parse_ovf(@inode, params[:ovf_location])
 
     render 'media/show'
