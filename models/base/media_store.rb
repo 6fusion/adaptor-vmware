@@ -16,7 +16,7 @@ class Base::MediaStore < Main
     logger.info("/etc/fstab backed up")
 
     logger.info("adding mount to /etc/fstab to it will persist on reboot")
-    automount_cmd = "sudo echo #{_remote_mount_path} #{_local_mount_path} nfs auto,user,noexec,sync 0 0 >> /etc/fstab"
+    automount_cmd = "sudo echo #{_remote_mount_path} #{_local_mount_path} nfs rw,sync 0 0 >> /etc/fstab"
     logger.info("automount_cmd: #{automount_cmd}")
     Kernel.system(automount_cmd)
     logger.info("mount added to /etc/fstab for persistence")
@@ -28,7 +28,7 @@ class Base::MediaStore < Main
     logger.info("mounted: #{_local_mount_path}")
 
     logger.info("creating engine room auth token file for #{_engine_room[:uuid]}")
-    token_cmd = "sudo mkdir -p #{_local_mount_path}/engine-room-tokens && sudo echo -n '#{_engine_room[:token]}' > #{_local_mount_path}/engine-room-tokens/#{_data_center_id}.token"
+    token_cmd = "mkdir -p #{_local_mount_path}/engine-room-tokens && echo -n '#{_engine_room[:token]}' > #{_local_mount_path}/engine-room-tokens/#{_data_center_id}.token"
     Kernel.system(token_cmd)
     logger.info("engine room auth token created")
 
