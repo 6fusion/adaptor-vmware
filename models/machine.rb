@@ -110,7 +110,7 @@ class Machine < Base::Machine
         end
 
         # import
-        ovf_import_result = ovf_manager.create_import_spec(ovf_xml, resource_pool, datastore, machine_specs)
+        ovf_import_result = ovf_manager.create_import_spec(ovf_xml, resource_pool, datastore["mor"], machine_specs)
 
         # TODO: handle errors and warnings
         ovf_import_result.get_error.each do |error|
