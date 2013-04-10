@@ -126,14 +126,10 @@ class VmwareApiAdaptor
     hardware.memorySize
   )
 
-  def hosts
+  def hosts()
     logger.info("vmware_api_adaptor.hosts");
     host_managed_objects = VIJava::InventoryNavigator.new(self.root_folder).search_managed_entities("HostSystem");
     host_properties = VIJavaUtil::PropertyCollectorUtil.retrieve_properties(host_managed_objects, "HostSystem", HOST_PROPERTIES.to_java(:string))
-
-    # logger.info "\n\n"
-    # logger.info host_properties.inspect
-    # logger.info "\n\n"
 
     _hosts = []
     host_managed_objects.each do |h|
@@ -156,34 +152,43 @@ class VmwareApiAdaptor
   # Datastores
   # --------------------------------------------------------
 
+  def get_datastores_by_host(_host_mor, _get_disks=false)
+    host_datastores = []
+
+    _host_mor.get_datastores.each do |ds|
+      # don't build a hash, or add it to the list of datastores if it's already there
+      if host_datastores.select {|d| d["moref_id"] == ds.get_mor.get_value }.empty?
+        ds_hash = {}
+        ds_hash["host_mor"] = _host_mor
+        ds_hash["mor"] = ds
+        ds_hash["moref_id"] = ds.get_mor.get_value
+        ds_hash["name"] = ds.get_info.get_name
+        ds_hash["type"] = ds.get_summary.get_type
+        ds_hash["max_file_size"] = ds.get_info.get_max_file_size if ds.get_info.get_max_file_size
+        ds_hash["free_space"] = ds.get_info.get_free_space if ds.get_info.get_free_space
+        ds_hash["url"] = ds.get_info.get_url if ds.get_info.get_url
+        ds_hash["media_files"] = virtual_disks(ds) if _get_disks
+        # Get NFS/NAS info if it exists
+        if ds.get_info.instance_of?(Vim::NasDatastoreInfo)
+          ds_hash["remote_path"] = ds.get_info.nas.get_remote_path
+          ds_hash["remote_host"] = ds.get_info.nas.get_remote_host
+        end
+
+        host_datastores << ds_hash
+      end
+    end
+
+    return host_datastores
+  end
+
   def datastores(_get_disks=false)
     logger.info("vmware_api_adaptor.datastores")
     datastores = []
     self.hosts.each do |host|
-      hdsb = host[:mor].get_datastore_browser
-      hdsb.get_datastores.each do |ds|
-        # don't build a hash, or add it to the list of datastores if it's already there
-        if datastores.select {|d| d["moref_id"] == ds.get_mor.get_value }.empty?
-          ds_hash = {}
-          ds_hash["mor"] = ds
-          ds_hash["moref_id"] = ds.get_mor.get_value
-          ds_hash["name"] = ds.get_info.get_name
-          ds_hash["type"] = ds.get_summary.get_type
-          ds_hash["max_file_size"] = ds.get_info.get_max_file_size if ds.get_info.get_max_file_size
-          ds_hash["free_space"] = ds.get_info.get_free_space if ds.get_info.get_free_space
-          ds_hash["url"] = ds.get_info.get_url if ds.get_info.get_url
-          ds_hash["media_files"] = virtual_disks(ds) if _get_disks
-          # Get NFS/NAS info if it exists
-          if ds.get_info.instance_of?(Vim::NasDatastoreInfo)
-            ds_hash["remote_path"] = ds.get_info.nas.get_remote_path
-            ds_hash["remote_host"] = ds.get_info.nas.get_remote_host
-          end
-          datastores << ds_hash
-        end
-      end
+      datastores << get_datastores_by_host(host[:mor], _get_disks)
     end
 
-    datastores
+    datastores.flatten
   end
 
   # this is really slow for a lot of disks, needs to be updated
