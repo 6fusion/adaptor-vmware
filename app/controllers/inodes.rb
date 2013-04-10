@@ -16,7 +16,7 @@ AdaptorVMware.controllers :inodes, :priority => :low do
     @inodes = []
     Dir["#{PADRINO_ROOT}/data/*.json"].each do |i|
       temp = ActiveSupport::JSON.decode(IO.read(i))
-      @inodes << { :uuid => temp["uuid"], :host_ip_address => temp["host_ip_address"] }
+      @inodes << INode.find_by_uuid(temp["uuid"])
     end
 
     case content_type
@@ -24,8 +24,7 @@ AdaptorVMware.controllers :inodes, :priority => :low do
       content_type 'text/html'
       render 'inodes/list'
     else
-      content_type 'application/json'
-      @inodes.to_json
+      render 'inodes/index'
     end
   end
 

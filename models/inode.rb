@@ -41,6 +41,10 @@ class INode < Base::INode
     self.vmware_api_adaptor.networks.map { |network| Network.new(network) }
   end
 
+  def datastores
+    self.vmware_api_adaptor.datastores
+  end
+
   def statistics_levels
     logger.info("INode.statistics_levels")
     vmware_api_adaptor.get_statistic_levels
