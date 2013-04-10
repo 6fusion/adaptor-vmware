@@ -35,13 +35,17 @@ class Machine < Base::Machine
     super
   end
 
-  def self.create(inode, _account_id, _media_store_location, _ovf_file_path, _virtual_machine_uuid, _network_maps, _disk_maps)
+  def self.create(inode, _account_id, _hypervisor_data_store_uuid, _media_store_location, _ovf_file_path, _virtual_machine_uuid, _network_maps, _disk_maps)
     begin
       logger.info("machine.create")
       adaptor = inode.vmware_api_adaptor
       host = adaptor.hosts.first[:mor]
       resource_pool = host.get_parent.get_resource_pool
-      datastore = host.get_datastores.first
+      datastore = host.get_datastores.select { |ds| ds.mor.get_value == _hypervisor_data_store_uuid }.first
+
+      datastore = host.get_datastores.first if datastore.blank?
+      raise "Unable to find datastore!" if datastore.blank?
+
       ovf_manager = adaptor.connection.get_ovf_manager
 
       # create account folder for virtual machine; if it doesn't exist

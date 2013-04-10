@@ -13,7 +13,7 @@ child :networks => :networks do
 end
 node :data_stores do |inode|
 	inode.datastores.map { |ds| {
-			hypervisor_id: ds["moref_id"],
+			hypervisor_data_store_uuid: ds["moref_id"],
 			name: ds["name"],
 			kind: ds["type"],
 			max_file_size_bytes: ds["max_file_size"],
