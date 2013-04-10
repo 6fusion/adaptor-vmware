@@ -39,7 +39,7 @@ class Machine < Base::Machine
     begin
       logger.info("machine.create")
       adaptor = inode.vmware_api_adaptor
-      datastore = inode.datastores.select { |ds| ds.mor.get_value == _hypervisor_data_store_uuid }.first
+      datastore = inode.datastores.select { |ds| ds["mor"].get_value == _hypervisor_data_store_uuid }.first
       datastore = inode.datastores.first if datastore.blank?
       raise "Unable to find datastore!" if datastore.blank?
 
