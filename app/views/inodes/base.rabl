@@ -11,6 +11,6 @@ child :networks => :networks do
   attribute :is_accessible
   attribute :ip_pool_name
 end
-node :infrastructure_node_data_stores_attributes do |inode|
+node :datastores do |inode|
 	inode.datastores
 end
