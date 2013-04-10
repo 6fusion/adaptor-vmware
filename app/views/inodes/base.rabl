@@ -11,7 +11,7 @@ child :networks => :networks do
   attribute :is_accessible
   attribute :ip_pool_name
 end
-node :datastores do |inode|
+node :data_stores do |inode|
 	inode.datastores.map { |ds| {
 			hypervisor_id: ds["moref_id"],
 			name: ds["name"],
