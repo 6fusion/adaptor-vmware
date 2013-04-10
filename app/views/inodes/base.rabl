@@ -12,5 +12,15 @@ child :networks => :networks do
   attribute :ip_pool_name
 end
 node :datastores do |inode|
-	inode.datastores
+	inode.datastores.map { |ds| {
+			hypervisor_id: ds["moref_id"],
+			name: ds["name"],
+			kind: ds["type"],
+			max_file_size_bytes: ds["max_file_size"],
+			free_space_bytes: ds["free_space"],
+			url: ds["url"],
+			remote_path: ds["remote_path"],
+			remote_host: ds["remote_host"]
+		}
+	}
 end
