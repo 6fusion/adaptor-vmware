@@ -41,6 +41,7 @@ class Machine < Base::Machine
       adaptor = inode.vmware_api_adaptor
       datastore = inode.datastores.select { |ds| ds["moref_id"] == _hypervisor_data_store_uuid }.first
       datastore = inode.datastores.first if datastore.blank?
+      logger.info("deploying to: #{datastore["mor"].get_info.get_name}")
       raise "Unable to find datastore!" if datastore.blank?
 
       host = datastore["host_mor"]
