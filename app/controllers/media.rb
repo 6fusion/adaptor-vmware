@@ -9,7 +9,14 @@ AdaptorVMware.controllers :media, :parent => :inodes do
 
   get :index do
     logger.info('GET - media#index')
-    @medium = Medium.parse_ovf(@inode, params[:ovf_location])
+    @medium = Medium.parse_descriptor_file(@inode, params[:medium_descriptor_location])
+
+    render 'media/show'
+  end
+
+  delete :delete do
+    logger.info('DELETE - media#delete')
+    @medium = Medium.delete(@inode, params[:medium_location])
 
     render 'media/show'
   end

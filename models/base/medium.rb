@@ -15,13 +15,13 @@ class Base::Medium < Main
     # :ip_allocation_scheme,
     # :ip_protocols
 
-  def self.parse_ovf(inode, _ovf_location)
+  def self.parse_descriptor_file(inode, _descriptor_file_location)
     logger.info("medium.parse_ovf")
     adaptor = inode.vmware_api_adaptor
     ovf_manager = adaptor.connection.get_ovf_manager
 
     # get ovf xml
-    ovf_xml = IO.read(_ovf_location)
+    ovf_xml = IO.read(_descriptor_file_location)
 
     # parse ovf
     parse_params = Vim::OvfParseDescriptorParams.new()
@@ -30,7 +30,7 @@ class Base::Medium < Main
     ovf_parse_result = ovf_manager.parseDescriptor(ovf_xml, parse_params)
 
     ovf_import_result = {}
-    #     ovf_file_location: _ovf_location,
+    #     ovf_file_location: _descriptor_file_location,
     #     annotation: ovf_parse_result.get_annotation,
     #     name: ovf_parse_result.get_default_entity_name,
     #     approximate_download_size: ovf_parse_result.get_approximate_download_size,
@@ -54,6 +54,15 @@ class Base::Medium < Main
     # TODO: figure out memory defaults
     # TODO: Figure out what the return object looks like
     self.new(ovf_import_result)
+  end
+
+  def self.delete(_infrastructure_node, _medium_location)
+    Rails.logger.info("Removing directory: #{_medium_location}")
+    delete_cmd = "rm -rf #{_medium_location}"
+
+    Rails.logger.info("executing delete command: #{delete_cmd}")
+    Kernel.system(delete_cmd)
+    Rails.logger.info("#{_medium_location} directory deleted.")
   end
 
   private
