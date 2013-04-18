@@ -57,12 +57,12 @@ class Base::Medium < Main
   end
 
   def self.delete(_infrastructure_node, _medium_location)
-    Rails.logger.info("Removing directory: #{_medium_location}")
+    logger.info("Removing directory: #{_medium_location}")
     delete_cmd = "rm -rf #{_medium_location}"
 
-    Rails.logger.info("executing delete command: #{delete_cmd}")
+    logger.info("executing delete command: #{delete_cmd}")
     Kernel.system(delete_cmd)
-    Rails.logger.info("#{_medium_location} directory deleted.")
+    logger.info("#{_medium_location} directory deleted.")
   end
 
   private
