@@ -14,7 +14,7 @@ AdaptorVMware.controllers :media, :parent => :inodes do
     render 'media/show'
   end
 
-  delete :delete do
+  delete :index do
     logger.info('DELETE - media#delete')
     @medium = Medium.delete(@inode, params[:medium_location])
 
