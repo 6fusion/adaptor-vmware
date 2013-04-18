@@ -16,7 +16,7 @@ class Base::Medium < Main
     # :ip_protocols
 
   def self.parse_descriptor_file(inode, _descriptor_file_location)
-    Rails.logger.info("medium.parse_descriptor_file")
+    logger.info("medium.parse_descriptor_file")
     adaptor = inode.vmware_api_adaptor
     ovf_manager = adaptor.connection.get_ovf_manager
 
