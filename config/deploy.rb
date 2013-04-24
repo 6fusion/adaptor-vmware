@@ -6,7 +6,6 @@ require 'capistrano-helpers/version'
 require 'bundler/capistrano'
 require 'open-uri'
 require 'rest_client'
-require 'new_relic/recipes'
 
 default_run_options[:pty] = true
 
@@ -51,7 +50,6 @@ before "deploy", "verify:rules"
 
 after "verify:rules", "hipchat:start"
 after "deploy:cleanup", "hipchat:finish"
-after "deploy:cleanup", "newrelic:notice_deployment"
 
 after("deploy") do
   # Setup data directory
@@ -84,9 +82,6 @@ after("deploy") do
 
   # Deploy the application
   torquebox.deploy
-
-  # Setup New Relic
-  run "if [ -f #{shared_path}/newrelic.yml ]; then #{sudo} ln -sfn #{shared_path}/newrelic.yml #{current_path}/config; fi"
 
   deploy.cleanup
 end
@@ -246,7 +241,7 @@ namespace :hipchat do
       hipchat_token = "06e70aeee31facbcbedafa466f5a90"
       hipchat_url   = URI.escape("https://api.hipchat.com/v1/rooms/message?format=json&auth_token=#{hipchat_token}")
       message       = "@#{ENV['USER']} is deploying #{branch} of #{application} to #{stage}"
-      RestClient.post(hipchat_url, { room_id: "#{stage}", from: "DeployBot", color: "green", message_format: "text", message: message })
+      # RestClient.post(hipchat_url, { room_id: "#{stage}", from: "DeployBot", color: "green", message_format: "text", message: message })
       RestClient.post(hipchat_url, { room_id: "Deployments", from: "DeployBot", color: "green", message_format: "text", message: message })
     end
   end
@@ -257,7 +252,7 @@ namespace :hipchat do
       hipchat_token = "06e70aeee31facbcbedafa466f5a90"
       hipchat_url   = URI.escape("https://api.hipchat.com/v1/rooms/message?format=json&auth_token=#{hipchat_token}")
       message       = "@#{ENV['USER']} deployed #{branch} of #{application} to #{stage}"
-      RestClient.post(hipchat_url, { room_id: "#{stage}", from: "DeployBot", color: "green", message_format: "text", message: message })
+      # RestClient.post(hipchat_url, { room_id: "#{stage}", from: "DeployBot", color: "green", message_format: "text", message: message })
       RestClient.post(hipchat_url, { room_id: "Deployments", from: "DeployBot", color: "green", message_format: "text", message: message })
     end
   end

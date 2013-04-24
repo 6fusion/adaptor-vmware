@@ -14,16 +14,12 @@ gem 'uuid'
 gem 'json-jruby', require: 'json'
 gem 'jruby-rack'
 gem 'rack'
-gem 'rack-post-body-to-params'
 
 torquebox_version = "2.3.0"
 gem 'torquebox-cache', torquebox_version
 gem 'torquebox-messaging', torquebox_version
 gem 'torquebox-rake-support', torquebox_version
 gem 'torquebox', torquebox_version
-
-gem 'padrino-rpm', github: '6fusion/padrino-rpm'
-gem 'newrelic_rpm', require: false
 
 group :deploy do
   gem 'colorize'

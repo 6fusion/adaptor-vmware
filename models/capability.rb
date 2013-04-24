@@ -15,27 +15,27 @@ class Capability < Base::Capability
   #   )
   SUPPORTED_CAPABILITIES = %w(
     inode
-    machines
-    machines_readings
-    machine
+    inode_delete
+    machines 
+    machines_readings 
+    machines_readings_historical 
+    machine 
     machine_readings
-    add
-    start
-    stop
-    restart
-    force_stop
-    force_restart
-    diagnostics
-    delete
-    media_store_add_mount
-    media_store_delete_mount
-    medium_parse
-    medium_delete
+    machine_readings_historical
+    diagnostics 
     )
   def self.all(inode)
     logger.info('Capability.all')
     SUPPORTED_CAPABILITIES.map do |capability|
       Capability.new(:name => capability)
     end
+  end
+
+  def ==(other)
+    other.to_s.eql?(name)
+  end
+
+  def to_s
+    return name
   end
 end

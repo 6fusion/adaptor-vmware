@@ -74,12 +74,16 @@ class INode < Base::INode
     super
   end
 
-  def release_version
+  def branch
     if File.exists?('/var/6fusion/adaptor-vmware/current/VERSION')
       File.read('/var/6fusion/adaptor-vmware/current/VERSION').chomp
     else
-      "#{`git branch --no-color 2> /dev/null`.chomp.split("\n").grep(/^[*]/).first[/(\S+)$/, 1]} #{`git rev-parse HEAD`.chomp}"
+      `git branch --no-color 2> /dev/null`.chomp.split("\n").grep(/^[*]/).first[/(\S+)$/, 1]
     end
+  end
+
+  def release_version
+    branch.gsub("\n"," ")
   end
 
   def close_connection
