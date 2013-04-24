@@ -113,6 +113,8 @@ GEM
     rabl (0.8.0)
       activesupport (>= 2.3.14)
     rack (1.5.2)
+    rack-post-body-to-params (0.1.7)
+      activesupport (>= 2.3)
     rack-protection (1.4.0)
       rack
     rack-test (0.6.2)
@@ -214,6 +216,7 @@ DEPENDENCIES
   padrino!
   rabl
   rack
+  rack-post-body-to-params
   rack-test
   rake
   rest-client

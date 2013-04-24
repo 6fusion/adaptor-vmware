@@ -57,12 +57,22 @@ class Base::Medium < Main
   end
 
   def self.delete(_infrastructure_node, _medium_location)
-    logger.info("Removing directory: #{_medium_location}")
-    delete_cmd = "rm -rf #{_medium_location}"
+    media_info_files = Dir.glob("#{_medium_location}/*.media_info")
+    inode_media_info_file = media_info_files.select { |e| e == "#{File.join(_medium_location, _infrastructure_node.uuid)}.media_info" }.first
 
-    logger.info("executing delete command: #{delete_cmd}")
-    Kernel.system(delete_cmd)
-    logger.info("#{_medium_location} directory deleted.")
+    if inode_media_info_file.present?
+      delete_cmd = ""
+      if media_info_files.count > 1
+        # if the media is associated with any other inodes than the one we are removing, just remove the media_info file
+        delete_cmd = "rm #{inode_media_info_file}"
+      else
+        # if the media is no longer associated with any inodes remove the directory, and all contents
+        delete_cmd = "rm -rf #{_medium_location}"
+      end
+      logger.info("executing: #{delete_cmd}")
+      Kernel.system(delete_cmd)
+      logger.info("completed: #{delete_cmd}")
+    end
   end
 
   private
