@@ -16,13 +16,23 @@ class Capability < Base::Capability
   SUPPORTED_CAPABILITIES = %w(
     inode
     inode_delete
-    machines 
-    machines_readings 
-    machines_readings_historical 
-    machine 
-    machine_readings
-    machine_readings_historical
-    diagnostics 
+    machines
+    machines_readings
+    machines_readings_historical
+    machine
+    add
+    start
+    stop
+    restart
+    force_stop
+    force_restart
+    diagnostics
+    delete
+    media_store_add_mount
+    media_store_delete_mount
+    medium_parse
+    medium_delete
+    diagnostics
     )
   def self.all(inode)
     logger.info('Capability.all')
