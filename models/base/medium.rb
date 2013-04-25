@@ -42,7 +42,9 @@ class Base::Medium < Main
     # ovf_parse_result.get_annotated_ost is worthless, don't explore it...seriously, i warned you -ag
 
     # Build errors and warnings
-    # ovf_import_result[:errors] = (ovf_parse_result.get_error ? ovf_parse_result.get_error.map { |e| { description: e.get_localized_message } } : {})
+    if ovf_parse_result.get_error
+      ovf_parse_result.get_error.each { |e| raise e.get_localized_message }
+    end
     # ovf_import_result[:warnings] = (ovf_parse_result.get_warning ? ovf_parse_result.get_warning.map { |w| { description: w.get_localized_message } } : {})
 
     # figure out nic details
