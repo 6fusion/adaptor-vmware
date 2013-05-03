@@ -28,7 +28,6 @@ set :rails_env, lambda { fetch(:stage) }
 set :keep_releases, 2
 set :tail_logs_location, "#{shared_path}/log/#{application}.log"
 set :context_path, ""
-set :hipchat_alert, ENV['HIPCHAT_ALERT'] || true
 set :password, ENV['PASSWORD'] if ENV['PASSWORD']
 set :tag, `git branch --no-color 2> /dev/null`.chomp.split("\n").grep(/^[*]/).first[/(\S+)$/, 1]
 set :current_branch, nil
@@ -44,9 +43,6 @@ end
 
 # Additional Deployment Actions
 before "deploy", "verify:rules"
-
-after "verify:rules", "hipchat:start"
-after "deploy:cleanup", "hipchat:finish"
 
 after("deploy") do
   # Setup data directory
