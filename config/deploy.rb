@@ -6,16 +6,12 @@ require 'capistrano-helpers/version'
 require 'bundler/capistrano'
 require 'open-uri'
 require 'rest_client'
-require 'new_relic/recipes'
 
 default_run_options[:pty] = true
 
 set :stages, Dir['config/deploy/*.rb'].map { |f| File.basename(f, '.rb') }
 set :default_stage, "development"
 set :bundle_without, [:development, :test, :automation, :assets, :deploy]
-# set :bundle_cmd, "jruby -S bundle"
-# set :bundle_dir, fetch(:shared_path)+"/bundle"
-# set :bundle_flags, "--deployment --quiet"
 
 set :application, `git remote -v`[/([\w-]+)\.git\s\(fetch\)/,1]
 set :user, 'deploy'
@@ -51,7 +47,6 @@ before "deploy", "verify:rules"
 
 after "verify:rules", "hipchat:start"
 after "deploy:cleanup", "hipchat:finish"
-after "deploy:cleanup", "newrelic:notice_deployment"
 
 after("deploy") do
   # Setup data directory
@@ -236,30 +231,6 @@ namespace :torquebox do
   task :redeploy, roles: :app do
     torquebox.undeploy
     torquebox.deploy
-  end
-end
-
-namespace :hipchat do
-  desc 'Alert Hipchat development room of deployment starting'
-  task :start, roles: :app do
-    if hipchat_alert
-      hipchat_token = "06e70aeee31facbcbedafa466f5a90"
-      hipchat_url   = URI.escape("https://api.hipchat.com/v1/rooms/message?format=json&auth_token=#{hipchat_token}")
-      message       = "@#{ENV['USER']} is deploying #{branch} of #{application} to #{stage}"
-      RestClient.post(hipchat_url, { room_id: "#{stage}", from: "DeployBot", color: "green", message_format: "text", message: message })
-      RestClient.post(hipchat_url, { room_id: "Deployments", from: "DeployBot", color: "green", message_format: "text", message: message })
-    end
-  end
-
-  desc 'Alert Hipchat development room of successful deploy'
-  task :finish, roles: :app do
-    if hipchat_alert
-      hipchat_token = "06e70aeee31facbcbedafa466f5a90"
-      hipchat_url   = URI.escape("https://api.hipchat.com/v1/rooms/message?format=json&auth_token=#{hipchat_token}")
-      message       = "@#{ENV['USER']} deployed #{branch} of #{application} to #{stage}"
-      RestClient.post(hipchat_url, { room_id: "#{stage}", from: "DeployBot", color: "green", message_format: "text", message: message })
-      RestClient.post(hipchat_url, { room_id: "Deployments", from: "DeployBot", color: "green", message_format: "text", message: message })
-    end
   end
 end
 
