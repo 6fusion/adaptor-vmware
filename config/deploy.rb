@@ -250,3 +250,15 @@ end
 task :configure, roles: :app do
   system "ssh configure@#{find_servers_for_task(self).first} -p #{ssh_port}"
 end
+
+def change_password(user = "root")
+  run "passwd #{user}", :pty => true do |ch, stream, data|
+    if data =~ /New password:/
+      ch.send_data(Capistrano::CLI.password_prompt("New password for #{user}: ") + "\n")
+    elsif data =~ /Retype new password:/
+      ch.send_data(Capistrano::CLI.password_prompt("Retype new password for #{user}: ") + "\n")
+    else
+      Capistrano::Configuration.default_io_proc.call(ch, stream, data)
+    end
+  end
+end
