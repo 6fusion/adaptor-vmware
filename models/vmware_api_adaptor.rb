@@ -351,7 +351,7 @@ class VmwareApiAdaptor
             vm_properties_hash["disks"] << get_disk(vd, vm)
             #when Vim::VirtualPCNet32, Vim::VirtualE1000, Vim::VirtualVmxnet
           when Vim::VirtualEthernetCard
-            vm_properties_hash["nics"] << get_nic(vd, vm)
+            vm_properties_hash["nics"] << get_nic(vd, vm, networks)
           end
         end
 
@@ -444,7 +444,7 @@ class VmwareApiAdaptor
     return disk_hash
   end
 
-  def get_nic(vNic, properties)
+  def get_nic(vNic, properties, inode_networks)
     logger.info "vmware_api_adaptor.get_nic";
     nic_hash = {}
     nic_hash["mac_address"] = vNic.get_mac_address if vNic.get_mac_address
@@ -458,7 +458,8 @@ class VmwareApiAdaptor
         if gn.get_device_config_id == vNic.get_key
           if gn.instance_of?(Vim::GuestNicInfo) && !gn.get_ip_address.nil?
             nic_hash["ip_address"] = gn.get_ip_address.first
-            nic_hash["network"] = gn.get_network
+            network = inode_networks.select { |n| n["name"] == gn.get_network }.first if gn.get_network
+            nic_hash["network_uuid"] = ( network.present? ? network["moref_id"] : "" )
           end
         end
       end

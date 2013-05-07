@@ -16,9 +16,17 @@ attributes :uuid,
 attribute :name => :virtual_name
 
 child :disks => :disks do
-  attributes :uuid, :name, :maximum_size, :type, :thin
+  attributes :uuid,
+    :name,
+    :maximum_size,
+    :type,
+    :thin
 
 end
 child :nics => :nics do
-  attributes :uuid, :name, :mac_address, :ip_address
+  attributes :uuid,
+    :network_uuid,
+    :name,
+    :mac_address,
+    :ip_address
 end

@@ -1,5 +1,6 @@
 class MachineNic < Base::MachineNic
   attr_accessor :vm,
+    :network_uuid,
     :stats,
     :key,
     :vnic
