@@ -14,7 +14,7 @@ ONBOOT=yes
 TYPE=Ethernet
     EOF
     put eth0, "/etc/sysconfig/network-scripts/ifcfg-eth0"
-    put "NETWORKING=yes\nHOSTNAME=localhost", "/tmp/etc/sysconfig/network"
+    put "NETWORKING=yes\nHOSTNAME=localhost", "/etc/sysconfig/network"
     run "rm /etc/udev/rules.d/70-persistent-net.rules"
     run "rm #{shared_path}/data/*"
     run "rm /var/log/torquebox/*"
