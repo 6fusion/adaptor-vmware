@@ -15,9 +15,9 @@ TYPE=Ethernet
     EOF
     put eth0, "/etc/sysconfig/network-scripts/ifcfg-eth0"
     put "NETWORKING=yes\nHOSTNAME=localhost", "/etc/sysconfig/network"
-    run "rm /etc/udev/rules.d/70-persistent-net.rules"
-    run "rm #{shared_path}/data/*"
-    run "rm /var/log/torquebox/*"
+    run "rm -f /etc/udev/rules.d/70-persistent-net.rules"
+    run "rm -f #{shared_path}/data/*"
+    run "rm -f /var/log/torquebox/*"
     change_password('deploy')
     change_password('root')
     run "halt"
