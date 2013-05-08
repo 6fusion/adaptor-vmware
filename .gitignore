@@ -11,3 +11,4 @@ data/*
 .vagrant
 config/newrelic.yml
 *.class
+.bundle

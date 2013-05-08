@@ -48,9 +48,6 @@ end
 # Additional Deployment Actions
 before "deploy", "verify:rules"
 
-after "verify:rules", "hipchat:start"
-after "deploy:cleanup", "hipchat:finish"
-
 after("deploy") do
   # Setup data directory
   run "#{sudo} mkdir -p #{shared_path}/data"
@@ -231,30 +228,6 @@ namespace :torquebox do
   task :redeploy, roles: :app do
     torquebox.undeploy
     torquebox.deploy
-  end
-end
-
-namespace :hipchat do
-  desc 'Alert Hipchat development room of deployment starting'
-  task :start, roles: :app do
-    if hipchat_alert
-      hipchat_token = "06e70aeee31facbcbedafa466f5a90"
-      hipchat_url   = URI.escape("https://api.hipchat.com/v1/rooms/message?format=json&auth_token=#{hipchat_token}")
-      message       = "@#{ENV['USER']} is deploying #{branch} of #{application} to #{stage}"
-      # RestClient.post(hipchat_url, { room_id: "#{stage}", from: "DeployBot", color: "green", message_format: "text", message: message })
-      RestClient.post(hipchat_url, { room_id: "Deployments", from: "DeployBot", color: "green", message_format: "text", message: message })
-    end
-  end
-
-  desc 'Alert Hipchat development room of successful deploy'
-  task :finish, roles: :app do
-    if hipchat_alert
-      hipchat_token = "06e70aeee31facbcbedafa466f5a90"
-      hipchat_url   = URI.escape("https://api.hipchat.com/v1/rooms/message?format=json&auth_token=#{hipchat_token}")
-      message       = "@#{ENV['USER']} deployed #{branch} of #{application} to #{stage}"
-      # RestClient.post(hipchat_url, { room_id: "#{stage}", from: "DeployBot", color: "green", message_format: "text", message: message })
-      RestClient.post(hipchat_url, { room_id: "Deployments", from: "DeployBot", color: "green", message_format: "text", message: message })
-    end
   end
 end
 

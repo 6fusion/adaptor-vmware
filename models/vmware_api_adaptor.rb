@@ -117,6 +117,24 @@ class VmwareApiAdaptor
     return stats
   end
 
+  def get_session_info
+    session_manager = self.connection.get_session_manager
+    user_sessions = session_manager.get_session_list
+    session_info = {
+      count: user_sessions.count
+    }
+    session_info[:sessions] = user_sessions.map { |us|
+      {
+        session_key: us.get_key,
+        user_name: us.get_user_name,
+        locale: us.get_locale,
+        login_time: us.get_login_time.get_time.to_s.to_datetime.utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        last_active_time: us.get_last_active_time.get_time.to_s.to_datetime.utc.strftime("%Y-%m-%dT%H:%M:%SZ")
+      }
+    }
+    session_info
+  end
+
   # --------------------------------------------------------
   # Hosts
   # --------------------------------------------------------
