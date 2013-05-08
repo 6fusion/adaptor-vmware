@@ -36,7 +36,7 @@ child :disks => :disks do
 end
 
 child :nics => :nics do
-  attributes :uuid, :name, :mac_address, :ip_address
+  attributes :uuid, :network_uuid, :name, :mac_address, :ip_address
 
   node :readings do |r|
     r.readings(@inode, _interval, _since, _until).map do |r|
