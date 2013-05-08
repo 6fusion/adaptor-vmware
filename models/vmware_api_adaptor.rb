@@ -314,6 +314,7 @@ class VmwareApiAdaptor
     vms_with_properties = VIJavaUtil::PropertyCollectorUtil.retrieve_properties(vms, "VirtualMachine", VM_PROPERTIES.to_java(:string))
 
     virtual_machines_with_properties = []
+    inode_networks = networks
     vms_with_properties.each do |vm|
       exclude_deploying = !_include_deploying && tasks.find { |t| BLOCKING_TASKS.include?(t[:description_id]) && t[:entity_name] == vm["name"] && ["running", "queued"].include?(t[:state]) }.present?
       unless vm["config.template"] || exclude_deploying
@@ -351,7 +352,7 @@ class VmwareApiAdaptor
             vm_properties_hash["disks"] << get_disk(vd, vm)
             #when Vim::VirtualPCNet32, Vim::VirtualE1000, Vim::VirtualVmxnet
           when Vim::VirtualEthernetCard
-            vm_properties_hash["nics"] << get_nic(vd, vm, networks)
+            vm_properties_hash["nics"] << get_nic(vd, vm, inode_networks)
           end
         end
 
@@ -456,10 +457,11 @@ class VmwareApiAdaptor
     if properties["guest.net"] && properties["guest.net"].respond_to?("each")
       properties["guest.net"].each do |gn|
         if gn.get_device_config_id == vNic.get_key
-          if gn.instance_of?(Vim::GuestNicInfo) && !gn.get_ip_address.nil?
-            nic_hash["ip_address"] = gn.get_ip_address.first
-            network = inode_networks.select { |n| n["name"] == gn.get_network }.first if gn.get_network
-            nic_hash["network_uuid"] = ( network.present? ? network["moref_id"] : "" )
+          network = inode_networks.select { |n| n["name"] == gn.get_network }.first if gn.get_network
+          nic_hash["network_uuid"] = ( network.present? ? network["moref_id"] : "" )
+
+          if gn.instance_of?(Vim::GuestNicInfo)
+            nic_hash["ip_address"] = gn.get_ip_address.first if !gn.get_ip_address.nil?
           end
         end
       end
@@ -484,14 +486,31 @@ class VmwareApiAdaptor
     return vm.first
   end
 
+  # runtime.powerState, guest.guestState, guest.net
+  def get_vm_property(_mor, _property_name)
+    logger.info("vmware_api_adaptor.get_vm_property(#{_property_name})")
+    VIJavaUtil::PropertyCollectorUtil.retrieve_properties([_mor], "VirtualMachine", [_property_name].to_java(:string)).each do |vm|
+      return vm[_property_name]
+    end
+  end
+
+  def wait_for_full_boot(_machine)
+    # check if guest tools installed?
+    # logger.info("waiting for correct guest state")
+    # sleep(1) while get_vm_property(_machine["mor"], "guest.guestState") != "running"
+
+    logger.info("waiting for network cards to be initialized")
+    # timeout?
+    # currently, unless you want to check for specific class assignments, the best way to check for nic_info is to see if it's an array
+    sleep(1) while !get_vm_property(_machine["mor"], "guest.net").respond_to?("each")
+  end
+
   def start(_uuid)
     begin
       logger.info("vmware_api_adaptor.start")
       machine = find_vm_by_uuid(_uuid)
-      tasks = []
 
       task = machine["mor"].power_on_vm_task(nil)
-
       if task.present?
         sleep(1) while ["queued", "running"].include?(task.get_task_info.get_state.to_s)
         if task.get_task_info.get_state.to_s.include?("error")
@@ -499,8 +518,8 @@ class VmwareApiAdaptor
         end
       end
 
-      machine["power_state"] = "poweredOn"
-      machine
+      wait_for_full_boot(machine)
+      machine = find_vm_by_uuid(_uuid)
     rescue Java::RuntimeFault,
         Java::RemoteException => e
       logger.warn("Invalid #{e.get_localized_message.to_s}")
@@ -517,7 +536,6 @@ class VmwareApiAdaptor
       logger.info("vmware_api_adaptor.stop")
       machine = find_vm_by_uuid(_uuid)
       tasks = []
-
       task = machine["mor"].shutdown_guest
 
       if task.present?
@@ -527,8 +545,9 @@ class VmwareApiAdaptor
         end
       end
 
-      machine["power_state"] = "poweredOff"
-      machine
+      logger.info("waiting for correct power state")
+      sleep(1) while !["poweredOff","suspended"].include?(get_vm_property(machine["mor"], "runtime.powerState").to_s)
+      find_vm_by_uuid(_uuid)
     rescue Java::RuntimeFault,
         Java::RemoteException => e
       logger.warn("Invalid #{e.class.to_s}")
@@ -558,6 +577,8 @@ class VmwareApiAdaptor
         end
       end
 
+      logger.info("waiting for correct power state")
+      sleep(1) while !["poweredOff","suspended"].include?(get_vm_property(machine["mor"], "runtime.powerState").to_s)
       find_vm_by_uuid(_uuid)
     rescue Java::RuntimeFault,
         Java::RemoteException => e
@@ -568,9 +589,6 @@ class VmwareApiAdaptor
       logger.warn("Invalid #{e.class.to_s}")
       raise Exceptions::MethodNotAllowed.new("Method Not Allowed: #{e.class.to_s}")
     end
-
-    machine["power_state"] = "poweredOff"
-    machine
   end
 
   def restart(_uuid)
@@ -588,8 +606,8 @@ class VmwareApiAdaptor
         end
       end
 
-      machine["power_state"] = "poweredOn"
-      machine
+      wait_for_full_boot(machine)
+      find_vm_by_uuid(_uuid)
     rescue Java::RuntimeFault,
         Java::RemoteException => e
       logger.warn("Invalid #{e.class.to_s}")
@@ -619,8 +637,9 @@ class VmwareApiAdaptor
         end
       end
 
-      machine["power_state"] = "poweredOn"
-      machine
+      logger.info("waiting for correct power state")
+      sleep(1) while get_vm_property(machine["mor"], "runtime.powerState").to_s != "poweredOn"
+      find_vm_by_uuid(_uuid)
     rescue Java::RuntimeFault,
         Java::RemoteException => e
       logger.warn("Invalid #{e.class.to_s}")
