@@ -1,4 +1,5 @@
 require 'java'
+require 'benchmark'
 Dir['lib/java/**/*.jar'].each do |jar|
   $CLASSPATH << jar
   logger.info("#{jar}")
@@ -68,21 +69,21 @@ class VmwareApiAdaptor
 
   def get_about_info
     logger.info("vmware_api_adaptor.get_about_info")
-    about = self.connection.get_about_info
-    about_hash = {}
-    about_hash["fullName"] = about.get_full_name
-    about_hash["vendor"] = about.get_vendor
-    about_hash["version"] = about.get_version
-    about_hash["build"] = about.get_build
-    about_hash["localeVersion"] = about.get_locale_version
-    about_hash["localeBuild"] = about.get_locale_build
-    about_hash["osType"] = about.get_os_type
-    about_hash["productLineId"] = about.get_product_line_id
-    about_hash["apiType"] = about.get_api_type
-    about_hash["apiVersion"] = about.get_api_version
-    about_hash["instanceUuid"] = about.get_instance_uuid
+    about                               = self.connection.get_about_info
+    about_hash                          = {}
+    about_hash["fullName"]              = about.get_full_name
+    about_hash["vendor"]                = about.get_vendor
+    about_hash["version"]               = about.get_version
+    about_hash["build"]                 = about.get_build
+    about_hash["localeVersion"]         = about.get_locale_version
+    about_hash["localeBuild"]           = about.get_locale_build
+    about_hash["osType"]                = about.get_os_type
+    about_hash["productLineId"]         = about.get_product_line_id
+    about_hash["apiType"]               = about.get_api_type
+    about_hash["apiVersion"]            = about.get_api_version
+    about_hash["instanceUuid"]          = about.get_instance_uuid
     about_hash["licenseProductVersion"] = about.get_license_product_name
-    about_hash["name"] = about.get_name
+    about_hash["name"]                  = about.get_name
 
     dynamic_properties = about.get_dynamic_property
     unless dynamic_properties.nil?
@@ -96,19 +97,19 @@ class VmwareApiAdaptor
 
   def get_statistic_levels
     logger.info("vmware_api_adaptor.get_statistic_levels")
-    performance_manager = self.connection.get_performance_manager
+    performance_manager   = self.connection.get_performance_manager
     performance_intervals = performance_manager.get_historical_interval
-    stats = []
+    stats                 = []
 
     unless performance_intervals.nil?
       performance_intervals.each do |pi|
-        pi_hash = {}
-        pi_hash["key"] = pi.get_key.to_s
+        pi_hash                   = {}
+        pi_hash["key"]            = pi.get_key.to_s
         pi_hash["samplingPeriod"] = pi.get_sampling_period.to_s
-        pi_hash["name"] = pi.get_name
-        pi_hash["length"] = pi.get_length.to_s
-        pi_hash["level"] = pi.get_level.to_s
-        pi_hash["enabled"] = pi.is_enabled.to_s
+        pi_hash["name"]           = pi.get_name
+        pi_hash["length"]         = pi.get_length.to_s
+        pi_hash["level"]          = pi.get_level.to_s
+        pi_hash["enabled"]        = pi.is_enabled.to_s
         stats << pi_hash
       end
     end
@@ -136,11 +137,11 @@ class VmwareApiAdaptor
       prop_record = host_properties.select { |e| e["name"] == h.name }
       if prop_record.present?
         _hosts << {
-          :mor => h,
-          :host_id => h.get_mor.get_value,
-          :name => prop_record.first["name"],
-          :hz => prop_record.first["hardware.cpuInfo.hz"],
-          :memorySize => prop_record.first["hardware.memorySize"],
+            :mor        => h,
+            :host_id    => h.get_mor.get_value,
+            :name       => prop_record.first["name"],
+            :hz         => prop_record.first["hardware.cpuInfo.hz"],
+            :memorySize => prop_record.first["hardware.memorySize"],
         }
       end
     end
@@ -157,13 +158,13 @@ class VmwareApiAdaptor
 
     _host_mor.get_datastores.each do |ds|
       # don't build a hash, or add it to the list of datastores if it's already there
-      if host_datastores.select {|d| d["moref_id"] == ds.get_mor.get_value }.empty?
-        ds_hash = {}
+      if host_datastores.select { |d| d["moref_id"] == ds.get_mor.get_value }.empty?
+        ds_hash             = {}
         ds_hash["host_mor"] = _host_mor
-        ds_hash["mor"] = ds
+        ds_hash["mor"]      = ds
         ds_hash["moref_id"] = ds.get_mor.get_value
-        ds_hash["name"] = ds.get_info.get_name
-        ds_hash["type"] = ds.get_summary.get_type
+        ds_hash["name"]     = ds.get_info.get_name
+        ds_hash["type"]     = ds.get_summary.get_type
         ds_hash["max_file_size"] = ds.get_info.get_max_file_size if ds.get_info.get_max_file_size
         ds_hash["free_space"] = ds.get_info.get_free_space if ds.get_info.get_free_space
         ds_hash["url"] = ds.get_info.get_url if ds.get_info.get_url
@@ -194,7 +195,7 @@ class VmwareApiAdaptor
   # this is really slow for a lot of disks, needs to be updated
   def virtual_disks(_datastore)
     logger.info("vmware_api_adaptor.virtual_disks")
-    ds_browser = _datastore.get_browser
+    ds_browser    = _datastore.get_browser
     v_disk_filter = Vim::VmDiskFileQueryFilter.new()
     v_disk_filter.set_controller_type(["VirtualIDEController"].to_java(:string))
     #file_query_flags = Vim::FileQueryFlags.new()
@@ -220,7 +221,7 @@ class VmwareApiAdaptor
         r.file.each do |f|
           logger.info "\t\tinspecting file"
           media_files << {
-            "path" => f.get_path
+              "path" => f.get_path
           }
         end
       end
@@ -234,16 +235,16 @@ class VmwareApiAdaptor
   # --------------------------------------------------------
 
   def tasks
-    all_tasks = []
+    all_tasks    = []
     task_manager = self.connection.get_task_manager
     task_manager.get_recent_tasks.each do |task|
       task_info = task.get_task_info
       all_tasks << {
-        :state => task_info.get_state.to_s,
-        :description_id => task_info.get_description_id,
-        :description => task_info.get_description,
-        :entity_mor => task_info.get_entity,
-        :entity_name => task_info.get_entity_name
+          :state          => task_info.get_state.to_s,
+          :description_id => task_info.get_description_id,
+          :description    => task_info.get_description,
+          :entity_mor     => task_info.get_entity,
+          :entity_name    => task_info.get_entity_name
       }
     end
 
@@ -254,25 +255,19 @@ class VmwareApiAdaptor
   # Networks
   # --------------------------------------------------------
 
+  # TODO: is_accessible and ip_pool_name may not be required
   def networks
-    logger.info("vmware_api_adaptor.networks")
-    networks = []
-    self.hosts.each do |host|
-      host[:mor].get_networks.each do |network|
-        # don't build a hash, or add it to the list of networks if it's already there
-        if networks.select {|d| d["moref_id"] == network.get_mor.get_value }.empty?
-          network_hash = {}
-          network_hash["mor"] = network
-          network_hash["moref_id"] = network.get_mor.get_value
-          network_hash["name"] = network.get_name if network.get_name
-          network_hash["is_accessible"] = network.get_summary.is_accessible if network.get_summary.is_accessible
-          network_hash["ip_pool_name"] = network.get_summary.get_ip_pool_name if network.get_summary.get_ip_pool_name
-          networks << network_hash
-        end
-      end
+    logger.debug("vmware_api_adaptor.networks")
+    network_mors = self.hosts.map { |host| host[:mor].get_networks }.flatten.uniq { |network| network.get_mor.get_value }
+    network_mors.map do |network|
+      {
+          mor:           network,
+          moref_id:      network.get_mor.get_value,
+          name:          network.get_name,
+          is_accessible: network.get_summary.is_accessible,
+          ip_pool_name:  network.get_summary.get_ip_pool_name
+      }
     end
-
-    networks
   end
 
   # --------------------------------------------------------
@@ -310,23 +305,23 @@ class VmwareApiAdaptor
 
   def gather_properties(vms, _include_deploying=false)
     logger.info("vmware_api_adaptor.gather_properties")
-    _hosts = self.hosts
+    _hosts              = self.hosts
     vms_with_properties = VIJavaUtil::PropertyCollectorUtil.retrieve_properties(vms, "VirtualMachine", VM_PROPERTIES.to_java(:string))
 
     virtual_machines_with_properties = []
-    inode_networks = networks
+    inode_networks                   = networks
     vms_with_properties.each do |vm|
       exclude_deploying = !_include_deploying && tasks.find { |t| BLOCKING_TASKS.include?(t[:description_id]) && t[:entity_name] == vm["name"] && ["running", "queued"].include?(t[:state]) }.present?
       unless vm["config.template"] || exclude_deploying
-        vm_managed_object = vms.select { |e| e.config.uuid == vm["config.uuid"] }.first
-        vm_host = _hosts.select { |e| e[:host_id] == vm["runtime.host"].get_value }.first
+        vm_managed_object  = vms.select { |e| e.config.uuid == vm["config.uuid"] }.first
+        vm_host            = _hosts.select { |e| e[:host_id] == vm["runtime.host"].get_value }.first
         vm_properties_hash = {}
 
-        vm_mor_id = vm_managed_object.get_mor.get_value.to_s
-        account_id_match = vm_managed_object.get_parent.get_name.match(/Account(\d*)/)
+        vm_mor_id                 = vm_managed_object.get_mor.get_value.to_s
+        account_id_match          = vm_managed_object.get_parent.get_name.match(/Account(\d*)/)
         vm_properties_hash["mor"] = vm_managed_object
         vm_properties_hash["external_vm_id"] = vm_mor_id if vm_mor_id.present?
-        vm_properties_hash["external_host_id"] =  vm["runtime.host"].get_value if vm["runtime.host"].get_value.present?
+        vm_properties_hash["external_host_id"] = vm["runtime.host"].get_value if vm["runtime.host"].get_value.present?
         vm_properties_hash["uuid"] = vm["config.uuid"] if vm["config.uuid"].present?
         vm_properties_hash["name"] = vm["name"] if vm["name"].present?
         vm_properties_hash["cpu_count"] = vm["config.hardware.numCPU"] if vm["config.hardware.numCPU"].present?
@@ -334,25 +329,25 @@ class VmwareApiAdaptor
         vm_properties_hash["power_state"] = vm["runtime.powerState"].to_s if vm["runtime.powerState"].present?
         vm_properties_hash["cpu_speed"] = (vm_host[:hz].to_f / 1000000).to_s if vm_host[:hz].present?
         vm_properties_hash["guest_agent"] = (vm["guest.toolsStatus"].to_s == "toolsOk" || vm["guest.toolsStatus"].to_s == "toolsOld" ? true : false)
-        vm_properties_hash["account_id"] = account_id_match.present? ? account_id_match[1] : ""
+        vm_properties_hash["account_id"]  = account_id_match.present? ? account_id_match[1] : ""
 
-        system_array = {}
+        system_array                 = {}
         system_array["architecture"] = (vm["guest.guestId"].to_s.include?("64") ? "x64" : "x32")
-        operating_system_hash = {}
+        operating_system_hash        = {}
         operating_system_hash["name"] = vm["guest.guestFullName"] if vm["guest.guestFullName"]
-        operating_system_hash["distro"] = vm["guest.guestId"]
+        operating_system_hash["distro"]  = vm["guest.guestId"]
         system_array["operating_system"] = operating_system_hash
-        vm_properties_hash["system"] = system_array
+        vm_properties_hash["system"]     = system_array
 
         vm_properties_hash["disks"] = []
-        vm_properties_hash["nics"] = []
+        vm_properties_hash["nics"]  = []
         vm["config.hardware.device"].each do |vd|
           case vd
-          when Vim::VirtualDisk
-            vm_properties_hash["disks"] << get_disk(vd, vm)
+            when Vim::VirtualDisk
+              vm_properties_hash["disks"] << get_disk(vd, vm)
             #when Vim::VirtualPCNet32, Vim::VirtualE1000, Vim::VirtualVmxnet
-          when Vim::VirtualEthernetCard
-            vm_properties_hash["nics"] << get_nic(vd, vm, inode_networks)
+            when Vim::VirtualEthernetCard
+              vm_properties_hash["nics"] << get_nic(vd, vm, inode_networks)
           end
         end
 
@@ -364,23 +359,23 @@ class VmwareApiAdaptor
   end
 
   DISK_TYPES_WITH_UUID = [
-    Vim::VirtualDiskFlatVer2BackingInfo,
-    Vim::VirtualDiskRawDiskMappingVer1BackingInfo,
-    Vim::VirtualDiskRawDiskVer2BackingInfo,
-    Vim::VirtualDiskSparseVer2BackingInfo,
-    Vim::VirtualDiskSeSparseBackingInfo,
+      Vim::VirtualDiskFlatVer2BackingInfo,
+      Vim::VirtualDiskRawDiskMappingVer1BackingInfo,
+      Vim::VirtualDiskRawDiskVer2BackingInfo,
+      Vim::VirtualDiskSparseVer2BackingInfo,
+      Vim::VirtualDiskSeSparseBackingInfo,
   ]
 
   def get_disk(disk, properties)
     logger.info "vmware_api_adaptor.get_disk"
-    disk_hash = {}
-    disk_hash["type"] = "Disk"
-    disk_hash["maximum_size"] = (disk.get_capacity_in_kb.to_i * KB) # if disk.get_capacity_in_kb
-    disk_hash["controller_key"] = disk.get_controller_key # if disk.get_controller_key
-    disk_hash["unit_number"] = disk.get_unit_number # if disk.get_unit_number
-    disk_hash["name"] = disk.get_device_info.get_label # if disk.get_device_info && disk.get_device_info.get_label
-    disk_hash["key"] = disk.get_key # if disk.get_key
-    disk_hash["thin"] = false
+    disk_hash                   = {}
+    disk_hash["type"]           = "Disk"
+    disk_hash["maximum_size"]   = (disk.get_capacity_in_kb.to_i * KB) # if disk.get_capacity_in_kb
+    disk_hash["controller_key"] = disk.get_controller_key             # if disk.get_controller_key
+    disk_hash["unit_number"]    = disk.get_unit_number                # if disk.get_unit_number
+    disk_hash["name"]           = disk.get_device_info.get_label      # if disk.get_device_info && disk.get_device_info.get_label
+    disk_hash["key"]            = disk.get_key                        # if disk.get_key
+    disk_hash["thin"]           = false
 
     backing = disk.get_backing
 
@@ -391,31 +386,31 @@ class VmwareApiAdaptor
 
     # grab backing specific metainfo
     case backing
-    when Vim::VirtualDiskFlatVer2BackingInfo
-      disk_hash["split"] = backing.get_split if backing.get_split
-      disk_hash["write_through"] = backing.get_write_through if backing.get_write_through
-      disk_hash["thin"] = (backing.get_thin_provisioned ? true : false)
-      disk_hash["file_name"] = backing.get_file_name if backing.get_file_name
-    when Vim::VirtualDiskRawDiskMappingVer1BackingInfo
-      disk_hash["type"] = "Shared"
-      disk_hash["compatability_mode"] = backing.get_compatibility_mode if backing.get_compatibility_mode
-      disk_hash["device_name"] = backing.get_device_name if backing.get_device_name
-      disk_hash["lun_uuid"] = backing.get_lun_uuid if backing.get_lun_uuid
-      disk_hash["uuid"] = backing.get_lun_uuid if backing.get_lun_uuid
+      when Vim::VirtualDiskFlatVer2BackingInfo
+        disk_hash["split"] = backing.get_split if backing.get_split
+        disk_hash["write_through"] = backing.get_write_through if backing.get_write_through
+        disk_hash["thin"] = (backing.get_thin_provisioned ? true : false)
+        disk_hash["file_name"] = backing.get_file_name if backing.get_file_name
+      when Vim::VirtualDiskRawDiskMappingVer1BackingInfo
+        disk_hash["type"] = "Shared"
+        disk_hash["compatability_mode"] = backing.get_compatibility_mode if backing.get_compatibility_mode
+        disk_hash["device_name"] = backing.get_device_name if backing.get_device_name
+        disk_hash["lun_uuid"] = backing.get_lun_uuid if backing.get_lun_uuid
+        disk_hash["uuid"] = backing.get_lun_uuid if backing.get_lun_uuid
       # disk_hash["uuid"] = backing.getUuid if backing.getUuid
-    when Vim::VirtualDiskRawDiskVer2BackingInfo
-      disk_hash["type"] = "Shared"
-      disk_hash["device_name"] = backing.get_device_name if backing.get_device_name
-      disk_hash["descriptive_file_name"] = backing.get_descriptor_file_name if backing.get_descriptor_file_name
-    when Vim::VirtualDiskSparseVer2BackingInfo
-      disk_hash["split"] = backing.get_split if backing.get_split
-      disk_hash["write_through"] = backing.get_write_through if backing.get_write_through
-      disk_hash["space_used_in_kb"] = backing.getSpaceUsedInKB if backing.getSpaceUsedInKB
-    when Vim::VirtualDiskSeSparseBackingInfo
-      disk_hash["write_through"] = backing.get_write_through if backing.get_write_through
-      disk_hash["delta_disk_format"] = backing.get_delta_disk_format if backing.get_delta_disk_format
-      disk_hash["digest_enabled"] = backing.get_digest_enabled if backing.get_digest_enabled
-      disk_hash["grain_size"] = backing.get_grain_size if backing.get_grain_size
+      when Vim::VirtualDiskRawDiskVer2BackingInfo
+        disk_hash["type"] = "Shared"
+        disk_hash["device_name"] = backing.get_device_name if backing.get_device_name
+        disk_hash["descriptive_file_name"] = backing.get_descriptor_file_name if backing.get_descriptor_file_name
+      when Vim::VirtualDiskSparseVer2BackingInfo
+        disk_hash["split"] = backing.get_split if backing.get_split
+        disk_hash["write_through"] = backing.get_write_through if backing.get_write_through
+        disk_hash["space_used_in_kb"] = backing.getSpaceUsedInKB if backing.getSpaceUsedInKB
+      when Vim::VirtualDiskSeSparseBackingInfo
+        disk_hash["write_through"] = backing.get_write_through if backing.get_write_through
+        disk_hash["delta_disk_format"] = backing.get_delta_disk_format if backing.get_delta_disk_format
+        disk_hash["digest_enabled"] = backing.get_digest_enabled if backing.get_digest_enabled
+        disk_hash["grain_size"] = backing.get_grain_size if backing.get_grain_size
     end
 
     # get disk usage
@@ -458,7 +453,7 @@ class VmwareApiAdaptor
       properties["guest.net"].each do |gn|
         if gn.get_device_config_id == vNic.get_key
           network = inode_networks.select { |n| n["name"] == gn.get_network }.first if gn.get_network
-          nic_hash["network_uuid"] = ( network.present? ? network["moref_id"] : "" )
+          nic_hash["network_uuid"] = (network.present? ? network["moref_id"] : "")
 
           if gn.instance_of?(Vim::GuestNicInfo)
             nic_hash["ip_address"] = gn.get_ip_address.first if !gn.get_ip_address.nil?
@@ -472,7 +467,7 @@ class VmwareApiAdaptor
 
   def find_vm_by_uuid(_uuid, _include_deploying=false)
     logger.info("vmware_api_adaptor.find_vm_by_uuid")
-    v = [self.connection.get_search_index.find_by_uuid(nil, _uuid, true, false)]
+    v  = [self.connection.get_search_index.find_by_uuid(nil, _uuid, true, false)]
     vm = gather_properties(v, _include_deploying)
 
     return vm.first
@@ -480,7 +475,7 @@ class VmwareApiAdaptor
 
   def find_vm_by_mor(_mor, _include_deploying=false)
     logger.info("vmware_api_adaptor.find_vm_by_mor")
-    v = [VIJavaUtil::MorUtil.createExactManagedEntity(self.connection.get_server_connection, _mor)]
+    v  = [VIJavaUtil::MorUtil.createExactManagedEntity(self.connection.get_server_connection, _mor)]
     vm = gather_properties(v, _include_deploying)
 
     return vm.first
@@ -535,8 +530,8 @@ class VmwareApiAdaptor
     begin
       logger.info("vmware_api_adaptor.stop")
       machine = find_vm_by_uuid(_uuid)
-      tasks = []
-      task = machine["mor"].shutdown_guest
+      tasks   = []
+      task    = machine["mor"].shutdown_guest
 
       if task.present?
         sleep(1) while ["queued", "running"].include?(task.get_task_info.get_state.to_s)
@@ -546,7 +541,7 @@ class VmwareApiAdaptor
       end
 
       logger.info("waiting for correct power state")
-      sleep(1) while !["poweredOff","suspended"].include?(get_vm_property(machine["mor"], "runtime.powerState").to_s)
+      sleep(1) while !["poweredOff", "suspended"].include?(get_vm_property(machine["mor"], "runtime.powerState").to_s)
       find_vm_by_uuid(_uuid)
     rescue Java::RuntimeFault,
         Java::RemoteException => e
@@ -566,7 +561,7 @@ class VmwareApiAdaptor
     begin
       logger.info("vmware_api_adaptor.stop")
       machine = find_vm_by_uuid(_uuid)
-      tasks = []
+      tasks   = []
 
       task = machine["mor"].power_off_vm_task
 
@@ -578,7 +573,7 @@ class VmwareApiAdaptor
       end
 
       logger.info("waiting for correct power state")
-      sleep(1) while !["poweredOff","suspended"].include?(get_vm_property(machine["mor"], "runtime.powerState").to_s)
+      sleep(1) while !["poweredOff", "suspended"].include?(get_vm_property(machine["mor"], "runtime.powerState").to_s)
       find_vm_by_uuid(_uuid)
     rescue Java::RuntimeFault,
         Java::RemoteException => e
@@ -595,7 +590,7 @@ class VmwareApiAdaptor
     begin
       logger.info("vmware_api_adaptor.restart")
       machine = find_vm_by_uuid(_uuid)
-      tasks = []
+      tasks   = []
 
       task = machine["mor"].reboot_guest
 
@@ -626,7 +621,7 @@ class VmwareApiAdaptor
     begin
       logger.info("vmware_api_adaptor.restart")
       machine = find_vm_by_uuid(_uuid)
-      tasks = []
+      tasks   = []
 
       task = machine["mor"].reset_vm_task
 
@@ -656,7 +651,7 @@ class VmwareApiAdaptor
     begin
       logger.info("vmware_api_adaptor.destroy")
       machine = find_vm_by_uuid(_uuid)
-      tasks = []
+      tasks   = []
 
       task = machine["mor"].destroy_task
 
@@ -684,26 +679,26 @@ class VmwareApiAdaptor
   def readings(_vms, _start_time, _end_time)
     logger.info("vmware_api_adaptor.gather_counters")
     if _vms.present?
-      performance_metrics = [
-        { :metric_name => "cpu.usage.average", :instance => ""},
-        { :metric_name => "cpu.usagemhz.average", :instance => ""},
-        { :metric_name => "mem.consumed.average", :instance => ""},
-        { :metric_name => "virtualDisk.read.average", :instance => "*"},
-        { :metric_name => "virtualDisk.write.average", :instance => "*"},
-        { :metric_name => "net.received.average", :instance => "*"},
-        { :metric_name => "net.transmitted.average", :instance => "*"},
+      performance_metrics      = [
+          { :metric_name => "cpu.usage.average", :instance => "" },
+          { :metric_name => "cpu.usagemhz.average", :instance => "" },
+          { :metric_name => "mem.consumed.average", :instance => "" },
+          { :metric_name => "virtualDisk.read.average", :instance => "*" },
+          { :metric_name => "virtualDisk.write.average", :instance => "*" },
+          { :metric_name => "net.received.average", :instance => "*" },
+          { :metric_name => "net.transmitted.average", :instance => "*" },
       ]
 
       # build performance metric hash with counter keys, and performance metric id array for query
-      performance_manager = self.connection.get_performance_manager
+      performance_manager      = self.connection.get_performance_manager
       performance_counter_info = performance_manager.get_perf_counter
-      perf_metric_ids = []
+      perf_metric_ids          = []
       performance_counter_info.each do |pci|
         perf_counter = "#{pci.get_group_info.get_key.to_s}.#{pci.get_name_info.get_key.to_s}.#{pci.get_rollup_type.to_s}"
-        perf_metric = performance_metrics.select { |e| e[:metric_name].downcase == perf_counter.downcase }.first
+        perf_metric  = performance_metrics.select { |e| e[:metric_name].downcase == perf_counter.downcase }.first
         if perf_metric.present?
           perf_metric[:perf_metric_key] = pci.get_key.to_i
-          temp_perf_metric_id = Vim::PerfMetricId.new()
+          temp_perf_metric_id           = Vim::PerfMetricId.new()
           temp_perf_metric_id.set_counter_id(pci.get_key)
           temp_perf_metric_id.set_instance(perf_metric[:instance])
           perf_metric_ids << temp_perf_metric_id
@@ -726,10 +721,10 @@ class VmwareApiAdaptor
         vm["stats"] = {}
         ((_start_time.utc + 5.minutes).._end_time.utc).step(5.minutes) do |ts|
           vm["stats"][ts.strftime("%Y-%m-%dT%H:%M:%SZ")] = {
-            "virtualDisk.read.average.*" => 0,
-            "virtualDisk.write.average.*" => 0,
-            "net.received.average.*" => 0,
-            "net.transmitted.average.*" => 0
+              "virtualDisk.read.average.*"  => 0,
+              "virtualDisk.write.average.*" => 0,
+              "net.received.average.*"      => 0,
+              "net.transmitted.average.*"   => 0
           }
         end
       end
@@ -743,21 +738,21 @@ class VmwareApiAdaptor
       unless performance_entity_metric_base.nil?
         performance_entity_metric_base.each do |pemb|
           if pemb.instance_of?(Vim::PerfEntityMetric)
-            infos = pemb.get_sample_info
+            infos  = pemb.get_sample_info
             values = pemb.get_value
 
             entity = _vms.select { |e| e["external_vm_id"] == pemb.get_entity.get_value }.first
             if infos.present?
               infos.each_with_index do |info, info_index|
-                metric_hash = {}
-                timestamp = info.get_timestamp.get_time.to_s.to_datetime.utc.strftime("%Y-%m-%dT%H:%M:%SZ")
+                metric_hash              = {}
+                timestamp                = info.get_timestamp.get_time.to_s.to_datetime.utc.strftime("%Y-%m-%dT%H:%M:%SZ")
                 metric_hash["timestamp"] = timestamp
                 if values.present?
                   values.each do |value|
-                    metric = performance_metrics.select { |e| e[:perf_metric_key] == value.get_id.get_counter_id }.first
-                    metric_name = ( value.get_id.get_instance.to_s.length > 0 ? "#{metric[:metric_name]}.#{value.get_id.get_instance}" : "#{metric[:metric_name]}" )
+                    metric      = performance_metrics.select { |e| e[:perf_metric_key] == value.get_id.get_counter_id }.first
+                    metric_name = (value.get_id.get_instance.to_s.length > 0 ? "#{metric[:metric_name]}.#{value.get_id.get_instance}" : "#{metric[:metric_name]}")
                     if value.instance_of?(Vim::PerfMetricIntSeries)
-                      long_values = value.get_value
+                      long_values              = value.get_value
                       metric_hash[metric_name] = long_values[info_index]
                     end
                   end
