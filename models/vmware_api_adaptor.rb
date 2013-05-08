@@ -261,11 +261,11 @@ class VmwareApiAdaptor
     network_mors = self.hosts.map { |host| host[:mor].get_networks }.flatten.uniq { |network| network.get_mor.get_value }
     network_mors.map do |network|
       {
-          mor:           network,
-          moref_id:      network.get_mor.get_value,
-          name:          network.get_name,
-          is_accessible: network.get_summary.is_accessible,
-          ip_pool_name:  network.get_summary.get_ip_pool_name
+          "mor" =>           network,
+          "moref_id" =>      network.get_mor.get_value,
+          "name" =>          network.get_name,
+          "is_accessible" => network.get_summary.is_accessible,
+          "ip_pool_name" =>  network.get_summary.get_ip_pool_name
       }
     end
   end
