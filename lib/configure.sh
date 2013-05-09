@@ -11,7 +11,7 @@ function control_c {
 
 export LANG=en_US.UTF-8
 
-VERSION=$(cat ../VERSION)
+VERSION=$(cat /var/6fusion/adaptor-vmware/current/VERSION)
 
 choice=0
 while [ $choice != "quit" ]
