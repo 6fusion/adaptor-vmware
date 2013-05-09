@@ -21,7 +21,6 @@ do
    1 "Change Password" \
    2 "Network Configuration" \
    3 "Proxy and NTP Configuration" \
-   #4 "Connectivity Tests" \
    4 "Reboot Appliance" \
    5 "Quit" \
    3>&1 1>&2 2>&3)
