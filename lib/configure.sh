@@ -11,7 +11,7 @@ function control_c {
 
 export LANG=en_US.UTF-8
 
-VERSION=2.1
+VERSION=$(cat ../VERSION)
 
 choice=0
 while [ $choice != "quit" ]
