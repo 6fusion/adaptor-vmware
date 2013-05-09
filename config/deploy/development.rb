@@ -2,9 +2,8 @@ set :hipchat_alert, false
 set :repository, "file://."
 set :deploy_via, :copy
 set :ssh_port, 2225
-set :context_path, "/vmware"
 
-server 'adaptor-vmware.2223', :app
+server 'adaptor-vmware.2225', :app
 
 before "deploy", "iptables:stop"
 

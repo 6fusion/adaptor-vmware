@@ -21,9 +21,9 @@ do
    1 "Change Password" \
    2 "Network Configuration" \
    3 "Proxy and NTP Configuration" \
-   4 "Connectivity Tests" \
-   5 "Reboot Appliance" \
-   6 "Quit" \
+   #4 "Connectivity Tests" \
+   4 "Reboot Appliance" \
+   5 "Quit" \
    3>&1 1>&2 2>&3)
   clear
   case $choice in
@@ -67,7 +67,7 @@ do
       message "Proxies Configured"
     fi
     ;;
-   4)
+   99)
     source /etc/profile.d/proxy.sh
     clear
     echo "Performing Connectivity Tests..."
@@ -75,7 +75,7 @@ do
     echo
     read -p "Press any key to continue... " -n1 -s
    ;;
-   5)
+   4)
     dialog --defaultno --yesno "Are you sure you want to reboot?" 5 40
     if [ "$?" = "0" ]
     then
