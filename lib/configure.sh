@@ -32,12 +32,12 @@ do
      trap - SIGINT
    ;;
    2)
-    if [ -f /var/6fusion/engine-room/shared/network ]
+    if [ -f /var/6fusion/adaptor-vmware/shared/network ]
     then
-      sudo system-config-network-cmd -c --file=/var/6fusion/engine-room/shared/network
+      sudo system-config-network-cmd -c --file=/var/6fusion/adaptor-vmware/shared/network
     fi
     sudo system-config-network-tui
-    sudo system-config-network-cmd > /var/6fusion/engine-room/shared/network
+    sudo system-config-network-cmd > /var/6fusion/adaptor-vmware/shared/network
     sudo /etc/init.d/network restart
    ;;
    3)
@@ -70,7 +70,7 @@ do
     source /etc/profile.d/proxy.sh
     clear
     echo "Performing Connectivity Tests..."
-    cd /var/6fusion/engine-room/current/lib && ./preflight.rb
+    cd /var/6fusion/adaptor-vmware/current/lib && ./preflight.rb
     echo
     read -p "Press any key to continue... " -n1 -s
    ;;
