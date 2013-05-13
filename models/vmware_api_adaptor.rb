@@ -501,7 +501,7 @@ class VmwareApiAdaptor
 
   # runtime.powerState, guest.guestState, guest.net
   def get_vm_property(_mor, _property_name)
-    logger.info("vmware_api_adaptor.get_vm_property(#{_property_name})")
+    logger.info("vmware_api_adaptor.get_vm_property(#{_property_name}) for #{_mor}")
     VIJavaUtil::PropertyCollectorUtil.retrieve_properties([_mor], "VirtualMachine", [_property_name].to_java(:string)).each do |vm|
       return vm[_property_name]
     end
