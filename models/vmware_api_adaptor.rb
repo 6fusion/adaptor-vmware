@@ -323,11 +323,10 @@ class VmwareApiAdaptor
 
   def gather_properties(vms, _include_deploying=false)
     logger.info("vmware_api_adaptor.gather_properties")
-    _hosts              = self.hosts
+    _hosts = self.hosts
     vms_with_properties = VIJavaUtil::PropertyCollectorUtil.retrieve_properties(vms, "VirtualMachine", VM_PROPERTIES.to_java(:string))
 
     virtual_machines_with_properties = []
-    inode_networks                   = networks
     vms_with_properties.each do |vm|
       exclude_deploying = !_include_deploying && tasks.find { |t| BLOCKING_TASKS.include?(t[:description_id]) && t[:entity_name] == vm["name"] && ["running", "queued"].include?(t[:state]) }.present?
       unless vm["config.template"] || exclude_deploying
@@ -363,9 +362,8 @@ class VmwareApiAdaptor
           case vd
             when Vim::VirtualDisk
               vm_properties_hash["disks"] << get_disk(vd, vm)
-            #when Vim::VirtualPCNet32, Vim::VirtualE1000, Vim::VirtualVmxnet
             when Vim::VirtualEthernetCard
-              vm_properties_hash["nics"] << get_nic(vd, vm, inode_networks)
+              vm_properties_hash["nics"] << get_nic(vd, vm)
           end
         end
 
@@ -458,7 +456,7 @@ class VmwareApiAdaptor
     return disk_hash
   end
 
-  def get_nic(vNic, properties, inode_networks)
+  def get_nic(vNic, properties)
     logger.info "vmware_api_adaptor.get_nic";
     nic_hash = {}
     nic_hash["mac_address"] = vNic.get_mac_address if vNic.get_mac_address
@@ -467,12 +465,19 @@ class VmwareApiAdaptor
     nic_hash["uuid"] = ("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaa" + vNic.get_key.to_s) if vNic.get_key
 
     # There has to be a better way of getting a Nics IP address, because this is terrible
+    _network_name = ""
+    _backing = vNic.get_backing
+    if _backing.respond_to?("get_port")
+      _network_name = _backing.get_port.get_portgroup_key if _backing.get_port
+    elsif _backing.respond_to?("get_network")
+      _network_name = _backing.get_network.get_value if _backing.get_network
+    end
+
+    nic_hash["network_uuid"] = _network_name
+
     if properties["guest.net"] && properties["guest.net"].respond_to?("each")
       properties["guest.net"].each do |gn|
         if gn.get_device_config_id == vNic.get_key
-          network = inode_networks.select { |n| n["name"] == gn.get_network }.first if gn.get_network
-          nic_hash["network_uuid"] = (network.present? ? network["moref_id"] : "")
-
           if gn.instance_of?(Vim::GuestNicInfo)
             nic_hash["ip_address"] = gn.get_ip_address.first if !gn.get_ip_address.nil?
           end
@@ -508,14 +513,19 @@ class VmwareApiAdaptor
   end
 
   def wait_for_full_boot(_machine)
-    # check if guest tools installed?
+    # die if no guest tools installed on the virtual machine
+    return if !_machine["guest_agent"]
+
     # logger.info("waiting for correct guest state")
     # sleep(1) while get_vm_property(_machine["mor"], "guest.guestState") != "running"
 
     logger.info("waiting for network cards to be initialized")
-    # timeout?
+    timeout = 0
     # currently, unless you want to check for specific class assignments, the best way to check for nic_info is to see if it's an array
-    sleep(1) while !get_vm_property(_machine["mor"], "guest.net").respond_to?("each")
+    while !get_vm_property(_machine["mor"], "guest.net").respond_to?("each") && timeout < 120
+      timeout += 1
+      sleep(1)
+    end
   end
 
   def start(_uuid)
