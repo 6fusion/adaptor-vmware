@@ -261,10 +261,10 @@ class Machine < Base::Machine
       start_time = _since.floor(5.minutes).utc
       end_time = _until.round(5.minutes).utc
       adaptor = inode.vmware_api_adaptor
-      vm = adaptor.readings(adaptor.find_vm_by_uuid(uuid), start_time, end_time)
+      vm = adaptor.readings([adaptor.find_vm_by_uuid(uuid)], start_time, end_time)
 
       unless vm.nil?
-        Machine.new(vm)
+        Machine.new(vm.first)
       else
         raise Exceptions::NotFound
       end
