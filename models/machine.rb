@@ -180,8 +180,12 @@ class Machine < Base::Machine
         end
       ensure
       end
-    rescue Vim::InvalidRequest, Vim::SystemError => e
-      logger.error("#{e.class} - Message: \"#{e.get_localized_message.to_s}\"")
+    rescue Vim::InvalidRequest => e
+      logger.error("#{e.class} - Message: \"#{e.backtrace.to_s}\"")
+      raise Exceptions::Unrecoverable, "Invalid Request: #{e.reason}"
+    rescue Vim::SystemError => e
+      logger.error("#{e.class} - Message: \"#{e.backtrace.to_s}\"")
+      raise Exceptions::Unrecoverable, "System Error: #{e.reason}"
     ensure
       inode.close_connection
     end

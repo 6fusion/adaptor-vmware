@@ -275,7 +275,7 @@ class VmwareApiAdaptor
 
   # TODO: is_accessible and ip_pool_name may not be required
   def networks
-    logger.debug("vmware_api_adaptor.networks")
+    logger.info("vmware_api_adaptor.networks")
     network_mors = self.hosts.map { |host| host[:mor].get_networks }.flatten.uniq { |network| network.get_mor.get_value }
     network_mors.map do |network|
       {
