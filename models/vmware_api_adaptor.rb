@@ -343,7 +343,7 @@ class VmwareApiAdaptor
         vm_properties_hash["name"] = vm["name"] if vm["name"].present?
         vm_properties_hash["cpu_count"] = vm["config.hardware.numCPU"] if vm["config.hardware.numCPU"].present?
         vm_properties_hash["maximum_memory"] = (vm["config.hardware.memoryMB"].to_f * MB) if vm["config.hardware.memoryMB"].present?
-        vm_properties_hash["power_state"] = vm["runtime.powerState"].to_s if vm["runtime.powerState"].present?
+        vm_properties_hash["power_state"] = convert_power_state(vm["guest.toolsStatus"].to_s, vm["runtime.powerState"].to_s) if vm["runtime.powerState"].present?
         vm_properties_hash["cpu_speed"] = (vm_host[:hz].to_f / 1000000).to_s if vm_host[:hz].present?
         vm_properties_hash["guest_agent"] = (vm["guest.toolsStatus"].to_s == "toolsOk" || vm["guest.toolsStatus"].to_s == "toolsOld" ? true : false)
         vm_properties_hash["account_id"]  = account_id_match.present? ? account_id_match[1] : ""
@@ -796,5 +796,36 @@ class VmwareApiAdaptor
       return _vms
     end
     return nil
+  end
+
+  # Helper Method for converting machine power states.
+  def convert_power_state(tools_status, power_status)
+    logger.info('machine.convert_power_state')
+
+    begin
+      status = "#{tools_status}|#{power_status}"
+
+      case status
+      when "toolsOk|poweredOn"
+        "started"
+      when "toolsOld|poweredOn"
+        "started"
+      when "toolsNotInstalled|poweredOn"
+        "started"
+      when "toolsNotRunning|poweredOff"
+        "stopped"
+      when "toolsOld|poweredOff"
+        "stopped"
+      when "toolsNotInstalled|poweredOff"
+        "stopped"
+      when "toolsNotRunning|poweredOn"
+        "started"
+      else
+        "Unknown"
+      end
+    rescue => e
+      logger.error(e.message)
+      raise Exceptions::Unrecoverable, e.message
+    end
   end
 end

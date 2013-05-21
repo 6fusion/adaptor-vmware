@@ -393,35 +393,4 @@ class Machine < Base::Machine
       logger.info "*** Result: #{_object.send(method)}" if _execute_it
     end
   end
-
-  # Helper Method for converting machine power states.
-  def self.convert_power_state(tools_status, power_status)
-    logger.info('machine.convert_power_state')
-
-    begin
-      status = "#{tools_status}|#{power_status}"
-
-      case status
-      when "toolsOk|poweredOn"
-        "started"
-      when "toolsOld|poweredOn"
-        "started"
-      when "toolsNotInstalled|poweredOn"
-        "started"
-      when "toolsNotRunning|poweredOff"
-        "stopped"
-      when "toolsOld|poweredOff"
-        "stopped"
-      when "toolsNotInstalled|poweredOff"
-        "stopped"
-      when "toolsNotRunning|poweredOn"
-        "started"
-      else
-        "Unknown"
-      end
-    rescue => e
-      logger.error(e.message)
-      raise Exceptions::Unrecoverable, e.message
-    end
-  end
 end
