@@ -36,8 +36,7 @@ AdaptorVMware.controllers :machines, :parent => :inodes do
 
     logger.info("params #{_since.to_s} #{_until.to_s}")
     all_machines = Machine.all_with_readings(@inode,_interval,_since,_until)
-    @machines = all_machines.map { |vm| Machine.new(vm) } if all_machines.present?
-
+    @machines = all_machines.map { |vm| Machine.new(vm) }
     render 'machines/readings'
   end
 
