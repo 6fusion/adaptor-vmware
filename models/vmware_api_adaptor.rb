@@ -491,7 +491,9 @@ class VmwareApiAdaptor
   def find_vm_by_uuid(_uuid, _include_deploying=false)
     logger.info("vmware_api_adaptor.find_vm_by_uuid")
     v  = [self.connection.get_search_index.find_by_uuid(nil, _uuid, true, false)]
+    raise Exceptions::NotFound, "Unable to find machine by uuid: #{_uuid}" unless v.present?
     vm = gather_properties(v, _include_deploying)
+    raise Exceptions::NotFound, "Unable to find machine by uuid: #{_uuid}" unless vm.present?
 
     return vm.first
   end
@@ -679,7 +681,6 @@ class VmwareApiAdaptor
     begin
       logger.info("vmware_api_adaptor.destroy")
       machine = find_vm_by_uuid(_uuid)
-      raise Exceptions::NotFound, "Unable to find machine by uuid: #{_uuid}"
       tasks   = []
 
       task = machine["mor"].destroy_task
