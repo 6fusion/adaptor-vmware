@@ -175,6 +175,8 @@ class VmwareApiAdaptor
     host_datastores = []
 
     _host_mor.get_datastores.each do |ds|
+      ds.refresh_datastore
+
       # don't build a hash, or add it to the list of datastores if it's already there
       if host_datastores.select { |d| d["moref_id"] == ds.get_mor.get_value }.empty?
         ds_hash             = {}
