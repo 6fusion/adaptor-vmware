@@ -40,8 +40,7 @@ class Machine < Base::Machine
       logger.info("machine.create")
       adaptor = inode.vmware_api_adaptor
       datastore = inode.datastores.find { |ds| ds["moref_id"] == _hypervisor_data_store_uuid && ds["mor"].get_summary.is_accessible }
-      datastore ||= inode.datastores.find { |ds| ds["mor"].get_summary.is_accessible }
-      raise Exceptions::Unrecoverable,  "No Data Store was found in an deployable state." unless datastore.present?
+      raise Exceptions::Unrecoverable,  "data store uuid #{_hypervisor_data_store_uuid}, was found in an undeployable state." unless datastore.present?
 
       logger.info("deploying to: #{datastore.inspect}")
       raise "Unable to find datastore!" if datastore.blank?
