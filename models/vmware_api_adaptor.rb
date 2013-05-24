@@ -679,6 +679,7 @@ class VmwareApiAdaptor
     begin
       logger.info("vmware_api_adaptor.destroy")
       machine = find_vm_by_uuid(_uuid)
+      raise Exceptions::NotFound, "Unable to find machine by uuid: #{_uuid}"
       tasks   = []
 
       task = machine["mor"].destroy_task
