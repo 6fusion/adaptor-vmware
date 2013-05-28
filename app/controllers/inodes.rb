@@ -160,7 +160,7 @@ AdaptorVMware.controllers :inodes, :priority => :low do
         :iptables => "iptables -L",
         :network => "ifconfig -a",
         :ping_api => "ping -c 4 api.6fusion.com",
-        :ping_control_room => "ping -c 4 control-room.6fusion.com"
+        :ping_control_room => "ping -c 4 control-room-20130107.6fusion.com"
       }
 
       Zip::ZipOutputStream.open(t.path) do |z|
