@@ -776,7 +776,7 @@ class VmwareApiAdaptor
 
       unless performance_entity_metric_base.nil?
         vms_hash = {}
-        _vms.each { |vm| vms_hash["external_vm_id"] = vm }
+        _vms.each { |vm| vms_hash[vm["external_vm_id"]] = vm }
         performance_entity_metric_base.each do |pemb|
           if pemb.instance_of?(Vim::PerfEntityMetric)
             infos  = pemb.get_sample_info
