@@ -332,7 +332,7 @@ class VmwareApiAdaptor
     vms_with_properties = VIJavaUtil::PropertyCollectorUtil.retrieve_properties(vms, "VirtualMachine", VM_PROPERTIES.to_java(:string))
 
     vms_hash = {}
-    vms.each { |vm| vms_hash[vm.config.uuid] = vm }
+    vms.each { |vm| vms_hash[vm.config.uuid] = vm if vm.config.present? }
 
     virtual_machines_with_properties = []
     vms_with_properties.each do |vm|
