@@ -18,6 +18,8 @@ TYPE=Ethernet
     run "rm -f /etc/udev/rules.d/70-persistent-net.rules"
     run "rm -f #{shared_path}/data/*"
     run "rm -f /var/log/torquebox/*"
+    run "rm -rf /etc/chef"
+    run "rm -f /usr/local/src/*.{zip,gz}"
     change_password('deploy')
     change_password('root')
     run "halt"
