@@ -789,7 +789,7 @@ class VmwareApiAdaptor
                 metric_hash["timestamp"] = timestamp
                 if values.present?
                   values.each do |value|
-                    metric      = performance_metrics.select { |e| e[:perf_metric_key] == value.get_id.get_counter_id }.first
+                    metric      = performance_metrics.find { |e| e[:perf_metric_key] == value.get_id.get_counter_id }
                     metric_name = (value.get_id.get_instance.to_s.length > 0 ? "#{metric[:metric_name]}.#{value.get_id.get_instance}" : "#{metric[:metric_name]}")
                     if value.instance_of?(Vim::PerfMetricIntSeries)
                       long_values              = value.get_value
