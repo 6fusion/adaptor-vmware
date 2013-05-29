@@ -150,16 +150,19 @@ class VmwareApiAdaptor
     host_managed_objects = VIJava::InventoryNavigator.new(self.root_folder).search_managed_entities("HostSystem");
     host_properties = VIJavaUtil::PropertyCollectorUtil.retrieve_properties(host_managed_objects, "HostSystem", HOST_PROPERTIES.to_java(:string))
 
+    host_properties_hash = {}
+    host_properties.each { |host| host_properties_hash[host["name"]] = host }
+
     _hosts = []
     host_managed_objects.each do |h|
-      prop_record = host_properties.select { |e| e["name"] == h.name }
+      prop_record = host_properties_hash.delete(h.name)
       if prop_record.present?
         _hosts << {
             :mor        => h,
             :host_id    => h.get_mor.get_value,
-            :name       => prop_record.first["name"],
-            :hz         => prop_record.first["hardware.cpuInfo.hz"],
-            :memorySize => prop_record.first["hardware.memorySize"],
+            :name       => prop_record["name"],
+            :hz         => prop_record["hardware.cpuInfo.hz"],
+            :memorySize => prop_record["hardware.memorySize"],
         }
       end
     end
