@@ -731,10 +731,11 @@ class VmwareApiAdaptor
       # build performance metric hash with counter keys, and performance metric id array for query
       performance_manager      = self.connection.get_performance_manager
       performance_counter_info = performance_manager.get_perf_counter
+
       perf_metric_ids          = []
       performance_counter_info.each do |pci|
         perf_counter = "#{pci.get_group_info.get_key.to_s}.#{pci.get_name_info.get_key.to_s}.#{pci.get_rollup_type.to_s}"
-        perf_metric  = performance_metrics.select { |e| e[:metric_name].downcase == perf_counter.downcase }.first
+        perf_metric  = performance_metrics.find { |e| e[:metric_name].downcase == perf_counter.downcase }
         if perf_metric.present?
           perf_metric[:perf_metric_key] = pci.get_key.to_i
           temp_perf_metric_id           = Vim::PerfMetricId.new()
