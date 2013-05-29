@@ -60,7 +60,7 @@ class Base::Medium < Main
 
   def self.delete(_infrastructure_node, _medium_location)
     media_info_files = Dir.glob("#{_medium_location}/*.media_info")
-    inode_media_info_file = media_info_files.select { |e| e == "#{File.join(_medium_location, _infrastructure_node.uuid)}.media_info" }.first
+    inode_media_info_file = media_info_files.find { |e| e == "#{File.join(_medium_location, _infrastructure_node.uuid)}.media_info" }
 
     if inode_media_info_file.present?
       delete_cmd = ""
