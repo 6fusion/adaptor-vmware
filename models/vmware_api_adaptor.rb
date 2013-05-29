@@ -769,19 +769,21 @@ class VmwareApiAdaptor
         end
       end
 
-
       logger.info "start performance_manager.query_perf"
       performance_entity_metric_base = performance_manager.query_perf(query_spec_list)
       # parse timestamps?
       logger.info "end performance_manager.query_perf"
 
       unless performance_entity_metric_base.nil?
+        vms_hash = {}
+        _vms.each { |vm| vms_hash["external_vm_id"] = vm }
         performance_entity_metric_base.each do |pemb|
           if pemb.instance_of?(Vim::PerfEntityMetric)
             infos  = pemb.get_sample_info
             values = pemb.get_value
 
-            entity = _vms.select { |e| e["external_vm_id"] == pemb.get_entity.get_value }.first
+            entity = vms_hash.delete(pemb.get_entity.get_value)
+            next if entity.nil?
             if infos.present?
               infos.each_with_index do |info, info_index|
                 metric_hash              = {}
