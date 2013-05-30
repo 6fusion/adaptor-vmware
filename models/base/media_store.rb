@@ -50,6 +50,11 @@ class Base::MediaStore < Main
     Kernel.system("sudo rmdir #{_local_mount_path}")
     logger.info("deleted local mount directory: #{_local_mount_path}")
 
+    logger.info("removing mount path from /etc/fstab")
+    unmount_command = "sudo sed -e \"s/#{_local_mount_path}//g\" -i.backup /etc/fstab"
+    Kernel.system(unmount_command)
+    logger.info("removed mount path from /etc/fstab")
+
     return self.new({ local_path: _local_mount_path, remote_path: '' })
   end
 end

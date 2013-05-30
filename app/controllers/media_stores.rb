@@ -15,6 +15,6 @@ AdaptorVMware.controllers :media_stores do
     logger.info('DELETE - media_stores#index')
     @media_store = MediaStore.unmount(params[:data_center_id], params[:local_path])
 
-    render 'media_stores/show'
+    status 204
   end
 end
