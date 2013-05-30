@@ -1,2 +1,2 @@
-object @media_stores
+object @media_store
 extends 'media_stores/base'
