@@ -51,13 +51,13 @@ class Base::MediaStore < Main
     logger.info("deleted local mount directory: #{_local_mount_path}")
 
     logger.info("removing mount path from /etc/fstab")
-    unmount_command = "sudo sed -e \"s/#{_local_mount_path}//g\" -i.backup /etc/fstab"
+    unmount_command = "sudo sed -e \"s/#{_local_mount_path.gsub('/', '\/')}//g\" -i.#{[Time.now.strftime("%Y-%m-%d-%H%M%S"),f].join("_")} /etc/fstab"
     logger.info(unmount_command)
     Kernel.system(unmount_command)
     logger.info("removed mount path from /etc/fstab")
 
     logger.info("removing local mount directory")
-    rm_dir_command = "rm -rf #{_local_mount_path}"
+    rm_dir_command = "sudo rm -rf #{_local_mount_path}"
     logger.info(rm_dir_command)
     Kernel.system(rm_dir_command)
     logger.info("removed local mount directory")
