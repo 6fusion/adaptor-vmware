@@ -6,7 +6,7 @@ class Base::MediaStore < Main
 
   def self.mount(_data_center_id, _local_mount_path, _remote_mount_path, _engine_room)
     logger.info("creating local mount path: #{_local_mount_path}")
-    Kernel.system("mkdir -p #{_local_mount_path}")
+    Kernel.system("sudo mkdir -p #{_local_mount_path}")
     logger.info("created local mount path: #{_local_mount_path}")
 
     logger.info("backing up /etc/fstab to /etc/fstab.bkp.#{Time.now.strftime("%Y-%m-%dT%H_%M_%S")}")
@@ -47,7 +47,7 @@ class Base::MediaStore < Main
     logger.info("unmounted #{_local_mount_path}")
 
     logger.info("deleting local mount directory: #{_local_mount_path}")
-    Kernel.system("rmdir #{_local_mount_path}")
+    Kernel.system("sudo rmdir #{_local_mount_path}")
     logger.info("deleted local mount directory: #{_local_mount_path}")
 
     logger.info("removing mount path from /etc/fstab")
