@@ -1,0 +1,44 @@
+user_id:
+  automationtestuser:
+    account_id: 1772
+  automationtestuser2:
+    account_id: 1773
+  automationtestuser3:
+    account_id: 1774
+  automationtestuser4:
+    account_id: 1775
+  automationtestuser5:
+    account_id: 1776
+  UC6Admin:
+    account_id: 1
+
+roles:
+  UCVendors:
+    login: automationtestuser2@6fusion.com
+    password: 7u8i&U*I
+  Solution_Providers_And_UCVendors:
+    login: automationtestuser3@6fusion.com
+    password: 7u8i&U*I
+  Admin:
+    login: UC6admin@6fusion.com
+    password: 1q2w!Q@W
+  Solution_Providers:
+    login: automationtestuser4@6fusion.com
+    password: 7u8i&U*I
+  Profiler:
+    login: automationtestuser5@6fusion.com
+    password: 7u8i&U*I
+
+canned_data:
+
+
+engine_room_2:
+     Xen_iNode: "Xen 6.0"
+     Xen_Network_Management_Server_Interfaces_id: "1"
+     VMWare_iNode: ""
+
+browser:
+  default: firefox
+  url: "https://console.6fusion.gin"
+
+graphic:

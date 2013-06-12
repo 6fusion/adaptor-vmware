@@ -1,0 +1,85 @@
+user_id:
+  automationtestuser:
+    account_id: 1762
+  automationtestuser2:
+    account_id: 1764
+  automationtestuser3:
+    account_id: 1772
+  automationtestuser4:
+    account_id: 1773
+  automationtestuser5:
+    account_id: 1774
+  UC6Admin:
+    account_id: 1
+
+roles:
+  UCVendors:
+    login: automationtestuser2@6fusion.com
+    password: 7u8i&U*I
+  Solution_Providers_And_UCVendors:
+    login: automationtestuser3@6fusion.com
+    password: 7u8i&U*I
+  Admin:
+    login: UC6admin@6fusion.com
+    password: 1q2w!Q@W
+  Solution_Providers:
+    login: automationtestuser4@6fusion.com
+    password: 7u8i&U*I
+  Profiler:
+    login: automationtestuser5@6fusion.com
+    password: 7u8i&U*I
+
+canned_data:
+     ftp_server: "10.57.0.200"
+     Engine_Room_2_Name: "Vodka Engine Troll"
+     iNode:  "Whiskey - VMware 5.1"
+     iNode_ID: "174"
+     Template: "Automation - Full_Test_Media"
+     Network_Mapping: "15164"
+     Template 2: "Automation - Edit_Test_Media"
+     NIC:  "Automation Network #01"
+     NIC_ID_1: "121"
+     Meter: "Whiskey Meter"
+     NIC_Field_Name: "network-name-121"
+     ISO: ""
+     Disk_Name: "16"
+     Engine_Room_Test_NIC_Field_Name: ""
+     Media_ID_1: "843"
+     Media_ID_2: "338"
+     Profiler_Name: ""
+     Xen_Engine_Room: ""
+     auth_token: "hxw7xRxY5UvL5nm1yqSx"
+     admin_auth_token: "89hL5ZWqnNSorHDMKfzy"
+     VMWare_Adapter_URL: "http://adaptor-vmware.6fusion.whiskey:8080"
+     VMWare_Adapter_UUID: ""
+     VMWare_Machine_UUID: ""
+     Xen_Adapter_URL: "http://adaptor-xen.6fusion.whiskey:8080"
+     Xen_Adapter_UUID: "7bf8a7b0-f521-012f-2cbb-005056ad1d40"
+     Xen_Machine_UUID: "d916b2f2-b8a9-6348-890c-9b37e255432c"
+     Public_iNode: "VMWare 4.1"
+     Private_iNode: ""
+
+browser:
+  default: firefox
+  url: "https://console.6fusion.whiskey"
+
+graphic:
+                     ____
+                    |    |
+                    |    |
+                    |____|
+                    |    |
+                    (    )
+                    )    (
+                  .'      `.
+                 /          \
+                |------------|
+                |JACK DANIELS|
+                |    ----    |
+                |   (No.7)   |
+                |    ----    |
+                | Tennessee  |
+                |  WHISKEY   |
+                |  40% Vol.  |
+                |------------|
+                |____________|
