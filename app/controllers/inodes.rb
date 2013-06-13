@@ -31,7 +31,6 @@ AdaptorVMware.controllers :inodes, :priority => :low do
   # Creates
   post :index do
     logger.info('POST - inodes#index')
-    logger.debug(params.inspect)
 
     uuid = params['uuid']
     @inode = INode.new(params)
@@ -148,12 +147,14 @@ AdaptorVMware.controllers :inodes, :priority => :low do
       # Unable to zip these due to permissions
         # :cron => "/var/log/cron",
         # :messages => "/var/log/messages"
+
       file_list = {
-        :torquebox => "/var/log/torquebox/torquebox.log*",
         :er_inodes => "/var/6fusion/engine-room/shared/inodes.yml",
         :er_settings => "/var/6fusion/engine-room/shared/settings.yml",
       }
 
+      Dir.foreach("/var/log/torquebox") {|x| file_list[x] = "/var/log/torquebox/#{x}" if !x.index('torquebox.log').nil? }
+      
       cmd_list = {
         :date => "date -u",
         :process_list => "ps faux",
