@@ -149,7 +149,9 @@ AdaptorVMware.controllers :inodes, :priority => :low do
         # :cron => "/var/log/cron",
         # :messages => "/var/log/messages"
       file_list = {
-        :torquebox => "/var/log/torquebox/torquebox.log"
+        :torquebox => "/var/log/torquebox/torquebox.log*",
+        :er_inodes => "/var/6fusion/engine-room/shared/inodes.yml",
+        :er_settings => "/var/6fusion/engine-room/shared/settings.yml",
       }
 
       cmd_list = {
