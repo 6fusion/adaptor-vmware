@@ -344,7 +344,11 @@ class VmwareApiAdaptor
         vm_properties_hash = {}
 
         vm_mor_id                 = vm_managed_object.get_mor.get_value.to_s
-        account_id_match          = vm_managed_object.get_parent.get_name.match(/Account(\d*)/) if !vm_managed_object.get_parent.nil?
+
+        if !AdaptorVMware.skip_folder_discovery
+          logger.info("vmware_api_adaptor.gather_properties Discovery check")
+          account_id_match          = vm_managed_object.get_parent.get_name.match(/Account(\d*)/) if !vm_managed_object.get_parent.nil?
+        end
         vm_properties_hash["mor"] = vm_managed_object
         vm_properties_hash["external_vm_id"] = vm_mor_id if vm_mor_id.present?
         vm_properties_hash["external_host_id"] = vm["runtime.host"].get_value if vm["runtime.host"].get_value.present?
