@@ -16,7 +16,7 @@ AdaptorVMware.controllers :inodes, :priority => :low do
     @inodes = []
     Dir["#{PADRINO_ROOT}/data/*.json"].each do |i|
       temp = ActiveSupport::JSON.decode(IO.read(i))
-      @inodes << { :uuid => temp["uuid"], :host_ip_address => temp["host_ip_address"] }
+      @inodes << INode.find_by_uuid(temp["uuid"])
     end
 
     case content_type
@@ -24,15 +24,13 @@ AdaptorVMware.controllers :inodes, :priority => :low do
       content_type 'text/html'
       render 'inodes/list'
     else
-      content_type 'application/json'
-      @inodes.to_json
+      render 'inodes/index'
     end
   end
 
   # Creates
   post :index do
     logger.info('POST - inodes#index')
-    logger.debug(params.inspect)
 
     uuid = params['uuid']
     @inode = INode.new(params)
@@ -71,7 +69,7 @@ AdaptorVMware.controllers :inodes, :priority => :low do
   end
 
   # Deletes
-  delete :index do
+  delete :index, "/inodes/:uuid" do
     logger.info('DELETE - inodes#index')
 
     uuid = params.delete('uuid')
@@ -149,10 +147,14 @@ AdaptorVMware.controllers :inodes, :priority => :low do
       # Unable to zip these due to permissions
         # :cron => "/var/log/cron",
         # :messages => "/var/log/messages"
+
       file_list = {
-        :torquebox => "/var/log/torquebox/torquebox.log"
+        :er_inodes => "/var/6fusion/engine-room/shared/inodes.yml",
+        :er_settings => "/var/6fusion/engine-room/shared/settings.yml",
       }
 
+      Dir.foreach("/var/log/torquebox") {|x| file_list[x] = "/var/log/torquebox/#{x}" if !x.index('torquebox.log').nil? }
+      
       cmd_list = {
         :date => "date -u",
         :process_list => "ps faux",
@@ -161,7 +163,7 @@ AdaptorVMware.controllers :inodes, :priority => :low do
         :iptables => "iptables -L",
         :network => "ifconfig -a",
         :ping_api => "ping -c 4 api.6fusion.com",
-        :ping_control_room => "ping -c 4 control-room.6fusion.com"
+        :ping_control_room => "ping -c 4 control-room-20130107.6fusion.com"
       }
 
       Zip::ZipOutputStream.open(t.path) do |z|

@@ -2,7 +2,6 @@ object @machine
 attributes :uuid,
            :external_vm_id,
            :external_host_id,
-           :name,
            :cpu_count,
            :cpu_speed,
            :maximum_memory,
@@ -13,6 +12,7 @@ attributes :uuid,
            :data_center_uuid,
            :description,
            :host_uuid
+attribute :name => :virtual_name
 
 _interval = params[:interval].blank? ? 300 : params[:interval]
 _since = params[:since].blank? ? 5.minutes.ago.utc : Time.iso8601(params[:since])
@@ -34,7 +34,7 @@ child :disks => :disks do
 end
 
 child :nics => :nics do
-  attributes :uuid, :name, :mac_address, :ip_address
+  attributes :uuid, :network_uuid, :name, :mac_address, :ip_address
 
   node :readings do |r|
     r.readings(@inode, _interval, _since, _until).map do |r|

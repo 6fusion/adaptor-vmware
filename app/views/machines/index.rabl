@@ -2,7 +2,6 @@
 collection @machines
 
 attributes :uuid,
-           :name,
            :cpu_count,
            :cpu_speed,
            :maximum_memory,
@@ -12,12 +11,22 @@ attributes :uuid,
            :hostname,
            :data_center_uuid,
            :description,
-           :host_uuid
+           :host_uuid,
+           :account_id
+attribute :name => :virtual_name
 
 child :disks => :disks do
-  attributes :uuid, :name, :maximum_size, :type, :thin
+  attributes :uuid,
+    :name,
+    :maximum_size,
+    :type,
+    :thin
 
 end
 child :nics => :nics do
-  attributes :uuid, :name, :mac_address, :ip_address
+  attributes :uuid,
+    :network_uuid,
+    :name,
+    :mac_address,
+    :ip_address
 end

@@ -12,6 +12,9 @@ default_run_options[:pty] = true
 set :stages, Dir['config/deploy/*.rb'].map { |f| File.basename(f, '.rb') }
 set :default_stage, "development"
 set :bundle_without, [:development, :test, :automation, :assets, :deploy]
+# set :bundle_cmd, "jruby -S bundle"
+# set :bundle_dir, fetch(:shared_path)+"/bundle"
+# set :bundle_flags, "--deployment --quiet"
 
 set :application, `git remote -v`[/([\w-]+)\.git\s\(fetch\)/,1]
 set :user, 'deploy'
@@ -26,8 +29,9 @@ set :deploy_to, "/var/6fusion/#{application}"
 set :deploy_via, :remote_cache
 set :rails_env, lambda { fetch(:stage) }
 set :keep_releases, 2
-set :tail_logs_location, "#{shared_path}/log/#{application}.log"
+set :tail_logs_location, "/var/log/torquebox/torquebox.log"
 set :context_path, ""
+set :hipchat_alert, ENV['HIPCHAT_ALERT'] || true
 set :password, ENV['PASSWORD'] if ENV['PASSWORD']
 set :tag, `git branch --no-color 2> /dev/null`.chomp.split("\n").grep(/^[*]/).first[/(\S+)$/, 1]
 set :current_branch, nil
@@ -75,9 +79,6 @@ after("deploy") do
 
   # Deploy the application
   torquebox.deploy
-
-  # Setup New Relic
-  run "if [ -f #{shared_path}/newrelic.yml ]; then #{sudo} ln -sfn #{shared_path}/newrelic.yml #{current_path}/config; fi"
 
   deploy.cleanup
 end
@@ -249,4 +250,16 @@ end
 # SSH configuration
 task :configure, roles: :app do
   system "ssh configure@#{find_servers_for_task(self).first} -p #{ssh_port}"
+end
+
+def change_password(user = "root")
+  run "passwd #{user}", :pty => true do |ch, stream, data|
+    if data =~ /New password:/
+      ch.send_data(Capistrano::CLI.password_prompt("New password for #{user}: ") + "\n")
+    elsif data =~ /Retype new password:/
+      ch.send_data(Capistrano::CLI.password_prompt("Retype new password for #{user}: ") + "\n")
+    else
+      Capistrano::Configuration.default_io_proc.call(ch, stream, data)
+    end
+  end
 end

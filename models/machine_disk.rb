@@ -5,7 +5,10 @@ class MachineDisk < Base::MachineDisk
     :usage,
     :key,
     :unit_number,
-    :controller_key
+    :controller_key,
+    :HostResource,
+    :location,
+    :size
 
   KB = 1024
   MB = 1024**2

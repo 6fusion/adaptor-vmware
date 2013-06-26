@@ -37,6 +37,14 @@ class INode < Base::INode
     vmware_api_adaptor.virtual_machines
   end
 
+  def networks
+    self.vmware_api_adaptor.networks.map { |network| Network.new(network) }
+  end
+
+  def datastores
+    self.vmware_api_adaptor.datastores
+  end
+
   def statistics_levels
     logger.info("INode.statistics_levels")
     vmware_api_adaptor.get_statistic_levels
@@ -74,16 +82,8 @@ class INode < Base::INode
     end
   end
 
-  def revision
-    if File.exists?('/var/6fusion/adaptor-vmware/current/REVISION')
-      File.read('/var/6fusion/adaptor-vmware/current/REVISION').chomp
-    else
-      `git rev-parse HEAD`.chomp
-    end
-  end
-
   def release_version
-    "#{branch} (#{revision})"
+    branch.gsub("\n"," ")
   end
 
   def close_connection
