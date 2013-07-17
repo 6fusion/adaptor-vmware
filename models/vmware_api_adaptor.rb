@@ -559,12 +559,16 @@ class VmwareApiAdaptor
       wait_for_full_boot(machine)
       machine = find_vm_by_uuid(_uuid)
     rescue Java::RuntimeFault,
-        Java::RemoteException => e
-      logger.warn("Invalid #{e.get_localized_message.to_s}")
+      Java::RemoteException => e
+      logger.error("class: #{e.get_class.to_s}")
+      logger.error("message: #{e.get_localized_message}")
+      logger.error("backtrace: #{e.backtrace}")
       raise Exceptions::Unrecoverable.new("Cannot Complete Requested Action: #{e.class.to_s}")
     rescue Vim::InvalidState,
-        Vim::TaskInProgress => e
-      logger.warn("Invalid #{e.class.to_s}")
+      Vim::TaskInProgress => e
+      logger.error("class: #{e.get_class.to_s}")
+      logger.error("message: #{e.get_localized_message}")
+      logger.error("backtrace: #{e.backtrace}"))
       raise Exceptions::MethodNotAllowed.new("Method Not Allowed: #{e.class.to_s}")
     end
   end
@@ -588,14 +592,20 @@ class VmwareApiAdaptor
       find_vm_by_uuid(_uuid)
     rescue Java::RuntimeFault,
         Java::RemoteException => e
-      logger.warn("Invalid #{e.class.to_s}")
+      logger.error("class: #{e.get_class.to_s}")
+      logger.error("message: #{e.get_localized_message}")
+      logger.error("backtrace: #{e.backtrace}")
       raise Exceptions::Unrecoverable.new("Cannot Complete Requested Action: #{e.class.to_s}")
     rescue Vim::InvalidState,
         Vim::TaskInProgress => e
-      logger.warn("Invalid #{e.class.to_s}")
+      logger.error("class: #{e.get_class.to_s}")
+      logger.error("message: #{e.get_localized_message}")
+      logger.error("backtrace: #{e.backtrace}")
       raise Exceptions::MethodNotAllowed.new("Method Not Allowed: #{e.class.to_s}")
     rescue Java::ComVmwareVim25::ToolsUnavailable => e
-      logger.error("VMware Tools Unavailable")
+      logger.error("class: #{e.get_class.to_s}")
+      logger.error("message: #{e.get_localized_message}")
+      logger.error("backtrace: #{e.backtrace}")
       raise Exceptions::MethodNotAllowed.new("Method Not Allowed: VMware Tools Unavailable")
     end
   end
@@ -620,11 +630,15 @@ class VmwareApiAdaptor
       find_vm_by_uuid(_uuid)
     rescue Java::RuntimeFault,
         Java::RemoteException => e
-      logger.warn("Invalid #{e.class.to_s}")
+      logger.error("class: #{e.get_class.to_s}")
+      logger.error("message: #{e.get_localized_message}")
+      logger.error("backtrace: #{e.backtrace}")
       raise Exceptions::Unrecoverable.new("Cannot Complete Requested Action: #{e.class.to_s}")
     rescue Vim::InvalidState,
         Vim::TaskInProgress => e
-      logger.warn("Invalid #{e.class.to_s}")
+      logger.error("class: #{e.get_class.to_s}")
+      logger.error("message: #{e.get_localized_message}")
+      logger.error("backtrace: #{e.backtrace}")
       raise Exceptions::MethodNotAllowed.new("Method Not Allowed: #{e.class.to_s}")
     end
   end
@@ -648,14 +662,20 @@ class VmwareApiAdaptor
       find_vm_by_uuid(_uuid)
     rescue Java::RuntimeFault,
         Java::RemoteException => e
-      logger.warn("Invalid #{e.class.to_s}")
+      logger.error("class: #{e.get_class.to_s}")
+      logger.error("message: #{e.get_localized_message}")
+      logger.error("backtrace: #{e.backtrace}")
       raise Exceptions::Unrecoverable.new("Cannot Complete Requested Action: #{e.class.to_s}")
     rescue Vim::InvalidState,
         Vim::TaskInProgress => e
-      logger.warn("Invalid #{e.class.to_s}")
+      logger.error("class: #{e.get_class.to_s}")
+      logger.error("message: #{e.get_localized_message}")
+      logger.error("backtrace: #{e.backtrace}")
       raise Exceptions::MethodNotAllowed.new("Method Not Allowed: #{e.class.to_s}")
     rescue Java::ComVmwareVim25::ToolsUnavailable => e
-      logger.error("VMware Tools Unavailable")
+      logger.error("class: #{e.get_class.to_s}")
+      logger.error("message: #{e.get_localized_message}")
+      logger.error("backtrace: #{e.backtrace}")
       raise Exceptions::MethodNotAllowed.new("Method Not Allowed: VMware Tools Unavailable")
     end
   end
@@ -680,12 +700,16 @@ class VmwareApiAdaptor
       find_vm_by_uuid(_uuid)
     rescue Java::RuntimeFault,
         Java::RemoteException => e
-      logger.warn("Invalid #{e.class.to_s}")
+      logger.error("class: #{e.get_class.to_s}")
+      logger.error("message: #{e.get_localized_message}")
+      logger.error("backtrace: #{e.backtrace}")
       raise Exceptions::Unrecoverable.new("Cannot Complete Requested Action: #{e.class.to_s}")
     rescue Vim::InvalidState,
         Vim::ToolsUnavailable,
         Vim::TaskInProgress => e
-      logger.warn("Invalid #{e.class.to_s}")
+      logger.error("class: #{e.get_class.to_s}")
+      logger.error("message: #{e.get_localized_message}")
+      logger.error("backtrace: #{e.backtrace}")
       raise Exceptions::MethodNotAllowed.new("Method Not Allowed: #{e.class.to_s}")
     end
   end
@@ -706,11 +730,15 @@ class VmwareApiAdaptor
       end
     rescue Java::RuntimeFault,
         Java::RemoteException => e
-      logger.warn("Invalid #{e.class.to_s}")
+      logger.error("class: #{e.get_class.to_s}")
+      logger.error("message: #{e.get_localized_message}")
+      logger.error("backtrace: #{e.backtrace}")
       raise Exceptions::Unrecoverable.new("Cannot Complete Requested Action: #{e.class.to_s}")
     rescue Vim::InvalidState,
         Vim::TaskInProgress => e
-      logger.warn("Invalid #{e.class.to_s}")
+      logger.error("class: #{e.get_class.to_s}")
+      logger.error("message: #{e.get_localized_message}")
+      logger.error("backtrace: #{e.backtrace}")
       raise Exceptions::MethodNotAllowed.new("Method Not Allowed: #{e.class.to_s}")
     end
   end
