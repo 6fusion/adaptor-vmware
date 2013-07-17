@@ -90,10 +90,14 @@ AdaptorVMware.controllers :inodes, :priority => :low do
       @inode = INode.find_by_uuid(params[:uuid])
       diag[:about] = @inode.about
     rescue InvalidLogin => e
+      logger.error("class: #{e.get_class.to_s}")
+      logger.error("message: #{e.get_localized_message}")
+      logger.error("backtrace: #{e.backtrace}")
       diag[:about] = "Invalid Login"
     rescue => e
-      logger.error(e.message)
-      logger.error(e.backtrace)
+      logger.error("class: #{e.get_class.to_s}")
+      logger.error("message: #{e.get_localized_message}")
+      logger.error("backtrace: #{e.backtrace}")
       diag[:about] = "Unable to connect ("+e.to_s+")"
     ensure
       @inode.close_connection
@@ -102,10 +106,14 @@ AdaptorVMware.controllers :inodes, :priority => :low do
     begin
       diag[:statistics_levels] = @inode.statistics_levels.to_a
     rescue InvalidLogin => e
+      logger.error("class: #{e.get_class.to_s}")
+      logger.error("message: #{e.get_localized_message}")
+      logger.error("backtrace: #{e.backtrace}")
       diag[:statistics_levels] = "Invalid Login"
     rescue => e
-      logger.error(e.message)
-      logger.error(e.backtrace)
+      logger.error("class: #{e.get_class.to_s}")
+      logger.error("message: #{e.get_localized_message}")
+      logger.error("backtrace: #{e.backtrace}")
       diag[:statistics_levels] = "Unable to connect ("+e.to_s+")"
     ensure
       @inode.close_connection
@@ -114,10 +122,14 @@ AdaptorVMware.controllers :inodes, :priority => :low do
     begin
       diag[:virtual_machines] = @inode.virtual_machines.to_yaml
     rescue InvalidLogin => e
+      logger.error("class: #{e.get_class.to_s}")
+      logger.error("message: #{e.get_localized_message}")
+      logger.error("backtrace: #{e.backtrace}")
       diag[:virtual_machines] = "Invalid Login"
     rescue => e
-      logger.error(e.message)
-      logger.error(e.backtrace)
+      logger.error("class: #{e.get_class.to_s}")
+      logger.error("message: #{e.get_localized_message}")
+      logger.error("backtrace: #{e.backtrace}")
       diag[:virtual_machines] = "Unable to connect ("+e.to_s+")"
     ensure
       @inode.close_connection
@@ -127,10 +139,14 @@ AdaptorVMware.controllers :inodes, :priority => :low do
     begin
       diag[:sessions] = @inode.vmware_api_adaptor.get_session_info.to_yaml
     rescue InvalidLogin => e
+      logger.error("class: #{e.get_class.to_s}")
+      logger.error("message: #{e.get_localized_message}")
+      logger.error("backtrace: #{e.backtrace}")
       diag[:sessions] = "Invalid Login"
     rescue => e
-      logger.error(e.message)
-      logger.error(e.backtrace)
+      logger.error("class: #{e.get_class.to_s}")
+      logger.error("message: #{e.get_localized_message}")
+      logger.error("backtrace: #{e.backtrace}")
       diag[:sessions] = "Unable to connect ("+e.to_s+")"
     ensure
       @inode.close_connection
@@ -154,7 +170,7 @@ AdaptorVMware.controllers :inodes, :priority => :low do
       }
 
       Dir.foreach("/var/log/torquebox") {|x| file_list[x] = "/var/log/torquebox/#{x}" if !x.index('torquebox.log').nil? }
-      
+
       cmd_list = {
         :date => "date -u",
         :process_list => "ps faux",
@@ -205,10 +221,14 @@ AdaptorVMware.controllers :inodes, :priority => :low do
                            rescue InvalidLogin => e
 
     rescue InvalidLogin => e
+      logger.error("class: #{e.get_class.to_s}")
+      logger.error("message: #{e.get_localized_message}")
+      logger.error("backtrace: #{e.backtrace}")
       raise Exceptions::Forbidden, "Invalid Login"
     rescue => e
-      logger.error(e.message)
-      logger.error(e.backtrace)
+      logger.error("class: #{e.get_class.to_s}")
+      logger.error("message: #{e.get_localized_message}")
+      logger.error("backtrace: #{e.backtrace}")
       raise Exceptions::Unrecoverable, e.to_s
     ensure
       diag_file.close

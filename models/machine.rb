@@ -182,11 +182,15 @@ class Machine < Base::Machine
       ensure
       end
     rescue Vim::InvalidRequest => e
-      logger.error("#{e.class} - Message: \"#{e.backtrace.to_s}\"")
-      raise Exceptions::Unrecoverable, "Invalid Request: #{e.reason}"
+      logger.error("class: #{e.get_class.to_s}")
+      logger.error("message: #{e.get_localized_message}")
+      logger.error("backtrace: #{e.backtrace}")
+      raise Exceptions::Unrecoverable, "Invalid Request: #{e.class.to_s}"
     rescue Vim::SystemError => e
-      logger.error("#{e.class} - Message: \"#{e.backtrace.to_s}\"")
-      raise Exceptions::Unrecoverable, "System Error: #{e.reason}"
+      logger.error("class: #{e.get_class.to_s}")
+      logger.error("message: #{e.get_localized_message}")
+      logger.error("backtrace: #{e.backtrace}")
+      raise Exceptions::Unrecoverable, "System Error: #{e.class.to_s}"
     ensure
       inode.close_connection
     end
@@ -206,15 +210,18 @@ class Machine < Base::Machine
   # end
 
   def self.all(inode)
+    logger.info("machine.all")
     begin
       inode.vmware_api_adaptor.virtual_machines
     rescue Vim::InvalidLogin => e
-      logger.error(e.message)
-      logger.error(e.backtrace)
+      logger.error("class: #{e.get_class.to_s}")
+      logger.error("message: #{e.get_localized_message}")
+      logger.error("backtrace: #{e.backtrace}")
       raise Exceptions::Forbidden, "Invalid Login"
     rescue => e
-      logger.error(e.message)
-      logger.error(e.backtrace)
+      logger.error("class: #{e.get_class.to_s}")
+      logger.error("message: #{e.get_localized_message}")
+      logger.error("backtrace: #{e.backtrace}")
       raise Exceptions::Unrecoverable, e.to_s
     ensure
       inode.close_connection
@@ -222,6 +229,7 @@ class Machine < Base::Machine
   end
 
   def self.all_with_readings(inode, _interval = 300, _since = 10.minutes.ago.utc, _until = 5.minutes.ago.utc)
+    logger.info("machine.all_with_readings")
     begin
       # Retrieve all machines and virtual machine references
       start_time = _since.floor(5.minutes).utc
@@ -232,8 +240,9 @@ class Machine < Base::Machine
     rescue InvalidLogin => e
       raise Exceptions::Forbidden, "Invalid Login"
     rescue => e
-      logger.error(e.message)
-      logger.error(e.backtrace)
+      logger.error("class: #{e.get_class.to_s}")
+      logger.error("message: #{e.get_localized_message}")
+      logger.error("backtrace: #{e.backtrace}")
       raise Exceptions::Unrecoverable, e.to_s
     ensure
       inode.close_connection
@@ -241,6 +250,7 @@ class Machine < Base::Machine
   end
 
   def self.find_by_uuid(inode, uuid)
+    logger.info("machine.find_by_uuid")
     begin
       vm = inode.vmware_api_adaptor.find_vm_by_uuid(uuid)
 
@@ -252,8 +262,9 @@ class Machine < Base::Machine
     rescue InvalidLogin => e
       raise Exceptions::Forbidden, "Invalid Login"
     rescue => e
-      logger.error(e.message)
-      logger.error(e.backtrace)
+      logger.error("class: #{e.get_class.to_s}")
+      logger.error("message: #{e.get_localized_message}")
+      logger.error("backtrace: #{e.backtrace}")
       raise Exceptions::Unrecoverable, e.to_s
     ensure
       inode.close_connection
@@ -262,6 +273,7 @@ class Machine < Base::Machine
 
 
   def self.find_by_uuid_with_readings(inode, uuid, _interval = 300, _since = 10.minutes.ago.utc, _until = 5.minutes.ago.utc)
+    logger.info("machine.find_by_uuid_with_readings")
     begin
       start_time = _since.floor(5.minutes).utc
       end_time = _until.round(5.minutes).utc
@@ -276,8 +288,9 @@ class Machine < Base::Machine
     rescue InvalidLogin => e
       raise Exceptions::Forbidden, "Invalid Login"
     rescue => e
-      logger.error(e.message)
-      logger.error(e.backtrace)
+      logger.error("class: #{e.get_class.to_s}")
+      logger.error("message: #{e.get_localized_message}")
+      logger.error("backtrace: #{e.backtrace}")
       raise Exceptions::Unrecoverable, e.to_s
     ensure
       inode.close_connection
@@ -310,8 +323,9 @@ class Machine < Base::Machine
 
       result
     rescue => e
-      logger.error(e.message)
-      logger.error(e.backtrace)
+      logger.error("class: #{e.get_class.to_s}")
+      logger.error("message: #{e.get_localized_message}")
+      logger.error("backtrace: #{e.backtrace}")
       raise Exceptions::Unrecoverable, e.to_s
     end
   end

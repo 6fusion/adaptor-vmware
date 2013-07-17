@@ -49,7 +49,7 @@ class AdaptorVMware < Padrino::Application
 
   def render_json_error(code)
     @error = ErrorDescription.new(code,env['sinatra.error'].to_s)
-    logger.info "code = #{@error.code}, description=#{@error.description}"
+    logger.error "code = #{@error.code}, description=#{@error.description}"
     render('errors/error')
   end
 
