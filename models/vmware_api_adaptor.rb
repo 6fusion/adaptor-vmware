@@ -568,7 +568,7 @@ class VmwareApiAdaptor
       Vim::TaskInProgress => e
       logger.error("class: #{e.get_class.to_s}")
       logger.error("message: #{e.get_localized_message}")
-      logger.error("backtrace: #{e.backtrace}"))
+      logger.error("backtrace: #{e.backtrace}")
       raise Exceptions::MethodNotAllowed.new("Method Not Allowed: #{e.class.to_s}")
     end
   end
