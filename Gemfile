@@ -33,11 +33,15 @@ end
 
 group :development, :test do
   gem 'trinidad'
+  gem 'pry-rails'
 end
 
 group :test do
   gem 'cucumber'
   gem 'mocha', require: 'mocha/setup'
-  gem 'rspec'
+  #gem 'rspec'
+  gem 'rspec-padrino'
+  gem 'simplecov'
+  gem 'simplecov-rcov'
   gem 'rack-test', require: 'rack/test'
 end
