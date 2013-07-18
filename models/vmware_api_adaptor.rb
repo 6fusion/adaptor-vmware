@@ -9,6 +9,7 @@ $CLASSPATH << "#{PADRINO_ROOT}/lib/java"
 java_import "java.net.URL"
 # java_import "java.util.ArrayList"
 # java_import "com.vmware.vim25.InvalidLogin"
+java_import "java.net.MalformedURLException"
 java_import "java.rmi.RemoteException"
 
 module VIJavaUtil
@@ -51,7 +52,12 @@ class VmwareApiAdaptor
   # @yield [VIJava, VIJava::ServiceInstance]
   def connect(_host, _user, _password)
     disconnect
-    @connection = VIJava::ServiceInstance.new(URL.new("https://#{_host}/sdk"), _user, _password, true)
+    begin
+      @connection = VIJava::ServiceInstance.new(URL.new("https://#{_host}/sdk"), _user, _password, true)
+    rescue Java::JavaRmi::RemoteException, Java::JavaNet::MalformedURLException => e
+      logger.error "error connection in #{self.class}: #{e.inspect}" 
+      raise Exception::RemoteConnectionException, e
+    end
     return @connection
   end
 
@@ -64,7 +70,12 @@ class VmwareApiAdaptor
   end
 
   def root_folder
-    self.connection.get_root_folder
+    begin
+      self.connection.get_root_folder
+    rescue Java::ComVmwareVim25::InvalidProperty, Java::ComVmwareVim25::RuntimeFault, Java::JavaRmi::RemoteException => e 
+      logger.error "Error in #root_folder: #{e} "
+      raise Exceptions::Unrecoverable, e
+    end
   end
 
   def get_about_info
@@ -316,10 +327,12 @@ class VmwareApiAdaptor
 
   def virtual_machines()
     logger.info("vmware_api_adaptor#virtual_machines");
-    vms = VIJava::InventoryNavigator.new(self.root_folder).search_managed_entities("VirtualMachine");
-    virtual_machines = gather_properties(vms)
-
-    return virtual_machines
+    begin
+      vms = VIJava::InventoryNavigator.new(self.root_folder).search_managed_entities("VirtualMachine");
+      virtual_machines = gather_properties(vms)
+    rescue Java::ComVmwareVim25::InvalidProperty, Java::RuntimeFault, Java::JavaRmi::RemoteException
+      logger.error "Error in #virtual_machines: #{e}"
+    end
   end
 
   BLOCKING_TASKS = %w(
