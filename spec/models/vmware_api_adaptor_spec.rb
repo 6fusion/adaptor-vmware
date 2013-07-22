@@ -133,7 +133,7 @@ describe VmwareApiAdaptor do
     end
 
     context "when exceptions" do
-      fit "raise an error" do
+      it "raise an error" do
         service_instance = double("VIJava::ServiceInstance", :get_about_info => {})
         vmware_api_adaptor.instance_variable_set(:@connection, service_instance)
         service_instance.stub(:get_about_info).and_raise(Java::ComVmwareVim25::RuntimeFault.new)
