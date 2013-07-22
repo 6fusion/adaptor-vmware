@@ -56,7 +56,7 @@ class VmwareApiAdaptor
       @connection = VIJava::ServiceInstance.new(URL.new("https://#{_host}/sdk"), _user, _password, true)
     rescue Java::JavaRmi::RemoteException, Java::JavaNet::MalformedURLException => e
       logger.error "error connection in #{self.class}: #{e.inspect}" 
-      raise Exception::RemoteConnectionException, e
+      raise Exceptions::RemoteConnectionException, e
     end
     return @connection
   end
@@ -72,38 +72,48 @@ class VmwareApiAdaptor
   def root_folder
     begin
       self.connection.get_root_folder
-    rescue Java::ComVmwareVim25::InvalidProperty, Java::ComVmwareVim25::RuntimeFault, Java::JavaRmi::RemoteException => e 
+    # This can be raised as well: Java::JavaRmi::RemoteException,
+    # exception got in #connection
+    rescue Java::ComVmwareVim25::InvalidProperty, Java::ComVmwareVim25::RuntimeFault => e 
       logger.error "Error in #root_folder: #{e} "
       raise Exceptions::Unrecoverable, e
     end
   end
 
+  # Exceptions from get_about_info
+  # RuntimeFault, RemoteException 
+  # http://grepcode.com/file/repo1.maven.org/maven2/org.jvnet.hudson/vijava/2120100824/com/vmware/vim25/AboutInfo.java#AboutInfo
   def get_about_info
     logger.info("vmware_api_adaptor.get_about_info")
-    about                               = self.connection.get_about_info
-    about_hash                          = {}
-    about_hash["fullName"]              = about.get_full_name
-    about_hash["vendor"]                = about.get_vendor
-    about_hash["version"]               = about.get_version
-    about_hash["build"]                 = about.get_build
-    about_hash["localeVersion"]         = about.get_locale_version
-    about_hash["localeBuild"]           = about.get_locale_build
-    about_hash["osType"]                = about.get_os_type
-    about_hash["productLineId"]         = about.get_product_line_id
-    about_hash["apiType"]               = about.get_api_type
-    about_hash["apiVersion"]            = about.get_api_version
-    about_hash["instanceUuid"]          = about.get_instance_uuid
-    about_hash["licenseProductVersion"] = about.get_license_product_name
-    about_hash["name"]                  = about.get_name
+    begin 
+      about                               = self.connection.get_about_info
+      about_hash                          = {}
+      about_hash["fullName"]              = about.get_full_name
+      about_hash["vendor"]                = about.get_vendor
+      about_hash["version"]               = about.get_version
+      about_hash["build"]                 = about.get_build
+      about_hash["localeVersion"]         = about.get_locale_version
+      about_hash["localeBuild"]           = about.get_locale_build
+      about_hash["osType"]                = about.get_os_type
+      about_hash["productLineId"]         = about.get_product_line_id
+      about_hash["apiType"]               = about.get_api_type
+      about_hash["apiVersion"]            = about.get_api_version
+      about_hash["instanceUuid"]          = about.get_instance_uuid
+      about_hash["licenseProductVersion"] = about.get_license_product_name
+      about_hash["name"]                  = about.get_name
 
-    dynamic_properties = about.get_dynamic_property
-    unless dynamic_properties.nil?
-      dynamic_properties.each do |dp|
-        about_hash[dp.get_name.to_s] = dp.get_value.to_s
+      dynamic_properties = about.get_dynamic_property
+        unless dynamic_properties.nil?
+          dynamic_properties.each do |dp|
+          about_hash[dp.get_name.to_s] = dp.get_value.to_s
+        end
       end
-    end
 
-    return about_hash
+      return about_hash
+    rescue Java::ComVmwareVim25::RuntimeFault => e 
+      logger.error "Error in #get_about_info: #{e}"
+      raise Exceptions::UnprocessableEntity, e
+    end
   end
 
   def get_statistic_levels
@@ -327,12 +337,12 @@ class VmwareApiAdaptor
 
   def virtual_machines()
     logger.info("vmware_api_adaptor#virtual_machines");
-    begin
+    #begin
       vms = VIJava::InventoryNavigator.new(self.root_folder).search_managed_entities("VirtualMachine");
       virtual_machines = gather_properties(vms)
-    rescue Java::ComVmwareVim25::InvalidProperty, Java::RuntimeFault, Java::JavaRmi::RemoteException
-      logger.error "Error in #virtual_machines: #{e}"
-    end
+    #rescue Java::ComVmwareVim25::InvalidProperty, Java::RuntimeFault, Java::JavaRmi::RemoteException
+    #  logger.error "Error in #virtual_machines: #{e}"
+    #end
   end
 
   BLOCKING_TASKS = %w(

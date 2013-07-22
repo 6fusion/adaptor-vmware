@@ -24,16 +24,6 @@ end if ENV["COVERAGE"]
 require "test/unit"
 require File.expand_path(File.dirname(__FILE__) + "/../config/boot")
 
-RSpec.configure do |conf|
-  # Run only focused specs
-  conf.alias_example_to :fit, :focused => true
-  conf.filter_run :focused => true
-  conf.run_all_when_everything_filtered = true
-
-  conf.include Rack::Test::Methods
-  conf.include RSpec::Padrino  
-end
-
 # specific helpers for specs
 require 'java'
 Dir['lib/java/**/*.jar'].each do |jar|
@@ -55,6 +45,16 @@ end
 module Vim
   include_package "com.vmware.vim25"
 end 
+
+RSpec.configure do |conf|
+  # Run only focused specs
+  conf.alias_example_to :fit, :focused => true
+  conf.filter_run :focused => true
+  conf.run_all_when_everything_filtered = true
+
+  conf.include Rack::Test::Methods
+  conf.include RSpec::Padrino  
+end
 
 def app
   ##
