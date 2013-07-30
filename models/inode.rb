@@ -10,6 +10,13 @@ class INode < Base::INode
   attr_accessor :vmware_api_adaptor
   attr_reader :uuid, :session, :host_ip_address, :user, :password, :vmware_adaptor
 
+  validates :user,
+    :presence => true
+  validates :host_ip_address,
+    :presence => true
+  validates :password,
+    :presence => true
+
   def initialize(attributes)
     super
     self.vmware_api_adaptor = VmwareApiAdaptor.new(self)
