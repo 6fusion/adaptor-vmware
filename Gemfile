@@ -16,7 +16,7 @@ gem 'jruby-rack'
 gem 'rack'
 gem 'rack-post-body-to-params'
 
-torquebox_version = "2.3.0"
+torquebox_version = "2.3.2"
 gem 'torquebox-cache', torquebox_version
 gem 'torquebox-messaging', torquebox_version
 gem 'torquebox-rake-support', torquebox_version
