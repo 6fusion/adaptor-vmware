@@ -116,6 +116,7 @@ class VmwareApiAdaptor
     end
   end
 
+  # TODO: Test for RemoteException
   def get_statistic_levels
     logger.info("vmware_api_adaptor.get_statistic_levels")
     performance_manager   = self.connection.get_performance_manager
@@ -134,8 +135,7 @@ class VmwareApiAdaptor
         stats << pi_hash
       end
     end
-
-    return stats
+    stats
   end
 
   def get_session_info
@@ -144,6 +144,7 @@ class VmwareApiAdaptor
     session_info = {
       count: user_sessions.count
     }
+
     session_info[:sessions] = user_sessions.map { |us|
       {
         session_key: us.get_key,
@@ -153,6 +154,7 @@ class VmwareApiAdaptor
         last_active_time: us.get_last_active_time.get_time.to_s.to_datetime.utc.strftime("%Y-%m-%dT%H:%M:%SZ")
       }
     }
+logger.debug "session info: #{session_info}"
     session_info
   end
 

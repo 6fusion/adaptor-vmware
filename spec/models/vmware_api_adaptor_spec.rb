@@ -149,15 +149,72 @@ describe VmwareApiAdaptor do
   describe "#get_statistics_level" do
     context "when connection is good" do
       context "and the performance internals are nil" do
-        it "returns an empty array"
+        it "returns an empty array" do
+          performance_manager = double("", :get_historical_interval => nil)
+          service_instance =  double("VIJava::ServiceInstance", :get_performance_manager => performance_manager)
+          vmware_api_adaptor.instance_variable_set(:@connection, service_instance)
+          vmware_api_adaptor.get_statistic_levels == []
+        end
       end
       context "and the performance internals exist" do
-        it "returns info about the system"
+        it "returns info about the system" do
+          performance_methods_stub = {
+            :get_key => "StatLevelKey",
+            :get_sampling_period => 1, 
+            :get_name            => "Name",
+            :get_length          => 2,
+            :get_level            => 3,
+            :is_enabled          => 1
+          }
+          historical_interval = double("VIJava::PerformanceManager", performance_methods_stub)
+
+          performance_manager = double("VIJava::PerformanceManager", :get_historical_interval => [historical_interval])
+          service_instance =  double("VIJava::ServiceInstance", :get_performance_manager => performance_manager)
+          vmware_api_adaptor.instance_variable_set(:@connection, service_instance)
+
+          statistic_levels = [{
+            "key"            => "StatLevelKey",
+            "samplingPeriod" => "1",
+            "name"           => "Name",
+            "length"         => "2",
+            "level"          => "3",
+            "enabled"        => "1"
+          }]
+          vmware_api_adaptor.get_statistic_levels == statistic_levels
+        end
       end
     end
 
     context "when connection is bad" do
-      it "raise an error"
+      it "raises an error"
+    end
+  end
+
+  describe "#get_session_info" do
+    it "returns session info" do
+      time = Time.now
+      time_object = double("VIJava::Calender", :get_time => Time.now)
+      user_session = double("VIJava::UserSession", :count => 1, 
+        :get_key => '123key',
+        :get_user_name => 'username',
+        :get_locale => 'en',
+        :get_login_time => time_object,
+        :get_last_active_time => time_object)
+      session_manager_object = double("VIJava::SessionManager", :get_session_list => [user_session])
+      service_instance = double("VIJava::ServiceInstance", :get_session_manager => session_manager_object)
+      vmware_api_adaptor.instance_variable_set(:@connection, service_instance)
+
+      session_info = {
+        count: 1,
+        sessions: [{
+          session_key: '123key',
+          user_name: 'username',
+          locale: 'en',
+          login_time: "#{time.to_s.to_datetime.utc.strftime("%Y-%m-%dT%H:%M:%SZ")}",
+          last_active_time: "#{time.to_s.to_datetime.utc.strftime("%Y-%m-%dT%H:%M:%SZ")}"
+        }]
+      }
+      vmware_api_adaptor.get_session_info.should == session_info 
     end
   end
 
