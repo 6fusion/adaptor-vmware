@@ -21,6 +21,7 @@ gem 'torquebox-cache', torquebox_version
 gem 'torquebox-messaging', torquebox_version
 gem 'torquebox-rake-support', torquebox_version
 gem 'torquebox', torquebox_version
+gem 'semantic', require: false
 
 group :deploy do
   gem 'colorize'

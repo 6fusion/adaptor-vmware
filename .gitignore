@@ -12,3 +12,8 @@ data/*
 config/newrelic.yml
 *.class
 .bundle
+pkg
+vendor/cache
+*.tgz
+*.tar
+
