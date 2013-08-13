@@ -3,8 +3,7 @@
 .yardoc
 doc/**/*
 doc
-log/**/*
-log
+*.log
 .idea
 .DS_Store
 data/*
