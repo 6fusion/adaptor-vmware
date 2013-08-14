@@ -26,7 +26,7 @@ class ProductInstaller
   end
 
   def version
-    @version ||= File.read(File.dirname(__FILE__) + "/../VERSION")
+    @version ||= File.read(File.dirname(__FILE__) + "/../VERSION").chomp
   end
 
   def environment
@@ -59,7 +59,7 @@ class ProductInstaller
   def install_gems
     info "--- Installing Gems ---"
     duration = Benchmark.realtime do
-      output = %x'jruby -S bundle install --deployment --local --without test 2>&1'
+      output = %x'JRUBY_OPTS=-Xcext.enabled=true jruby -S bundle install --deployment --local --without test 2>&1'
       if $?.success?
         info(output)
       else
