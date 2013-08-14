@@ -272,3 +272,8 @@ def change_password(user = "root")
     end
   end
 end
+
+after 'deploy:rollback' do
+  logger.error "#{application} Rolled back"
+  exit(1)
+end
