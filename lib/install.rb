@@ -59,7 +59,7 @@ class ProductInstaller
   def install_gems
     info "--- Installing Gems ---"
     duration = Benchmark.realtime do
-      output = %x'jruby -S bundle install --local --without test 2>&1'
+      output = %x'jruby -S bundle install --deployment --local --without test 2>&1'
       if $?.success?
         info(output)
       else
