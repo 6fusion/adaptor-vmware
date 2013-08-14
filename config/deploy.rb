@@ -16,7 +16,7 @@ set :bundle_without, [:development, :test, :automation, :assets, :deploy]
 # set :bundle_dir, fetch(:shared_path)+"/bundle"
 # set :bundle_flags, "--deployment --quiet"
 
-set :application, `git remote -v`[/([\w-]+)\.git\s\(fetch\)/,1]
+set :application, 'adaptor-vmware'
 set :user, 'deploy'
 set :group, 'deploy'
 
