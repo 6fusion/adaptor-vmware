@@ -36,6 +36,7 @@ set :password, ENV['PASSWORD'] if ENV['PASSWORD']
 set :tag, (`git branch --no-color 2> /dev/null`.chomp.split("\n").grep(/^[*]/).first[/(\S+)$/, 1] rescue "")
 set :current_branch, nil
 set :current_version, nil
+set :exit_status_on_rollback, ENV['EXIT_STATUS_ON_ROLLBACK'].to_i || 0
 
 # Adaptor-VMware Specifics
 set :ssh_port, 22
@@ -274,6 +275,6 @@ def change_password(user = "root")
 end
 
 after 'deploy:rollback' do
-  logger.error "#{application} Rolled back"
-  exit(1)
+  puts "#{application} Rolled back".red
+  exit(exit_status_on_rollback)
 end

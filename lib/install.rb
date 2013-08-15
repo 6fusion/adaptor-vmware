@@ -41,10 +41,13 @@ class ProductInstaller
     info "  #{'%0.2f' % duration} seconds"
   end
 
+  # Use capistrano to install the upgrade code.  On failure to install capistrano will rollback the deploy and report the EXIT_STATUS_ON_ROLLBACK code
+  # indicating a failure to upgrade.
+  # TODO: set this up to stream output
   def deploy_upgrade
     info "--- Deploying upgrade ---"
     duration = Benchmark.realtime do
-      output = %x'jruby -S bundle exec cap upgrade deploy RAILS_ENV=#{environment} 2>&1'
+      output = %x'jruby -S bundle exec cap upgrade deploy RAILS_ENV=#{environment} EXIT_STATUS_ON_ROLLBACK=1 2>&1'
       if $?.success?
         info(output)
       else
@@ -56,6 +59,7 @@ class ProductInstaller
     duration
   end
 
+  # TODO: set this up to stream output
   def install_gems
     info "--- Installing Gems ---"
     duration = Benchmark.realtime do
