@@ -33,10 +33,6 @@ class ProductInstaller
     @environment ||= File.exists?('/var/6fusion/release-scripts/ENVIRONMENT') ? File.read('/var/6fusion/release-scripts/ENVIRONMENT') : 'development'
   end
 
-  def rails_env
-    @rails_env ||= File.exists?('/var/6fusion/release-scripts/RAILS_ENV') ? File.read('/var/6fusion/release-scripts/RAILS_ENV') : 'development'
-  end
-
   def run
     info "=== Upgrading to Adaptor VMware #{version} ==="
     duration = install_gems()
@@ -51,7 +47,7 @@ class ProductInstaller
   def deploy_upgrade
     info "--- Deploying upgrade ---"
     duration = Benchmark.realtime do
-      output = %x'jruby -S bundle exec cap upgrade deploy RAILS_ENV=#{rails_env} EXIT_STATUS_ON_ROLLBACK=1 2>&1'
+      output = %x'jruby -S bundle exec cap upgrade deploy RAILS_ENV=#{environment} EXIT_STATUS_ON_ROLLBACK=1 2>&1'
       if $?.success?
         info(output)
       else
