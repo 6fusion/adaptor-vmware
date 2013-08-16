@@ -1,7 +1,7 @@
 set :hipchat_alert, false
 set :repository, "."
 set :deploy_via, :copy
-set :copy_dir, '/tmp/upgrade/adaptor-vmware-copy'
+set :copy_dir, '/tmp/upgrade/capistrano/adaptor-vmware-copy'
 set :scm, :none
 set :rails_env, ENV['RAILS_ENV'] || 'production'
 set :bundle_flags, '--local --deployment --quiet'
