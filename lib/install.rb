@@ -34,7 +34,7 @@ class ProductInstaller
   end
 
   def run
-    puts "Running #{__FILE__} as: #{`whoami`}"
+    info "Running #{__FILE__} as: #{`whoami`}"
 
     info "=== Upgrading to Adaptor VMware #{version} ==="
     duration = install_gems()
