@@ -25,7 +25,7 @@ alias :capture :local_capture
 server "127.0.0.1", :app, :web, primary: true
 
 before 'deploy' do
-  run "mkdir -p #{copy_dir}"
+  run "#{sudo} mkdir -p #{copy_dir}"
 end
 
 namespace :verify do
