@@ -1,3 +1,4 @@
+set :context_path, ENV['CONTEXT_PATH'] || "/vmware"
 set :hipchat_alert, false
 set :repository, "."
 set :deploy_via, :copy
