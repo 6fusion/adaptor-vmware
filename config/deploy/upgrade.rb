@@ -28,10 +28,6 @@ before 'deploy' do
   run "mkdir -p #{copy_dir}"
 end
 
-after 'deploy' do
-  torquebox.restart
-end
-
 namespace :verify do
   task :rules do
   end
