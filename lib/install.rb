@@ -49,7 +49,7 @@ class ProductInstaller
   def deploy_upgrade
     info "--- Deploying upgrade ---"
     duration = Benchmark.realtime do
-      `sudo -u deploy cd /tmp/upgrade/adaptor-vmware`
+      `sudo -u deploy "cd /tmp/upgrade/adaptor-vmware"`
       output = %x'sudo -u deploy jruby -S bundle exec cap upgrade deploy RAILS_ENV=#{environment} EXIT_STATUS_ON_ROLLBACK=1 2>&1'
       if $?.success?
         info(output)
