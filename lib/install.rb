@@ -49,7 +49,7 @@ class ProductInstaller
   def deploy_upgrade
     info "--- Deploying upgrade ---"
     duration = Benchmark.realtime do
-      output = %x'jruby -S bundle exec cap upgrade deploy RAILS_ENV=#{environment} EXIT_STATUS_ON_ROLLBACK=1 2>&1'
+      output = %x"jruby -S bundle exec cap upgrade deploy RAILS_ENV=#{environment} EXIT_STATUS_ON_ROLLBACK=1 2>&1"
       if $?.success?
         info(output)
       else
