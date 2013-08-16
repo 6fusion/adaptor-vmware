@@ -224,7 +224,7 @@ namespace :torquebox do
 
   desc 'deploy application'
   task :deploy, roles: :app do
-    run "#{sudo} torquebox deploy #{current_path} --name #{application} --env #{rails_env} --context-path=#{context_path}"
+    run "#{sudo} torquebox deploy #{current_path} --name #{application} --env #{rails_env} --context-path=#{context_path} 2>&1"
     sleep 2
     run "#{sudo} test ! -f /opt/torquebox/jboss/standalone/deployments/#{application}-knob.yml.failed"
   end
