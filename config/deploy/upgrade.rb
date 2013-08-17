@@ -52,8 +52,10 @@ namespace :deploy do
   task :update_version do
   end
 
-  task :update_code do
+  task :update_code, :except => { :no_release => true } do
+    on_rollback { run "rm -rf #{release_path}; true" }
     run "cp -R . #{release_path}"
+    finalize_update
   end
 
   task :restart do
