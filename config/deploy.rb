@@ -209,29 +209,32 @@ end
 namespace :torquebox do
   desc 'start'
   task :start, roles: :app do
-    run "#{sudo} start torquebox"
+    run "#{sudo} start torquebox 2>&1"
   end
 
   desc 'stop'
   task :stop, roles: :app do
-    run "#{sudo} stop torquebox"
+    run "#{sudo} stop torquebox 2>&1"
   end
 
   desc 'restart'
   task :restart, roles: :app do
-    run "#{sudo} restart_torquebox"
+    run "#{sudo} restart_torquebox 2>&1"
   end
 
   desc 'deploy application'
   task :deploy, roles: :app do
-    run "#{sudo :as => 'deploy'} torquebox deploy #{current_path} --name #{application} --env #{rails_env} --context-path=#{context_path}; true"
+    run "#{sudo} torquebox deploy #{current_path} --name #{application} --env #{rails_env} --context-path=#{context_path} 2>&1"
     sleep 2
-    run "#{sudo} test ! -f /opt/torquebox/jboss/standalone/deployments/#{application}-knob.yml.failed"
+    # wait for the torquebox deployment to finish before moving on
+    run "while [ -f /opt/torquebox/jboss/standalone/deployments/#{application}-knob.yml.dodeploy ]; do sleep 2; done"
+    # This test will cause the run to fail if the torquebox deploy fails and causes the creation of a .failed file
+    run "if [ -f /opt/torquebox/jboss/standalone/deployments/#{application}-knob.yml.failed ]; then cat /opt/torquebox/jboss/standalone/deployments/#{application}-knob.yml.failed; exit 1; fi"
   end
 
   desc 'undeploy application'
   task :undeploy, roles: :app do
-    run "#{sudo} torquebox undeploy #{current_path} --name #{application}"
+    run "#{sudo} torquebox undeploy #{current_path} --name #{application} 2>&1"
   end
 
   desc 'undeploy then deploy application'
