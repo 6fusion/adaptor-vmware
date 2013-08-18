@@ -8,7 +8,6 @@ set :rails_env, ENV['RAILS_ENV'] || 'production'
 set :bundle_flags, '--local --deployment --quiet'
 set :bundle_without, [:development, 'test']
 set :use_sudo, true
-set :run_method, :local_run
 
 # this is a copy of the method shipped with capistrano that has been monkey patched to show
 # useful error messages on failure
