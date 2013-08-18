@@ -10,6 +10,25 @@ set :bundle_cmd, 'unset RUBYOPT; /opt/torquebox-current/jruby/bin/bundle'
 set :bundle_without, [:development, :test, :automation, :assets]
 set :use_sudo, false
 
+# this is a copy of the method shipped with capistrano that has been monkey patched to show
+# useful error messages on failure
+def run_locally(cmd)
+  if dry_run
+    return logger.debug "executing locally: #{cmd.inspect}"
+  end
+  logger.trace "executing locally: #{cmd.inspect}" if logger
+  output_on_stdout = nil
+  elapsed = Benchmark.realtime do
+    output_on_stdout = `#{cmd}`
+  end
+  if $?.to_i > 0 # $? is command exit code (posix style)
+    puts output_on_stdout
+    raise Capistrano::LocalArgumentError, "Command #{cmd} returned status code #{$?}"
+  end
+  logger.trace "command finished in #{(elapsed * 1000).round}ms" if logger
+  output_on_stdout
+end
+
 def local_run(cmd, options = {})
   puts "Ignoring local_run option: #{options.inspect}" unless options.empty?
   run_locally(cmd)
