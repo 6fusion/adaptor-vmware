@@ -5,10 +5,11 @@ set :deploy_via, :copy
 set :copy_dir, '/tmp/upgrade/capistrano/adaptor-vmware-copy'
 set :scm, :none
 set :rails_env, ENV['RAILS_ENV'] || 'production'
-set :bundle_flags, '--local --deployment --quiet'
-set :bundle_cmd, 'unset RUBYOPT; /opt/torquebox-current/jruby/bin/bundle'
-set :bundle_without, [:development, :test, :automation, :assets]
-set :use_sudo, false
+set :bundle_flags, '--local --deployment' # --quiet'
+#set :bundle_cmd, 'unset RUBYOPT && unset BUNDLE_GEMFILE && /opt/torquebox-current/jruby/bin/bundle'
+set :bundle_without, [:development, 'test']
+set :use_sudo, true
+set :run_method, :local_run
 
 # this is a copy of the method shipped with capistrano that has been monkey patched to show
 # useful error messages on failure
@@ -19,7 +20,7 @@ def run_locally(cmd)
   logger.trace "executing locally: #{cmd.inspect}" if logger
   output_on_stdout = nil
   elapsed = Benchmark.realtime do
-    output_on_stdout = `#{cmd}`
+    output_on_stdout = `#{cmd} 2>&1`
   end
   if $?.to_i > 0 # $? is command exit code (posix style)
     puts output_on_stdout
@@ -29,16 +30,16 @@ def run_locally(cmd)
   output_on_stdout
 end
 
-def local_run(cmd, options = {})
+def local_run(command, options = {})
   puts "Ignoring local_run option: #{options.inspect}" unless options.empty?
-  run_locally(cmd)
+  run_locally(command)
 end
 
 alias :run :local_run
 
 def local_capture(command, options = {})
   puts "Ignoring local_capture option: #{options.inspect}" unless options.empty?
-  `#{command}`
+  run_locally(command)
 end
 
 alias :capture :local_capture
@@ -86,5 +87,11 @@ end
 namespace :newrelic do
   task :notice_deployment do
     # don't try to talk to newrelic
+  end
+end
+
+namespace :bundle do
+  task :install do
+    run "cd #{release_path} && unset RUBYOPT && bundle install #{bundle_flags} --gemfile #{release_path}/Gemfile --path #{shared_path}/#{bundle_dir} --without #{bundle_without.join(' ')}"
   end
 end
