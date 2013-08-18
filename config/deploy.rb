@@ -41,7 +41,7 @@ set :exit_status_on_rollback, ENV['EXIT_STATUS_ON_ROLLBACK'].to_i || 0
 # Adaptor-VMware Specifics
 set :ssh_port, 22
 set :copy_exclude do
-  %w{Capfile Vagrantfile README.* spec config/deploy.rb
+  %w{Capfile Vagrantfile README.* spec config/deploy.rb .bundle
      config/deploy .rvmrc .rspec data .git .gitignore **/test.* .yardopts} +
     (stages - [rails_env]).map { |e| "**/#{e}.*" }
 end

@@ -6,7 +6,8 @@ set :copy_dir, '/tmp/upgrade/capistrano/adaptor-vmware-copy'
 set :scm, :none
 set :rails_env, ENV['RAILS_ENV'] || 'production'
 set :bundle_flags, '--local --deployment --quiet'
-set :bundle_cmd, 'jruby -S bundle'
+set :bundle_cmd, 'unset RUBYOPT; /opt/torquebox-current/jruby/bin/bundle'
+set :bundle_without, [:development, :test, :automation, :assets]
 set :use_sudo, false
 
 def local_run(cmd, options = {})

@@ -15,6 +15,7 @@ gem 'json-jruby', require: 'json'
 gem 'jruby-rack'
 gem 'rack'
 gem 'rack-post-body-to-params'
+gem 'rubygems-bundler'
 
 torquebox_version = "2.3.2"
 gem 'torquebox-cache', torquebox_version
