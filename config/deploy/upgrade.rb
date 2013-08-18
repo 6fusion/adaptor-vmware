@@ -5,8 +5,7 @@ set :deploy_via, :copy
 set :copy_dir, '/tmp/upgrade/capistrano/adaptor-vmware-copy'
 set :scm, :none
 set :rails_env, ENV['RAILS_ENV'] || 'production'
-set :bundle_flags, '--local --deployment' # --quiet'
-#set :bundle_cmd, 'unset RUBYOPT && unset BUNDLE_GEMFILE && /opt/torquebox-current/jruby/bin/bundle'
+set :bundle_flags, '--local --deployment --quiet'
 set :bundle_without, [:development, 'test']
 set :use_sudo, true
 set :run_method, :local_run
@@ -92,6 +91,6 @@ end
 
 namespace :bundle do
   task :install do
-    run "cd #{release_path} && unset RUBYOPT && bundle install #{bundle_flags} --gemfile #{release_path}/Gemfile --path #{shared_path}/#{bundle_dir} --without #{bundle_without.join(' ')}"
+    run "cd #{release_path} && unset RUBYOPT && unset BUNDLE_GEMFILE && unset GEM_HOME && jruby -S bundle install #{bundle_flags} --gemfile #{release_path}/Gemfile --without #{bundle_without.join(' ')}"
   end
 end
