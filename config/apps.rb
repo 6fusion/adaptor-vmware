@@ -27,11 +27,8 @@
 #
 Padrino.configure_apps do
   # enable :sessions
-  if Padrino.env.to_s.include?("crm")
-    set :skip_folder_discovery, true
-  else
-    set :skip_folder_discovery, false
-  end
+  # always skip folder discovery
+  set :skip_folder_discovery, true
   set :session_secret, '94eec342031957df4a32bb25036d980f8aa5bf75bac2a5dbfaea6bb7626d4b8a'
 end
 
