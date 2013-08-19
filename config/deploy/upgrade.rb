@@ -20,8 +20,8 @@ def run_locally(cmd)
   elapsed = Benchmark.realtime do
     output_on_stdout = `#{cmd} 2>&1`
   end
+  puts output_on_stdout
   if $?.to_i > 0 # $? is command exit code (posix style)
-    puts output_on_stdout
     raise Capistrano::LocalArgumentError, "Command #{cmd} returned status code #{$?}"
   end
   logger.trace "command finished in #{(elapsed * 1000).round}ms" if logger
