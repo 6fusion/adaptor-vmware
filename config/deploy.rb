@@ -30,7 +30,7 @@ set :deploy_via, :remote_cache
 set :rails_env, lambda { fetch(:stage) }
 set :keep_releases, 2
 set :tail_logs_location, "/var/log/torquebox/torquebox.log"
-set :context_path, ""
+set :context_path, "/vmware"
 set :hipchat_alert, ENV['HIPCHAT_ALERT'] || true
 set :password, ENV['PASSWORD'] if ENV['PASSWORD']
 set :tag, (`git branch --no-color 2> /dev/null`.chomp.split("\n").grep(/^[*]/).first[/(\S+)$/, 1] rescue "")
