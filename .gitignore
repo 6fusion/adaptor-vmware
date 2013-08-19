@@ -15,4 +15,4 @@ pkg
 vendor/cache
 *.tgz
 *.tar
-
+vendor
