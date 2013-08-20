@@ -20,6 +20,7 @@ TYPE=Ethernet
     run "rm -f /var/log/torquebox/*"
     run "rm -rf /etc/chef"
     run "rm -f /usr/local/src/*.{zip,gz}"
+    run "echo 'DenyUsers deploy' >> /etc/ssh/sshd_config"
     change_password('deploy')
     change_password('root')
     run "halt"
