@@ -224,7 +224,6 @@ namespace :torquebox do
 
   desc 'deploy application'
   task :deploy, roles: :app do
-    run "printenv"
     run "#{sudo} torquebox deploy #{current_path} --name #{application} --env #{rails_env} --context-path=#{context_path} 2>&1"
     sleep 2
     # wait for the torquebox deployment to finish before moving on
