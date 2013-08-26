@@ -16,7 +16,7 @@ set :bundle_without, [:development, :test, :automation, :assets, :deploy]
 # set :bundle_dir, fetch(:shared_path)+"/bundle"
 # set :bundle_flags, "--deployment --quiet"
 
-set :application, `git remote -v`[/([\w-]+)\.git\s\(fetch\)/,1]
+set :application, 'adaptor-vmware'
 set :user, 'deploy'
 set :group, 'deploy'
 
@@ -24,23 +24,24 @@ set :ssh_options, { forward_agent: true }
 set :scm, "git"
 set :use_sudo, true
 set :repository, "git@github.com:6fusion/#{application}.git"
-set :branch, ENV['TAG'] || ENV['BRANCH'] || `git branch --no-color 2> /dev/null`.chomp.split("\n").grep(/^[*]/).first[/(\S+)$/, 1]
+set :branch, ENV['TAG'] || ENV['BRANCH'] || (`git branch --no-color 2> /dev/null`.chomp.split("\n").grep(/^[*]/).first[/(\S+)$/, 1] rescue "")
 set :deploy_to, "/var/6fusion/#{application}"
 set :deploy_via, :remote_cache
 set :rails_env, lambda { fetch(:stage) }
 set :keep_releases, 2
 set :tail_logs_location, "/var/log/torquebox/torquebox.log"
-set :context_path, ""
+set :context_path, "/vmware"
 set :hipchat_alert, ENV['HIPCHAT_ALERT'] || true
 set :password, ENV['PASSWORD'] if ENV['PASSWORD']
-set :tag, `git branch --no-color 2> /dev/null`.chomp.split("\n").grep(/^[*]/).first[/(\S+)$/, 1]
+set :tag, (`git branch --no-color 2> /dev/null`.chomp.split("\n").grep(/^[*]/).first[/(\S+)$/, 1] rescue "")
 set :current_branch, nil
 set :current_version, nil
+set :exit_status_on_rollback, ENV['EXIT_STATUS_ON_ROLLBACK'].to_i || 0
 
 # Adaptor-VMware Specifics
 set :ssh_port, 22
 set :copy_exclude do
-  %w{Capfile Vagrantfile README.* spec config/deploy.rb
+  %w{Capfile Vagrantfile README.* spec config/deploy.rb .bundle
      config/deploy .rvmrc .rspec data .git .gitignore **/test.* .yardopts} +
     (stages - [rails_env]).map { |e| "**/#{e}.*" }
 end
@@ -48,7 +49,7 @@ end
 # Additional Deployment Actions
 before "deploy", "verify:rules"
 
-after("deploy") do
+after("deploy:create_symlink") do
   # Setup data directory
   run "#{sudo} mkdir -p #{shared_path}/data"
   run "#{sudo} chmod 0755 #{shared_path}/data"
@@ -79,17 +80,10 @@ after("deploy") do
 
   # Deploy the application
   torquebox.deploy
+end
 
+after('deploy') do
   deploy.cleanup
-end
-
-before("deploy:restart") do
-  run "#{sudo} touch #{shared_path}/inodes.yml"
-  run "#{sudo} chown torquebox:torquebox -R #{shared_path}/inodes.yml"
-end
-
-after("deploy:rollback") do
-  torquebox.undeploy
 end
 
 namespace :deploy do
@@ -99,6 +93,22 @@ namespace :deploy do
 
     run "#{sudo} sed -i -e '$a\\' #{release_path}/VERSION && #{sudo} echo -n \"#{latest_commit_sha}\" >> #{release_path}/VERSION"
   end
+
+  desc 'restart torquebox'
+  task :restart do
+    torquebox.restart
+  end
+
+  desc 'start torquebox'
+  task :start do
+    torquebox.start
+  end
+
+  desc 'stop torquebox'
+  task :stop do
+    torquebox.stop
+  end
+
 end
 
 namespace :verify do
@@ -199,29 +209,32 @@ end
 namespace :torquebox do
   desc 'start'
   task :start, roles: :app do
-    run "#{sudo} start torquebox"
+    run "#{sudo} start torquebox 2>&1"
   end
 
   desc 'stop'
   task :stop, roles: :app do
-    run "#{sudo} stop torquebox"
+    run "#{sudo} stop torquebox 2>&1"
   end
 
   desc 'restart'
   task :restart, roles: :app do
-    run "#{sudo} restart torquebox"
+    run "#{sudo} restart_torquebox 2>&1"
   end
 
   desc 'deploy application'
   task :deploy, roles: :app do
-    run "#{sudo} torquebox deploy #{current_path} --name #{application} --env #{rails_env} --context-path=#{context_path}"
+    run "#{sudo} torquebox deploy #{current_path} --name #{application} --env #{rails_env} --context-path=#{context_path} 2>&1"
     sleep 2
-    run "#{sudo} test ! -f /opt/torquebox/jboss/standalone/deployments/#{application}-knob.yml.failed"
+    # wait for the torquebox deployment to finish before moving on
+    run "while [ -f /opt/torquebox/jboss/standalone/deployments/#{application}-knob.yml.dodeploy ]; do sleep 2; done"
+    # This test will cause the run to fail if the torquebox deploy fails and causes the creation of a .failed file
+    run "if [ -f /opt/torquebox/jboss/standalone/deployments/#{application}-knob.yml.failed ]; then cat /opt/torquebox/jboss/standalone/deployments/#{application}-knob.yml.failed; exit 1; fi"
   end
 
   desc 'undeploy application'
   task :undeploy, roles: :app do
-    run "#{sudo} torquebox undeploy #{current_path} --name #{application}"
+    run "#{sudo} torquebox undeploy #{current_path} --name #{application} 2>&1"
   end
 
   desc 'undeploy then deploy application'
@@ -262,4 +275,9 @@ def change_password(user = "root")
       Capistrano::Configuration.default_io_proc.call(ch, stream, data)
     end
   end
+end
+
+after 'deploy:rollback' do
+  puts "#{application} Rolled back".red
+  exit(exit_status_on_rollback)
 end

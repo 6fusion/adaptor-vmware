@@ -78,3 +78,6 @@ then
 else
 	echo "Using: $GEM_HOME" # don't use colors in interactive shells
 fi
+
+export BUNDLE_BIN_PATH=`which bundle`
+export BUNDLE_GEMFILE=`pwd`/Gemfile

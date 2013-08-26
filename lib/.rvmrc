@@ -41,3 +41,6 @@ else
     return 1
   }
 fi
+
+export BUNDLE_BIN_PATH=`which bundle`
+export BUNDLE_GEMFILE=`pwd`/Gemfile

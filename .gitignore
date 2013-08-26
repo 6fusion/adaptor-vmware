@@ -3,8 +3,7 @@
 .yardoc
 doc/**/*
 doc
-log/**/*
-log
+*.log
 .idea
 .DS_Store
 data/*
@@ -12,3 +11,8 @@ data/*
 config/newrelic.yml
 *.class
 .bundle
+pkg
+vendor/cache
+*.tgz
+*.tar
+vendor
