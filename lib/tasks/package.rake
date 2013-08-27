@@ -8,11 +8,15 @@ namespace :package do
 
   directory package_dir_path
 
-  file package_dir_path => %w(vendor/cache) do
+  file 'REVISION' do
+    sh 'git rev-parse HEAD > REVISION'
+  end
+
+  file package_dir_path => %w(vendor/cache REVISION) do
     files = FileList.new do |fl|
       fl.add 'app/**/*'
       fl.add 'config/**/*'
-      fl.add 'vendor/**/*'
+      fl.add 'vendor/cache'
       fl.add 'models/**/*'
       fl.add 'public/**/*'
       fl.add 'log'
@@ -22,6 +26,7 @@ namespace :package do
       fl.add 'config.ru'
       fl.add 'Rakefile'
       fl.add 'VERSION'
+      fl.add 'REVISION'
     end
 
     files.each do |fn|
