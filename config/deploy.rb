@@ -29,7 +29,7 @@ set :deploy_to, "/var/6fusion/#{application}"
 set :deploy_via, :remote_cache
 set :rails_env, lambda { fetch(:stage) }
 set :keep_releases, 2
-set :tail_logs_location, "/var/log/torquebox/torquebox.log"
+set :tail_logs_location, "#{shared_path}/log/#{application}.log"
 set :context_path, "/vmware"
 set :hipchat_alert, ENV['HIPCHAT_ALERT'] || true
 set :password, ENV['PASSWORD'] if ENV['PASSWORD']
@@ -41,9 +41,9 @@ set :exit_status_on_rollback, ENV['EXIT_STATUS_ON_ROLLBACK'].to_i || 0
 # Adaptor-VMware Specifics
 set :ssh_port, 22
 set :copy_exclude do
-  %w{Capfile Vagrantfile README.* spec config/deploy.rb .bundle
+  %w{Capfile Vagrantfile Rakefile README.* spec features config/deploy.rb .bundle
      config/deploy .rvmrc .rspec data .git .gitignore **/test.* .yardopts} +
-    (stages - [rails_env]).map { |e| "**/#{e}.*" }
+    (stages - [rails_env.to_s]).map { |e| "**/#{e}.*" }
 end
 
 # Additional Deployment Actions
@@ -263,18 +263,6 @@ end
 # SSH configuration
 task :configure, roles: :app do
   system "ssh configure@#{find_servers_for_task(self).first} -p #{ssh_port}"
-end
-
-def change_password(user = "root")
-  run "passwd #{user}", :pty => true do |ch, stream, data|
-    if data =~ /New password:/
-      ch.send_data(Capistrano::CLI.password_prompt("New password for #{user}: ") + "\n")
-    elsif data =~ /Retype new password:/
-      ch.send_data(Capistrano::CLI.password_prompt("Retype new password for #{user}: ") + "\n")
-    else
-      Capistrano::Configuration.default_io_proc.call(ch, stream, data)
-    end
-  end
 end
 
 after 'deploy:rollback' do
