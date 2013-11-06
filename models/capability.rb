@@ -28,7 +28,6 @@ class Capability < Base::Capability
     restart
     force_stop
     force_restart
-    diagnostics
     delete
     media_store_add_mount
     media_store_delete_mount
