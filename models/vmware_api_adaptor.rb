@@ -781,10 +781,11 @@ class VmwareApiAdaptor
       end
 
       logger.info "start performance_manager.query_perf"
+logger.debug "WTF query_spec_list: #{query_spec_list}"
       performance_entity_metric_base = performance_manager.query_perf(query_spec_list)
       # parse timestamps?
       logger.info "end performance_manager.query_perf"
-logger.debug "WTF: #{performance_entity_metric_base}"
+logger.debug "WTF performance_entity_metric_base: #{performance_entity_metric_base}"
       unless performance_entity_metric_base.nil?
         vms_hash = {}
         _vms.each { |vm| vms_hash[vm["external_vm_id"]] = vm }
