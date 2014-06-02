@@ -753,7 +753,7 @@ class VmwareApiAdaptor
           temp_perf_metric_id.set_counter_id(pci.get_key)
           temp_perf_metric_id.set_instance(perf_metric[:instance])
           perf_metric_ids << temp_perf_metric_id
-          logger.debug "WTF perf_metric: #{perf_metric}" 
+          logger.debug "WTF perf_metric: #{perf_metric}"
         end
       end
 
@@ -767,6 +767,7 @@ class VmwareApiAdaptor
         temp_perf_query_spec.set_metric_id(perf_metric_ids)
         temp_perf_query_spec.set_start_time(_start_time.utc)
         temp_perf_query_spec.set_end_time(_end_time.utc)
+        logger.debug "WTF temp_perf_query_spec: #{temp_perf_query_spec}"
         query_spec_list << temp_perf_query_spec
 
         # add empty readings here to avoid having to interate over the array again
