@@ -1,1 +1,0 @@
-server "adaptor-vmware-1-0-001.6fusion.#{rails_env}", :app
