@@ -16,3 +16,4 @@ vendor/cache
 *.tgz
 *.tar
 vendor
+tmp/
