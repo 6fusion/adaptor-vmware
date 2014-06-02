@@ -754,6 +754,7 @@ class VmwareApiAdaptor
           temp_perf_metric_id.set_instance(perf_metric[:instance])
           perf_metric_ids << temp_perf_metric_id
         end
+        logger.error "WTF perf_metric: #{perf_metric}"
       end
 
       query_spec_list = []
