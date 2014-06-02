@@ -818,7 +818,7 @@ logger.debug "WTF performance_entity_metric_base: #{performance_entity_metric_ba
           end
         end
       end
-
+logger.debug "WTF _vms: #{_vms}"
       return _vms
     end
     return nil
