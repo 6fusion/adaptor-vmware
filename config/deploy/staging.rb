@@ -1,1 +1,1 @@
-server "adaptor-vmware-1-0-001.6fusion.#{rails_env}", :app
+server "172.20.5.103", :app
