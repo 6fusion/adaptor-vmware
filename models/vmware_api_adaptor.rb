@@ -764,13 +764,13 @@ class VmwareApiAdaptor
         temp_perf_query_spec.set_format("normal");
         temp_perf_query_spec.set_interval_id(300);
         temp_perf_query_spec.set_metric_id(perf_metric_ids)
-        temp_perf_query_spec.set_start_time(_start_time.utc - 1.hour)
-        temp_perf_query_spec.set_end_time(_end_time.utc - 1.hour)
+        temp_perf_query_spec.set_start_time(_start_time.utc)
+        temp_perf_query_spec.set_end_time(_end_time.utc)
         query_spec_list << temp_perf_query_spec
 
         # add empty readings here to avoid having to interate over the array again
         vm["stats"] = {}
-        ((_start_time.utc + 5.minutes - 1.hour).._end_time.utc - 1.hour).step(5.minutes) do |ts|
+        ((_start_time.utc + 5.minutes).._end_time.utc).step(5.minutes) do |ts|
           vm["stats"][ts.strftime("%Y-%m-%dT%H:%M:%SZ")] = {
               "virtualDisk.read.average.*"  => 0,
               "virtualDisk.write.average.*" => 0,
