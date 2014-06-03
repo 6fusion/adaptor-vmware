@@ -752,7 +752,6 @@ class VmwareApiAdaptor
           temp_perf_metric_id           = Vim::PerfMetricId.new()
           temp_perf_metric_id.set_counter_id(pci.get_key)
           temp_perf_metric_id.set_instance(perf_metric[:instance])
-          logger.debug "WTF perf_metric_instance: #{perf_metric.to_yaml}"
           perf_metric_ids << temp_perf_metric_id
         end
       end
@@ -766,9 +765,7 @@ class VmwareApiAdaptor
         temp_perf_query_spec.set_interval_id(300);
         temp_perf_query_spec.set_metric_id(perf_metric_ids)
         temp_perf_query_spec.set_start_time(_start_time.utc - 1.hour)
-        logger.debug "WTF start_time: #{_start_time.utc - 1.hour}"
         temp_perf_query_spec.set_end_time(_end_time.utc - 1.hour)
-        logger.debug "WTF end_time: #{_end_time.utc - 1.hour}"
         query_spec_list << temp_perf_query_spec
 
         # add empty readings here to avoid having to interate over the array again
@@ -784,11 +781,9 @@ class VmwareApiAdaptor
       end
 
       logger.info "start performance_manager.query_perf"
-logger.debug "WTF query_spec_list: #{query_spec_list.inspect}"
       performance_entity_metric_base = performance_manager.query_perf(query_spec_list)
       # parse timestamps?
       logger.info "end performance_manager.query_perf"
-logger.debug "WTF performance_entity_metric_base: #{performance_entity_metric_base}"
       unless performance_entity_metric_base.nil?
         vms_hash = {}
         _vms.each { |vm| vms_hash[vm["external_vm_id"]] = vm }
@@ -821,7 +816,6 @@ logger.debug "WTF performance_entity_metric_base: #{performance_entity_metric_ba
           end
         end
       end
-logger.debug "WTF _vms: #{_vms}"
       return _vms
     end
     return nil
