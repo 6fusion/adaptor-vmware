@@ -761,20 +761,20 @@ class VmwareApiAdaptor
       _vms.each do |vm|
         temp_perf_query_spec = Vim::PerfQuerySpec.new()
         temp_perf_query_spec.set_entity(vm["mor"].get_mor)
-        logger.debug "WTF entity: #{vm["mor"].get_mor}"
         temp_perf_query_spec.set_format("normal");
         temp_perf_query_spec.set_interval_id(300);
         temp_perf_query_spec.set_metric_id(perf_metric_ids)
-        logger.debug "WTF perf_metric_ids: #{perf_metric_ids}"
-        temp_perf_query_spec.set_start_time(_start_time.utc)
-        logger.debug "WTF start_time: #{_start_time.utc}"
-        temp_perf_query_spec.set_end_time(_end_time.utc)
-        logger.debug "WTF end_time: #{_end_time.utc}"
+        logger.debug "WTF perf_metric_ids instance variables: #{perf_metric_ids.instance_variables}"
+        logger.debug "WTF perf_metric_ids methods: #{perf_metric_ids.methods}"
+        temp_perf_query_spec.set_start_time(_start_time.utc - 1.hour)
+        logger.debug "WTF start_time: #{_start_time.utc - 1.hour}"
+        temp_perf_query_spec.set_end_time(_end_time.utc - 1.hour)
+        logger.debug "WTF end_time: #{_end_time.utc - 1.hour}"
         query_spec_list << temp_perf_query_spec
 
         # add empty readings here to avoid having to interate over the array again
         vm["stats"] = {}
-        ((_start_time.utc + 5.minutes).._end_time.utc).step(5.minutes) do |ts|
+        ((_start_time.utc + 5.minutes - 1.hour).._end_time.utc - 1.hour).step(5.minutes) do |ts|
           vm["stats"][ts.strftime("%Y-%m-%dT%H:%M:%SZ")] = {
               "virtualDisk.read.average.*"  => 0,
               "virtualDisk.write.average.*" => 0,
