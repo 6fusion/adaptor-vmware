@@ -331,6 +331,8 @@ class VmwareApiAdaptor
     _hosts = self.hosts
     vms_with_properties = VIJavaUtil::PropertyCollectorUtil.retrieve_properties(vms, "VirtualMachine", VM_PROPERTIES.to_java(:string))
 
+    # added rescue and logging here to troubleshoot delloite's
+    # missing readings issue, see https://trello.com/c/nMTNdT8C
     vms_hash = {}
     vms.each do |vm|
       begin
@@ -784,6 +786,7 @@ class VmwareApiAdaptor
       performance_entity_metric_base = performance_manager.query_perf(query_spec_list)
       # parse timestamps?
       logger.info "end performance_manager.query_perf"
+
       unless performance_entity_metric_base.nil?
         vms_hash = {}
         _vms.each { |vm| vms_hash[vm["external_vm_id"]] = vm }
@@ -816,6 +819,7 @@ class VmwareApiAdaptor
           end
         end
       end
+
       return _vms
     end
     return nil
