@@ -752,6 +752,7 @@ class VmwareApiAdaptor
           temp_perf_metric_id           = Vim::PerfMetricId.new()
           temp_perf_metric_id.set_counter_id(pci.get_key)
           temp_perf_metric_id.set_instance(perf_metric[:instance])
+          logger.debug "WTF perf_metric_instance: #{perf_metric.to_yaml}"
           perf_metric_ids << temp_perf_metric_id
         end
       end
@@ -764,7 +765,6 @@ class VmwareApiAdaptor
         temp_perf_query_spec.set_format("normal");
         temp_perf_query_spec.set_interval_id(300);
         temp_perf_query_spec.set_metric_id(perf_metric_ids)
-        logger.debug "WTF perf_metric_ids methods: #{perf_metric_ids.map(&:instance_methods)}"
         temp_perf_query_spec.set_start_time(_start_time.utc - 1.hour)
         logger.debug "WTF start_time: #{_start_time.utc - 1.hour}"
         temp_perf_query_spec.set_end_time(_end_time.utc - 1.hour)
