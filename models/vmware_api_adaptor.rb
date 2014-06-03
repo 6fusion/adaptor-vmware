@@ -764,8 +764,8 @@ class VmwareApiAdaptor
         temp_perf_query_spec.set_format("normal");
         temp_perf_query_spec.set_interval_id(300);
         temp_perf_query_spec.set_metric_id(perf_metric_ids)
-        logger.debug "WTF perf_metric_ids instance variables: #{perf_metric_ids.instance_variables}"
-        logger.debug "WTF perf_metric_ids methods: #{perf_metric_ids.methods}"
+        logger.debug "WTF perf_metric_ids instance variables: #{perf_metric_ids.to_a}"
+        logger.debug "WTF perf_metric_ids methods: #{perf_metric_ids.to_yaml}"
         temp_perf_query_spec.set_start_time(_start_time.utc - 1.hour)
         logger.debug "WTF start_time: #{_start_time.utc - 1.hour}"
         temp_perf_query_spec.set_end_time(_end_time.utc - 1.hour)
