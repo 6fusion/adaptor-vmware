@@ -17,8 +17,8 @@ attributes :uuid,
 attribute :name => :virtual_name
 
 _interval = params[:interval].blank? ? 300 : params[:interval]
-_since = params[:since].blank? ? 5.minutes.ago.utc : Time.iso8601(params[:since])
-_until = params[:until].blank? ? Time.now.utc : Time.iso8601(params[:until])
+_since = params[:since].blank? ? 10.minutes.ago.utc : Time.iso8601(params[:since])
+_until = params[:until].blank? ? 5.minutes.ago.utc : Time.iso8601(params[:until])
 
 child :disks => :disks do
   attributes :uuid, :name, :maximum_size, :type, :thin

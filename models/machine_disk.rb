@@ -19,7 +19,7 @@ class MachineDisk < Base::MachineDisk
   #   @stats = stats
   # end
 
-  def readings(inode, _interval = 300, _since = 10.minutes.ago.utc, _until = 5.minutes.utc)
+  def readings(inode, _interval = 300, _since = 10.minutes.ago.utc, _until = 5.minutes.ago.utc)
     #logger.info('machine_disk.readings')
 
     #Create machine disk readings from stats variable
