@@ -4,8 +4,8 @@
 Vagrant.configure('2') do |config|
   config.vm.define 'adaptor-vmware' do |adaptor_vmware|
     adaptor_vmware.vm.hostname = 'adaptor-vmware'
-    adaptor_vmware.vm.box      = 'centos-6.3-amd64'
-    adaptor_vmware.vm.box_url  = 'http://chef.6fusion.lab/centos-6.3-amd64.box'
+    adaptor_vmware.vm.box      = 'chef/centos-6.5'
+
 
     adaptor_vmware.vm.provider :virtualbox do |virtualbox|
       virtualbox.customize ['modifyvm', :id] + %w{--memory 1024 --ioapic on --cpus 1}
